@@ -8,8 +8,11 @@ import { appConfigSchema } from './config/config.types';
 import { typeOrmConfig } from './config/database.config';
 import { TypedConfigService } from './config/typed-config.service';
 import { UserEntity } from './users/user.entity';
+import { UserModule } from './users/user.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformResponseInterceptor } from './interceptors/transform-response.interceptor';
+import { QueryingModule } from './querying/querying.module';
+import { SeedingModule } from './database/seeding/seeding.module';
 
 @Module({
   imports: [
@@ -29,6 +32,9 @@ import { TransformResponseInterceptor } from './interceptors/transform-response.
       },
       isGlobal: true,
     }),
+    UserModule,
+    QueryingModule,
+    SeedingModule,
   ],
   controllers: [AppController],
   providers: [
