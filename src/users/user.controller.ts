@@ -28,19 +28,6 @@ export class UserController {
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
-    // try {
-    //   await this.userService.create(createUserDto);
-
-    //   return {
-    //     success: true,
-    //     message: 'User Created Successfully',
-    //   };
-    // } catch (error: unknown) {
-    //   return {
-    //     success: false,
-    //     message: this.getErrorMessage(error),
-    //   };
-    // }
   }
 
   @Get()
