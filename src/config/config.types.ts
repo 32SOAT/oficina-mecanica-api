@@ -17,5 +17,5 @@ export const appConfigSchema = Joi.object({
   POSTGRES_USER: Joi.string().required(),
   POSTGRES_PASSWORD: Joi.string().required(),
   POSTGRES_DB: Joi.string().required(),
-  DB_SYNC: Joi.number().valid(0, 1).required(),
+  POSTGRES_SYNC: Joi.number().valid(0, 1).required(),
 });

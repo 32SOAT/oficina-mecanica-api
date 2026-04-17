@@ -8,7 +8,7 @@ export const getDatabaseOptions = (): TypeOrmModuleOptions => ({
   username: process.env.POSTGRES_USER ?? 'postgres',
   password: process.env.POSTGRES_PASSWORD ?? 'postgres',
   database: process.env.POSTGRES_DB ?? 'oficina_mecanica',
-  synchronize: process.env.DB_SYNC === '1',
+  synchronize: process.env.POSTGRES_SYNC === '1',
 });
 
 export const typeOrmConfig = registerAs('database', getDatabaseOptions);
