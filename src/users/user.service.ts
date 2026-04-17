@@ -22,14 +22,14 @@ export class UserService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { page } = paginationDto;
+    const page = paginationDto.page ?? 1;
     const take = paginationDto.take ?? DefaultPageSize.USER;
-    const offset = this.paginationService.calculateOffset(take, page ?? 0);
+    const offset = this.paginationService.calculateOffset(take, page);
     const [data, count] = await this.userRepository.findAndCount({
       skip: offset,
       take,
     });
-    const meta = this.paginationService.createMeta(take, page ?? 0, count);
+    const meta = this.paginationService.createMeta(take, page, count);
     return {
       data,
       meta,

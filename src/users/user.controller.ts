@@ -17,14 +17,6 @@ import { PaginationDto } from 'src/querying/dtos/pagination.dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return 'Unexpected error';
-  }
-
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
@@ -37,50 +29,29 @@ export class UserController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    try {
-      const data = await this.userService.findOne(id);
-      return {
-        success: true,
-        data,
-        message: 'User Fetched Successfully',
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        message: this.getErrorMessage(error),
-      };
-    }
+    const data = await this.userService.findOne(id);
+    return {
+      success: true,
+      data,
+      message: 'User Fetched Successfully',
+    };
   }
 
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    try {
-      await this.userService.update(id, updateUserDto);
-      return {
-        success: true,
-        message: 'User Updated Successfully',
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        message: this.getErrorMessage(error),
-      };
-    }
+    await this.userService.update(id, updateUserDto);
+    return {
+      success: true,
+      message: 'User Updated Successfully',
+    };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    try {
-      await this.userService.remove(id);
-      return {
-        success: true,
-        message: 'User Deleted Successfully',
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        message: this.getErrorMessage(error),
-      };
-    }
+    await this.userService.remove(id);
+    return {
+      success: true,
+      message: 'User Deleted Successfully',
+    };
   }
 }

@@ -3,8 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AppConfig, appConfig } from './config/app.config';
-import { appConfigSchema } from './config/config.types';
+import { appConfig } from './config/app.config';
+import { type ConfigType, appConfigSchema } from './config/config.types';
 import { typeOrmConfig } from './config/database.config';
 import { TypedConfigService } from './config/typed-config.service';
 import { UserEntity } from './users/user.entity';
@@ -13,16 +13,24 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformResponseInterceptor } from './interceptors/transform-response.interceptor';
 import { QueryingModule } from './querying/querying.module';
 import { SeedingModule } from './database/seeding/seeding.module';
+import { shouldEnableSeedingModule } from './database/seeding/seeding-environment';
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: TypedConfigService) => ({
-        ...configService.get<AppConfig>('database'),
-        entities: [UserEntity],
-      }),
+      useFactory: (configService: ConfigService<ConfigType>) => {
+        const databaseConfig: ConfigType['database'] = configService.getOrThrow(
+          'database',
+          { infer: true },
+        );
+
+        return {
+          ...databaseConfig,
+          entities: [UserEntity],
+        };
+      },
     }),
     ConfigModule.forRoot({
       load: [appConfig, typeOrmConfig],
@@ -34,7 +42,7 @@ import { SeedingModule } from './database/seeding/seeding.module';
     }),
     UserModule,
     QueryingModule,
-    SeedingModule,
+    ...(shouldEnableSeedingModule(process.env.NODE_ENV) ? [SeedingModule] : []),
   ],
   controllers: [AppController],
   providers: [
