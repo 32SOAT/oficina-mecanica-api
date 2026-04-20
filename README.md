@@ -4,16 +4,25 @@
 
 API em [NestJS](https://nestjs.com/) com TypeORM e PostgreSQL.
 
-### Por que banco relacional (PostgreSQL) neste tipo de projeto?
+### Por que um banco relacional (PostgreSQL) neste projeto?
 
-Uma oficina envolve **entidades ligadas por regras claras** (cliente possui veículos; ordem de serviço pertence a um veículo; itens referenciam serviço ou estoque; histórico amarra-se à ordem). Um **modelo relacional** ajuda a:
+O domínio de uma **oficina mecânica** não é um conjunto de registros isolados: existe uma **malha de dependências** que o sistema precisa respeitar. Um **cliente** possui **veículos**; cada **ordem de serviço** está ligada a um veículo; os **itens** da ordem apontam para **serviços** cadastrados ou para **linhas de estoque**; o **histórico de status** precisa estar sempre associado à ordem correta. Ou seja, o negócio é naturalmente **estruturado em entidades e relacionamentos** — exatamente o que o **modelo relacional** descreve com tabelas, chaves e integridade referencial.
 
-- **Garantir integridade** com chaves estrangeiras e constraints (evita órfãos e inconsistências).
-- **Expressar relacionamentos** (um-para-muitos, muitos-para-muitos via tabelas de junção) de forma explícita no schema.
-- **Consultar e auditar** com SQL (relatórios, totais, status) e transações **ACID** quando várias tabelas precisam mudar juntas (por exemplo, reserva de peça + linha na OS).
-- **Evoluir o MVP** com migrações versionadas, mantendo rastreabilidade do banco alinhada ao código.
+#### Encaixe com o modelo de dados
 
-Bancos apenas documento ou “schema flexível” podem servir em outros cenários; aqui, a **consistência dos dados de negócio** e as **relações entre cadastros** são o foco, por isso **PostgreSQL** (relacional) foi a nossa escolha.
+Em um SGBDR (sistema gerenciador de banco de dados relacional), você declara **no próprio schema** quem pode referenciar quem: chaves estrangeiras impedem, por exemplo, uma ordem de serviço órfã (sem veículo) ou um item apontando para um serviço que não existe. Restrições de **unicidade** (como documento do cliente ou placa do veículo) evitam duplicidade que geraria confusão operacional. Isso reduz a quantidade de validações “só na aplicação” e diminui o risco de dois caminhos de código divergirem sobre a mesma regra.
+
+#### Transações e consistência (ACID)
+
+Operações de oficina costumam exigir **várias escritas coordenadas**: abrir item na OS, atualizar quantidade reservada no estoque, registrar mudança de status no histórico. Se uma etapa falhar no meio, o sistema não pode ficar “meio atualizado”. Bancos relacionais oferecem **transações ACID** (atomicidade, consistência, isolamento, durabilidade): ou tudo que pertence àquela operação é confirmado, ou nada é — o que é essencial para **integridade financeira e de estoque** em um MVP que pretende crescer para cenários reais.
+
+#### Consultas, relatórios e evolução do MVP
+
+Grandes parte das perguntas de negócio são **relacionais** por natureza: total por período, ordens em aberto por status, consumo de peças, histórico de uma OS. **SQL** é a ferramenta madura para isso; o time consegue prototipar relatórios e validar números sem reimplementar agregações em código para cada caso. Além disso, o uso de **migrações versionadas** (como as deste repositório) permite que o **schema evolua junto com o código**, com revisão em pull request e histórico claro do que mudou no banco — importante em produto que ainda está definindo escopo.
+
+#### Por que PostgreSQL em particular
+
+**PostgreSQL** é um banco relacional **robusto, open source** e amplamente adotado: bom desempenho para cargas típicas de sistema administrativo, recursos sólidos de tipos (incluindo `UUID`, `NUMERIC`, timestamps com fuso), e ecossistema compatível com **Docker**, nuvem e ferramentas de backup. Quando surgir necessidade de algo menos estruturado em um ponto específico, o Postgres ainda oferece tipos como **JSON/JSONB** para casos pontuais **sem** abandonar o modelo relacional como base.
 
 ## Pré-requisitos
 
