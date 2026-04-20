@@ -1,20 +1,35 @@
 # Oficina Mecânica API
 
-API em [NestJS](https://nestjs.com/) com TypeORM e PostgreSQL para gestão de oficina mecânica.
+**MVP** (produto mínimo viável) para **gerenciamento de oficina mecânica**: cadastro de clientes e veículos, ordens de serviço, itens (serviços e peças), estoque e histórico de status. O escopo é propositalmente enxuto para validar fluxo e modelo de dados antes de evoluir para funcionalidades mais amplas.
+
+API em [NestJS](https://nestjs.com/) com TypeORM e PostgreSQL.
+
+### Por que banco relacional (PostgreSQL) neste tipo de projeto?
+
+Uma oficina envolve **entidades ligadas por regras claras** (cliente possui veículos; ordem de serviço pertence a um veículo; itens referenciam serviço ou estoque; histórico amarra-se à ordem). Um **modelo relacional** ajuda a:
+
+- **Garantir integridade** com chaves estrangeiras e constraints (evita órfãos e inconsistências).
+- **Expressar relacionamentos** (um-para-muitos, muitos-para-muitos via tabelas de junção) de forma explícita no schema.
+- **Consultar e auditar** com SQL (relatórios, totais, status) e transações **ACID** quando várias tabelas precisam mudar juntas (por exemplo, reserva de peça + linha na OS).
+- **Evoluir o MVP** com migrações versionadas, mantendo rastreabilidade do banco alinhada ao código.
+
+Bancos apenas documento ou “schema flexível” podem servir em outros cenários; aqui, a **consistência dos dados de negócio** e as **relações entre cadastros** são o foco, por isso **PostgreSQL** (relacional) foi a nossa escolha.
 
 ## Pré-requisitos
 
-| Ferramenta                      | Uso                                             |
-| ------------------------------- | ----------------------------------------------- |
+
+| Ferramenta                       | Uso                                               |
+| -------------------------------- | ------------------------------------------------- |
 | **Node.js** **20.11+** ou **22** | Build e execução local com npm (veja nota abaixo) |
-| **npm**                         | Vem com o Node; use **>= 9** com Node 20+        |
-| **Docker** e **Docker Compose** | Subir PostgreSQL e/ou a aplicação em containers |
+| **npm**                          | Vem com o Node; use **>= 9** com Node 20+         |
+| **Docker** e **Docker Compose**  | Subir PostgreSQL e/ou a aplicação em containers   |
+
 
 ### Versão do Node (evitar `EBADENGINE` e instalação “lenta” no terminal)
 
 Este projeto precisa de **Node ≥ 20.11** (Nest 11, Joi 18, Jest 30, etc.). Com **Node 16**, o `npm install` gera centenas de linhas `EBADENGINE` — **é o Node errado**, não o projeto.
 
-O repositório inclui um script **`preinstall`**: se a versão for antiga, o install **para na primeira mensagem** (em vez de listar todos os pacotes). Para instalar mesmo assim (não recomendado): `npm install --ignore-scripts`.
+O repositório inclui um script `**preinstall`**: se a versão for antiga, o install **para na primeira mensagem** (em vez de listar todos os pacotes). Para instalar mesmo assim (não recomendado): `npm install --ignore-scripts`.
 
 **Fluxo recomendado** — com **[nvm](https://github.com/nvm-sh/nvm)** e o `.nvmrc` na raiz:
 
@@ -33,10 +48,9 @@ fnm use
 npm install
 ```
 
-Há um **`.npmrc`** com `audit=false` e `fund=false` para o final do `npm install` ficar mais limpo; você pode rodar `npm audit` quando quiser um relatório.
+Há um `**.npmrc**` com `audit=false` e `fund=false` para o final do `npm install` ficar mais limpo; você pode rodar `npm audit` quando quiser um relatório.
 
 Avisos `npm WARN deprecated` (ex.: `glob`, `inflight`) vêm de **dependências transitivas**; tendem a sumir quando os mantenedores atualizarem as cadeias — não é algo que você precise corrigir à mão no dia a dia.
-
 
 ---
 
@@ -112,12 +126,14 @@ O primeiro comando sobe só o serviço `db` em segundo plano; o segundo inicia a
 
 ### 6. Comandos da API (referência)
 
+
 | Modo                  | Comando               | Descrição                    |
 | --------------------- | --------------------- | ---------------------------- |
 | Desenvolvimento       | `npm run start:dev`   | Recarrega ao salvar arquivos |
 | Debug                 | `npm run start:debug` | Igual ao dev, com inspector  |
 | Uma execução          | `npm run start`       | Sem watch                    |
 | Produção (após build) | `npm run start:prod`  | Executa `node dist/main`     |
+
 
 A porta vem de `APP_PORT` no `.env` (padrão comum: `3000`).
 
@@ -206,10 +222,12 @@ Para e2e com API e banco, garanta que o ambiente (variáveis e Postgres) esteja 
 ## Resumo rápido
 
 
-| Objetivo         | npm (local)                                           | Docker                                                                                |
-| ---------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Instalar deps    | `npm install`                                         | (na build da imagem)                                                                  |
-| Build            | `npm run build`                                       | `docker compose build`                                                                |
+| Objetivo         | npm (local)                                                  | Docker                                                                                |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Instalar deps    | `npm install`                                                | (na build da imagem)                                                                  |
+| Build            | `npm run build`                                              | `docker compose build`                                                                |
 | Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
-| Migrations       | `npm run migration:run`                               | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
-| Revert migration | `npm run migration:revert`                            | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
+| Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
+| Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
+
+
