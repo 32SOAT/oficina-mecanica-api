@@ -1,11 +1,11 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateClientes1745200000001 implements MigrationInterface {
-  name = 'CreateClientes1745200000001';
+export class CreateCliente1745200000001 implements MigrationInterface {
+  name = 'CreateCliente1745200000001';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "clientes" (
+      CREATE TABLE "cliente" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "documento" character varying NOT NULL,
         "nome" character varying NOT NULL,
@@ -14,13 +14,13 @@ export class CreateClientes1745200000001 implements MigrationInterface {
         "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMP(3),
         "deleted_at" TIMESTAMP(3),
-        CONSTRAINT "PK_clientes" PRIMARY KEY ("id"),
-        CONSTRAINT "UQ_clientes_documento" UNIQUE ("documento")
+        CONSTRAINT "PK_cliente" PRIMARY KEY ("id"),
+        CONSTRAINT "UQ_cliente_documento" UNIQUE ("documento")
       )
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE "clientes"`);
+    await queryRunner.query(`DROP TABLE "cliente"`);
   }
 }
