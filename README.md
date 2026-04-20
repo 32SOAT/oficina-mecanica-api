@@ -4,12 +4,38 @@ API em [NestJS](https://nestjs.com/) com TypeORM e PostgreSQL para gestão de of
 
 ## Pré-requisitos
 
+| Ferramenta                      | Uso                                             |
+| ------------------------------- | ----------------------------------------------- |
+| **Node.js** **20.11+** ou **22** | Build e execução local com npm (veja nota abaixo) |
+| **npm**                         | Vem com o Node; use **>= 9** com Node 20+        |
+| **Docker** e **Docker Compose** | Subir PostgreSQL e/ou a aplicação em containers |
 
-| Ferramenta                                               | Uso                                             |
-| -------------------------------------------------------- | ----------------------------------------------- |
-| **Node.js** (versão compatível com o projeto, ex.: 22.x) | Build e execução local com npm                  |
-| **npm**                                                  | Instalação de dependências e scripts            |
-| **Docker** e **Docker Compose**                          | Subir PostgreSQL e/ou a aplicação em containers |
+### Versão do Node (evitar `EBADENGINE` e instalação “lenta” no terminal)
+
+Este projeto precisa de **Node ≥ 20.11** (Nest 11, Joi 18, Jest 30, etc.). Com **Node 16**, o `npm install` gera centenas de linhas `EBADENGINE` — **é o Node errado**, não o projeto.
+
+O repositório inclui um script **`preinstall`**: se a versão for antiga, o install **para na primeira mensagem** (em vez de listar todos os pacotes). Para instalar mesmo assim (não recomendado): `npm install --ignore-scripts`.
+
+**Fluxo recomendado** — com **[nvm](https://github.com/nvm-sh/nvm)** e o `.nvmrc` na raiz:
+
+```bash
+nvm install
+nvm use
+node -v   # v22.x ou v20.11+
+npm install
+```
+
+Com **[fnm](https://github.com/Schniz/fnm)**:
+
+```bash
+fnm install
+fnm use
+npm install
+```
+
+Há um **`.npmrc`** com `audit=false` e `fund=false` para o final do `npm install` ficar mais limpo; você pode rodar `npm audit` quando quiser um relatório.
+
+Avisos `npm WARN deprecated` (ex.: `glob`, `inflight`) vêm de **dependências transitivas**; tendem a sumir quando os mantenedores atualizarem as cadeias — não é algo que você precise corrigir à mão no dia a dia.
 
 
 ---
