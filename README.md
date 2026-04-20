@@ -1,98 +1,189 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Oficina Mecânica API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API em [NestJS](https://nestjs.com/) com TypeORM e PostgreSQL para gestão de oficina mecânica.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Pré-requisitos
 
-## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| Ferramenta                                               | Uso                                             |
+| -------------------------------------------------------- | ----------------------------------------------- |
+| **Node.js** (versão compatível com o projeto, ex.: 22.x) | Build e execução local com npm                  |
+| **npm**                                                  | Instalação de dependências e scripts            |
+| **Docker** e **Docker Compose**                          | Subir PostgreSQL e/ou a aplicação em containers |
 
-## Project setup
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## Configuração do ambiente
 
-```bash
-# development
-$ npm run start
+1. **Clone o repositório** e entre na pasta do projeto.
+2. **Crie o arquivo `.env`** na raiz (o Git não versiona o `.env`). Copie o exemplo:
+  ```bash
+   cp .env.example .env
+  ```
+3. **Ajuste as variáveis** em `.env` se necessário (usuário/senha do banco, porta da API, etc.). O arquivo `.env.example` documenta os campos usados pelo Compose e pela aplicação.
 
-# watch mode
-$ npm run start:dev
+**Importante sobre `POSTGRES_HOST`:**
 
-# production mode
-$ npm run start:prod
-```
+- Ao rodar a **API na sua máquina** e o **PostgreSQL no Docker** (porta publicada), use `POSTGRES_HOST=localhost`.
+- Ao rodar a **API dentro do Docker Compose**, o serviço do banco se chama `db`; o `docker-compose.yml` já define `POSTGRES_HOST=db` para o container da app — não precisa mudar isso no `.env` para o Compose, pois as variáveis do serviço `app` sobrescrevem o necessário.
 
-## Run tests
+---
+
+## Desenvolvimento com npm (código na máquina)
+
+### 1. Instalar dependências
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
+### 2. Ter o PostgreSQL acessível
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Escolha uma das formas:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- **Só o banco no Docker** (recomendado para dev local):
+  ```bash
+  docker compose up -d db
+  ```
+  No `.env`, use `POSTGRES_HOST=localhost` (e a mesma porta `POSTGRES_PORT` que estiver mapeada, em geral `5432`).
+- **PostgreSQL instalado localmente** — configure host, porta, usuário, senha e banco no `.env`.
+
+### 3. Build do projeto
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run build
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Gera a pasta `dist/` com o JavaScript compilado. Esse passo também é necessário antes de rodar **migrations** com os scripts npm (o `migration:run` executa um build prévio automaticamente).
 
-## Resources
+### 4. Migrations (banco de dados)
 
-Check out a few resources that may come in handy when working with NestJS:
+Com o Postgres no ar e o `.env` apontando para ele (`localhost` se o banco for o container com porta publicada):
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+npm run migration:run
+```
 
-## Support
+Esse script roda `npm run build` e em seguida aplica as migrations com o TypeORM.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Para **desfazer a última migration** aplicada:
 
-## Stay in touch
+```bash
+npm run migration:revert
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### 5. Subir o banco (Docker) e a API (npm)
 
-## License
+Fluxo típico com **PostgreSQL só no Compose** e **Nest na máquina** (no `.env`, `POSTGRES_HOST=localhost`):
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```bash
+docker compose up -d db
+npm run start:dev
+```
+
+O primeiro comando sobe só o serviço `db` em segundo plano; o segundo inicia a API com reload.
+
+### 6. Comandos da API (referência)
+
+| Modo                  | Comando               | Descrição                    |
+| --------------------- | --------------------- | ---------------------------- |
+| Desenvolvimento       | `npm run start:dev`   | Recarrega ao salvar arquivos |
+| Debug                 | `npm run start:debug` | Igual ao dev, com inspector  |
+| Uma execução          | `npm run start`       | Sem watch                    |
+| Produção (após build) | `npm run start:prod`  | Executa `node dist/main`     |
+
+A porta vem de `APP_PORT` no `.env` (padrão comum: `3000`).
+
+---
+
+## Build e execução com Docker
+
+O `Dockerfile` faz **multi-stage build**: compila a aplicação (`npm run build`) na etapa de build e na imagem final copia só `dist/` e dependências de produção.
+
+### 1. Garantir o `.env` na raiz
+
+O Compose usa variáveis do `.env` para `POSTGRES_`*, `APP_PORT`, `NODE_ENV`, etc.
+
+### 2. Build da imagem da aplicação
+
+Na raiz do projeto:
+
+```bash
+docker compose build
+```
+
+Para forçar rebuild completo (por exemplo, após mudar migrations ou código):
+
+```bash
+docker compose build --no-cache
+```
+
+### 3. Subir banco e API
+
+```bash
+docker compose up -d
+```
+
+- **PostgreSQL**: serviço `db`, saudável antes do `app` subir (`depends_on` + healthcheck).
+- **API**: serviço `app`, porta mapeada conforme `APP_PORT` (padrão `3000`).
+
+Logs:
+
+```bash
+docker compose logs -f app
+```
+
+### 4. Migrations dentro do container
+
+A imagem de produção **não** inclui as ferramentas de dev usadas no `npm run build` do host; o `dist/` já vem **da imagem**. Por isso use o TypeORM diretamente **sem** rodar `npm run build` de novo dentro do container:
+
+**Aplicar migrations:**
+
+```bash
+docker compose exec app npx typeorm migration:run -d dist/config/app-data-source
+```
+
+**Reverter a última migration:**
+
+```bash
+docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source
+```
+
+**Se você alterou arquivos de migration no repositório**, é preciso **reconstruir a imagem** do `app` para que o `dist/` dentro do container inclua essas alterações; depois suba de novo e rode o `migration:run` como acima.
+
+---
+
+## Testes e qualidade
+
+```bash
+# Testes unitários
+npm run test
+
+# Testes e2e
+npm run test:e2e
+
+# Cobertura
+npm run test:cov
+
+# Lint (com --fix)
+npm run lint
+
+# Formatação
+npm run format
+```
+
+Para e2e com API e banco, garanta que o ambiente (variáveis e Postgres) esteja configurado como o projeto espera (veja `test/` e `jest-e2e.json`).
+
+---
+
+## Resumo rápido
+
+
+| Objetivo         | npm (local)                                           | Docker                                                                                |
+| ---------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Instalar deps    | `npm install`                                         | (na build da imagem)                                                                  |
+| Build            | `npm run build`                                       | `docker compose build`                                                                |
+| Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
+| Migrations       | `npm run migration:run`                               | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
+| Revert migration | `npm run migration:revert`                            | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
