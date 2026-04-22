@@ -15,7 +15,7 @@ export class CreateHistoricoStatusOs1745200000006 implements MigrationInterface 
         "updated_at" TIMESTAMP(3),
         "deleted_at" TIMESTAMP(3),
         CONSTRAINT "PK_historico_status_os" PRIMARY KEY ("id"),
-        CONSTRAINT "FK_historico_status_os_ordem_servico" FOREIGN KEY ("os_id") REFERENCES "ordem_servico" ("id")
+        CONSTRAINT "FK_historico_status_os_ordem_servico" FOREIGN KEY ("os_id") REFERENCES "ordem_servico" ("id") ON DELETE RESTRICT
       )
     `);
     await queryRunner.query(

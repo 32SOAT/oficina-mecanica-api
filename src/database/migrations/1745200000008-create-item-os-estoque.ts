@@ -16,8 +16,8 @@ export class CreateItemOsEstoque1745200000008 implements MigrationInterface {
         "updated_at" TIMESTAMP(3),
         "deleted_at" TIMESTAMP(3),
         CONSTRAINT "PK_item_os_estoque" PRIMARY KEY ("id"),
-        CONSTRAINT "FK_item_os_estoque_ordem_servico" FOREIGN KEY ("os_id") REFERENCES "ordem_servico" ("id"),
-        CONSTRAINT "FK_item_os_estoque_estoque" FOREIGN KEY ("estoque_id") REFERENCES "estoque" ("id")
+        CONSTRAINT "FK_item_os_estoque_ordem_servico" FOREIGN KEY ("os_id") REFERENCES "ordem_servico" ("id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_item_os_estoque_estoque" FOREIGN KEY ("estoque_id") REFERENCES "estoque" ("id") ON DELETE RESTRICT
       )
     `);
     await queryRunner.query(

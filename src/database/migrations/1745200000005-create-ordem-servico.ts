@@ -15,7 +15,7 @@ export class CreateOrdemServico1745200000005 implements MigrationInterface {
         "updated_at" TIMESTAMP(3),
         "deleted_at" TIMESTAMP(3),
         CONSTRAINT "PK_ordem_servico" PRIMARY KEY ("id"),
-        CONSTRAINT "FK_ordem_servico_veiculo" FOREIGN KEY ("veiculo_id") REFERENCES "veiculo" ("id")
+        CONSTRAINT "FK_ordem_servico_veiculo" FOREIGN KEY ("veiculo_id") REFERENCES "veiculo" ("id") ON DELETE RESTRICT
       )
     `);
     await queryRunner.query(

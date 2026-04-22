@@ -17,7 +17,7 @@ export class CreateVeiculo1745200000002 implements MigrationInterface {
         "deleted_at" TIMESTAMP(3),
         CONSTRAINT "PK_veiculo" PRIMARY KEY ("id"),
         CONSTRAINT "UQ_veiculo_placa" UNIQUE ("placa"),
-        CONSTRAINT "FK_veiculo_cliente" FOREIGN KEY ("cliente_id") REFERENCES "cliente" ("id")
+        CONSTRAINT "FK_veiculo_cliente" FOREIGN KEY ("cliente_id") REFERENCES "cliente" ("id") ON DELETE RESTRICT
       )
     `);
     await queryRunner.query(

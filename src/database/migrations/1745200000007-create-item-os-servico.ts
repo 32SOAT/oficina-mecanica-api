@@ -14,8 +14,8 @@ export class CreateItemOsServico1745200000007 implements MigrationInterface {
         "updated_at" TIMESTAMP(3),
         "deleted_at" TIMESTAMP(3),
         CONSTRAINT "PK_item_os_servico" PRIMARY KEY ("id"),
-        CONSTRAINT "FK_item_os_servico_ordem_servico" FOREIGN KEY ("os_id") REFERENCES "ordem_servico" ("id"),
-        CONSTRAINT "FK_item_os_servico_servico" FOREIGN KEY ("servico_id") REFERENCES "servico" ("id")
+        CONSTRAINT "FK_item_os_servico_ordem_servico" FOREIGN KEY ("os_id") REFERENCES "ordem_servico" ("id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_item_os_servico_servico" FOREIGN KEY ("servico_id") REFERENCES "servico" ("id") ON DELETE RESTRICT
       )
     `);
     await queryRunner.query(
