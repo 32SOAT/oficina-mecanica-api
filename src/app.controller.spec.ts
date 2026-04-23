@@ -7,10 +7,11 @@ describe('AppController', () => {
   let appService: jest.Mocked<Pick<AppService, 'check'>>;
 
   beforeEach(async () => {
+    const fixedTimestamp = '2023-10-01T12:00:00.000Z';
     appService = {
       check: jest.fn().mockReturnValue({
         status: 'ok',
-        timestamp: new Date().toISOString(),
+        timestamp: fixedTimestamp,
       }),
     };
 
@@ -29,9 +30,10 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return the health check result', () => {
-      expect(appController.check()).toEqual({
+      const result = appController.check();
+      expect(result).toEqual({
         status: 'ok',
-        timestamp: new Date().toISOString(),
+        timestamp: '2023-10-01T12:00:00.000Z',
       });
       expect(appService.check).toHaveBeenCalledTimes(1);
     });
