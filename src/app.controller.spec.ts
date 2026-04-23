@@ -4,11 +4,14 @@ import { AppService } from './app.service';
 
 describe('AppController', () => {
   let appController: AppController;
-  let appService: jest.Mocked<Pick<AppService, 'getHello'>>;
+  let appService: jest.Mocked<Pick<AppService, 'check'>>;
 
   beforeEach(async () => {
     appService = {
-      getHello: jest.fn().mockReturnValue('Hello World!'),
+      check: jest.fn().mockReturnValue({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+      }),
     };
 
     const app: TestingModule = await Test.createTestingModule({
@@ -25,9 +28,12 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
-      expect(appService.getHello).toHaveBeenCalledTimes(1);
+    it('should return the health check result', () => {
+      expect(appController.check()).toEqual({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+      });
+      expect(appService.check).toHaveBeenCalledTimes(1);
     });
   });
 });
