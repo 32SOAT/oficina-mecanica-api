@@ -1,8 +1,8 @@
 import { fake as fakeCpf } from 'validation-br/dist/cpf';
 import { BadRequestException, ConflictException, HttpException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { DefaultPageSize } from 'src/querying/constants';
-import { PaginationService } from 'src/querying/pagination.service';
+import { DefaultPageSize } from '../querying/constants';
+import { PaginationService } from '../querying/pagination.service';
 import { ClienteEntity } from './cliente.entity';
 import { ClienteService } from './cliente.service';
 import { UpdateClienteDto } from './dtos/update-cliente.dto';

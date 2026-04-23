@@ -9,7 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { PaginationDto } from 'src/querying/dtos/pagination.dto';
+import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { ClienteService } from './cliente.service';
 import { CreateClienteDto } from './dtos/create-cliente.dto';
 import { FindClienteByDocumentDto } from './dtos/find-cliente-by-document.dto';

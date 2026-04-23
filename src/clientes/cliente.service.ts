@@ -6,9 +6,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { DefaultPageSize } from 'src/querying/constants';
-import { PaginationDto } from 'src/querying/dtos/pagination.dto';
-import { PaginationService } from 'src/querying/pagination.service';
+import { DefaultPageSize } from '../querying/constants';
+import { PaginationDto } from '../querying/dtos/pagination.dto';
+import { PaginationService } from '../querying/pagination.service';
 import { isValidBrazilianTaxId, normalizeTaxId } from './br-document.validator';
 import { ClienteEntity } from './cliente.entity';
 import { CreateClienteDto } from './dtos/create-cliente.dto';
