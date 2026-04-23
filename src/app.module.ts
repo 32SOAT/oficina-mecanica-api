@@ -9,6 +9,8 @@ import { typeOrmConfig } from './config/database.config';
 import { TypedConfigService } from './config/typed-config.service';
 import { UserEntity } from './users/user.entity';
 import { UserModule } from './users/user.module';
+import { VeiculoEntity } from './veiculos/veiculo.entity';
+import { VeiculoModule } from './veiculos/veiculo.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformResponseInterceptor } from './interceptors/transform-response.interceptor';
 import { QueryingModule } from './querying/querying.module';
@@ -28,7 +30,11 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
 
         return {
           ...databaseConfig,
+<<<<<<< Updated upstream
           entities: [UserEntity],
+=======
+          entities: [ClienteEntity, UserEntity, VeiculoEntity],
+>>>>>>> Stashed changes
         };
       },
     }),
@@ -41,6 +47,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
       isGlobal: true,
     }),
     UserModule,
+    VeiculoModule,
     QueryingModule,
     ...(shouldEnableSeedingModule(process.env.NODE_ENV) ? [SeedingModule] : []),
   ],
