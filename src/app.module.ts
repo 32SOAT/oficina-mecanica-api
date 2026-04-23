@@ -7,6 +7,8 @@ import { appConfig } from './config/app.config';
 import { type ConfigType, appConfigSchema } from './config/config.types';
 import { typeOrmConfig } from './config/database.config';
 import { TypedConfigService } from './config/typed-config.service';
+import { ClienteEntity } from './clientes/cliente.entity';
+import { ClienteModule } from './clientes/cliente.module';
 import { UserEntity } from './users/user.entity';
 import { UserModule } from './users/user.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -28,7 +30,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
 
         return {
           ...databaseConfig,
-          entities: [UserEntity],
+          entities: [ClienteEntity, UserEntity],
         };
       },
     }),
@@ -40,6 +42,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
       },
       isGlobal: true,
     }),
+    ClienteModule,
     UserModule,
     QueryingModule,
     ...(shouldEnableSeedingModule(process.env.NODE_ENV) ? [SeedingModule] : []),
