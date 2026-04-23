@@ -30,7 +30,7 @@ describe('ClienteController', () => {
       findByDocumento: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
-    } as ClienteServiceMock;
+    };
 
     controller = new ClienteController(
       clienteService as unknown as ClienteService,
@@ -48,6 +48,20 @@ describe('ClienteController', () => {
 
     await expect(controller.create(createClienteDto)).resolves.toBe(cliente);
     expect(clienteService.create).toHaveBeenCalledWith(createClienteDto);
+  });
+
+  it('lets create service exceptions propagate to Nest', async () => {
+    const error = new HttpException('Invalid data', 400);
+    clienteService.create.mockRejectedValue(error);
+
+    await expect(
+      controller.create({
+        documento: 'invalid',
+        nome: 'Jane Doe',
+        email: 'jane@example.com',
+        celularNumero: '11999999999',
+      }),
+    ).rejects.toBe(error);
   });
 
   it('lists clients with pagination', async () => {
@@ -70,6 +84,24 @@ describe('ClienteController', () => {
 
     await expect(controller.findAll(paginationDto)).resolves.toBe(result);
     expect(clienteService.findAll).toHaveBeenCalledWith(paginationDto);
+  });
+
+  it('lists clients with default pagination when no query is provided', async () => {
+    const result = {
+      data: [cliente],
+      meta: {
+        itemsPerPage: 10,
+        totalItems: 1,
+        currentPage: 1,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    };
+    clienteService.findAll.mockResolvedValue(result);
+
+    await expect(controller.findAll({} as any)).resolves.toBe(result);
+    expect(clienteService.findAll).toHaveBeenCalledWith({} as any);
   });
 
   it('finds one client by documento', async () => {
@@ -106,18 +138,25 @@ describe('ClienteController', () => {
       ...updateClienteDto,
     });
 
-    await expect(controller.update(cliente.id, updateClienteDto)).resolves.toEqual({
+    await expect(
+      controller.update(cliente.id, updateClienteDto),
+    ).resolves.toEqual({
       success: true,
       message: 'Client Updated Successfully',
     });
-    expect(clienteService.update).toHaveBeenCalledWith(cliente.id, updateClienteDto);
+    expect(clienteService.update).toHaveBeenCalledWith(
+      cliente.id,
+      updateClienteDto,
+    );
   });
 
   it('lets update service exceptions propagate to Nest', async () => {
     const error = new HttpException('Client Not Found', 404);
     clienteService.update.mockRejectedValue(error);
 
-    await expect(controller.update('missing-cliente-id', {})).rejects.toBe(error);
+    await expect(controller.update('missing-cliente-id', {})).rejects.toBe(
+      error,
+    );
   });
 
   it('removes a client', async () => {

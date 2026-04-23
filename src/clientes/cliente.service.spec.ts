@@ -1,5 +1,9 @@
 import { fake as fakeCpf } from 'validation-br/dist/cpf';
-import { BadRequestException, ConflictException, HttpException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { DefaultPageSize } from '../querying/constants';
 import { PaginationService } from '../querying/pagination.service';
@@ -66,7 +70,9 @@ describe('ClienteService', () => {
     clienteRepository.create.mockReturnValue(createdCliente);
     clienteRepository.save.mockResolvedValue(createdCliente);
 
-    await expect(service.create(createClienteDto)).resolves.toBe(createdCliente);
+    await expect(service.create(createClienteDto)).resolves.toBe(
+      createdCliente,
+    );
     expect(clienteRepository.findOne).toHaveBeenCalledWith({
       where: { documento: validDocumento },
     });
@@ -166,7 +172,9 @@ describe('ClienteService', () => {
     const existingCliente = cliente();
     clienteRepository.findOneBy.mockResolvedValue(existingCliente);
 
-    await expect(service.findOne(existingCliente.id)).resolves.toBe(existingCliente);
+    await expect(service.findOne(existingCliente.id)).resolves.toBe(
+      existingCliente,
+    );
     expect(clienteRepository.findOneBy).toHaveBeenCalledWith({
       id: existingCliente.id,
     });
@@ -213,7 +221,9 @@ describe('ClienteService', () => {
     clienteRepository.findOneBy.mockResolvedValue(existingCliente);
     clienteRepository.softRemove.mockResolvedValue(existingCliente);
 
-    await expect(service.remove(existingCliente.id)).resolves.toBe(existingCliente);
+    await expect(service.remove(existingCliente.id)).resolves.toBe(
+      existingCliente,
+    );
     expect(clienteRepository.findOneBy).toHaveBeenCalledWith({
       id: existingCliente.id,
     });
