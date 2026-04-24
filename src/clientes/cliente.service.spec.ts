@@ -295,7 +295,7 @@ describe('ClienteService', () => {
       documento: deletedClienteDocumento,
     });
 
-    const queryBuilderMock = createQueryBuilderMock(null); // Deleted client not found
+    const queryBuilderMock = createQueryBuilderMock(null);
 
     clienteRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
     clienteRepository.create.mockReturnValue(newCliente);
