@@ -113,7 +113,7 @@ describe('ClienteController', () => {
     ).resolves.toEqual({
       success: true,
       data: cliente,
-      message: 'Client Fetched Successfully',
+      message: 'Cliente encontrado com sucesso.',
     });
     expect(clienteService.findByDocumento).toHaveBeenCalledWith(
       findClienteByDocumentDto.documento,
@@ -142,7 +142,7 @@ describe('ClienteController', () => {
       controller.update(cliente.id, updateClienteDto),
     ).resolves.toEqual({
       success: true,
-      message: 'Client Updated Successfully',
+      message: 'Cliente atualizado com sucesso.',
     });
     expect(clienteService.update).toHaveBeenCalledWith(
       cliente.id,
@@ -164,7 +164,7 @@ describe('ClienteController', () => {
 
     await expect(controller.remove(cliente.id)).resolves.toEqual({
       success: true,
-      message: 'Client Deleted Successfully',
+      message: 'Cliente removido com sucesso.',
     });
     expect(clienteService.remove).toHaveBeenCalledWith(cliente.id);
   });

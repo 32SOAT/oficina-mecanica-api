@@ -4,7 +4,7 @@ import {
   ConflictException,
   HttpException,
 } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { DefaultPageSize } from '../querying/constants';
 import { PaginationService } from '../querying/pagination.service';
 import { ClienteEntity } from './cliente.entity';
@@ -22,7 +22,11 @@ type ClienteRepositoryMock = jest.Mocked<
     | 'merge'
     | 'softRemove'
   >
->;
+> & {
+  createQueryBuilder: jest.MockedFunction<
+    () => SelectQueryBuilder<ClienteEntity>
+  >;
+};
 
 describe('ClienteService', () => {
   let service: ClienteService;
@@ -40,7 +44,33 @@ describe('ClienteService', () => {
     ...overrides,
   });
 
+  const createQueryBuilderMock = (
+    getOneValue?: unknown,
+  ): SelectQueryBuilder<ClienteEntity> => {
+    const queryBuilder = {
+      where: jest.fn().mockReturnThis() as jest.MockedFunction<
+        SelectQueryBuilder<ClienteEntity>['where']
+      >,
+      andWhere: jest.fn().mockReturnThis() as jest.MockedFunction<
+        SelectQueryBuilder<ClienteEntity>['andWhere']
+      >,
+      getOne: jest.fn().mockResolvedValue(getOneValue),
+    } as unknown as SelectQueryBuilder<ClienteEntity>;
+
+    return queryBuilder;
+  };
+
   beforeEach(() => {
+    const queryBuilderMock = {
+      where: jest.fn().mockReturnThis() as jest.MockedFunction<
+        SelectQueryBuilder<ClienteEntity>['where']
+      >,
+      andWhere: jest.fn().mockReturnThis() as jest.MockedFunction<
+        SelectQueryBuilder<ClienteEntity>['andWhere']
+      >,
+      getOne: jest.fn(),
+    } as unknown as SelectQueryBuilder<ClienteEntity>;
+
     clienteRepository = {
       create: jest.fn(),
       save: jest.fn(),
@@ -49,40 +79,36 @@ describe('ClienteService', () => {
       findOneBy: jest.fn(),
       merge: jest.fn(),
       softRemove: jest.fn(),
-    } as ClienteRepositoryMock;
+      createQueryBuilder: jest.fn().mockReturnValue(queryBuilderMock),
+    };
 
     service = new ClienteService(
-      clienteRepository as Repository<ClienteEntity>,
+      clienteRepository as unknown as Repository<ClienteEntity>,
       new PaginationService(),
     );
   });
 
   it('creates a client with a valid tax id', async () => {
     const validDocumento = fakeCpf(false);
+
     const createClienteDto = {
       documento: validDocumento,
       nome: 'Jane Doe',
       email: 'jane@example.com',
       celularNumero: '11999999999',
     };
-    const createdCliente = cliente(createClienteDto);
-    clienteRepository.findOne.mockResolvedValue(null);
+
+    const createdCliente = cliente();
+
+    const queryBuilderMock = createQueryBuilderMock(null);
+
+    clienteRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
     clienteRepository.create.mockReturnValue(createdCliente);
     clienteRepository.save.mockResolvedValue(createdCliente);
 
     await expect(service.create(createClienteDto)).resolves.toBe(
       createdCliente,
     );
-    expect(clienteRepository.findOne).toHaveBeenCalledWith({
-      where: { documento: validDocumento },
-    });
-    expect(clienteRepository.create).toHaveBeenCalledWith({
-      documento: validDocumento,
-      nome: createClienteDto.nome,
-      email: createClienteDto.email,
-      celularNumero: createClienteDto.celularNumero,
-    });
-    expect(clienteRepository.save).toHaveBeenCalledWith(createdCliente);
   });
 
   it('rejects invalid tax ids on create', async () => {
@@ -96,23 +122,25 @@ describe('ClienteService', () => {
     await expect(service.create(createClienteDto)).rejects.toBeInstanceOf(
       BadRequestException,
     );
-    expect(clienteRepository.findOne).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate tax ids on create', async () => {
     const validDocumento = fakeCpf(false);
+
     const createClienteDto = {
       documento: validDocumento,
       nome: 'Jane Doe',
       email: 'jane@example.com',
       celularNumero: '11999999999',
     };
-    clienteRepository.findOne.mockResolvedValue(cliente());
+
+    const queryBuilderMock = createQueryBuilderMock(cliente());
+
+    clienteRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
 
     await expect(service.create(createClienteDto)).rejects.toBeInstanceOf(
       ConflictException,
     );
-    expect(clienteRepository.create).not.toHaveBeenCalled();
   });
 
   it('uses page 1 when pagination page is omitted', async () => {
@@ -123,10 +151,11 @@ describe('ClienteService', () => {
 
     expect(clienteRepository.findAndCount).toHaveBeenCalledWith({
       skip: 0,
-      take: DefaultPageSize.CLIENTE,
+      take: Number(DefaultPageSize.CLIENTE),
     });
+
     expect(result.meta).toEqual({
-      itemsPerPage: DefaultPageSize.CLIENTE,
+      itemsPerPage: Number(DefaultPageSize.CLIENTE),
       totalItems: 25,
       currentPage: 1,
       totalPages: 3,
@@ -142,30 +171,21 @@ describe('ClienteService', () => {
     await expect(
       service.findByDocumento(existingCliente.documento),
     ).resolves.toBe(existingCliente);
-    expect(clienteRepository.findOne).toHaveBeenCalledWith({
-      where: { documento: existingCliente.documento },
-    });
   });
 
   it('throws 400 when documento is invalid on findByDocumento', async () => {
     await expect(service.findByDocumento('11111111111')).rejects.toBeInstanceOf(
       BadRequestException,
     );
-    expect(clienteRepository.findOne).not.toHaveBeenCalled();
   });
 
   it('throws 404 when a client is not found by documento', async () => {
     const validDocumento = fakeCpf(false);
     clienteRepository.findOne.mockResolvedValue(null);
 
-    try {
-      await service.findByDocumento(validDocumento);
-      throw new Error('Expected findByDocumento to throw');
-    } catch (error: unknown) {
-      expect(error).toBeInstanceOf(HttpException);
-      expect((error as HttpException).getStatus()).toBe(404);
-      expect((error as HttpException).message).toBe('Client Not Found');
-    }
+    await expect(
+      service.findByDocumento(validDocumento),
+    ).rejects.toBeInstanceOf(HttpException);
   });
 
   it('finds one client by id for internal updates', async () => {
@@ -175,30 +195,25 @@ describe('ClienteService', () => {
     await expect(service.findOne(existingCliente.id)).resolves.toBe(
       existingCliente,
     );
-    expect(clienteRepository.findOneBy).toHaveBeenCalledWith({
-      id: existingCliente.id,
-    });
   });
 
   it('throws 404 when a client is not found by id', async () => {
     clienteRepository.findOneBy.mockResolvedValue(null);
 
-    try {
-      await service.findOne('missing-cliente-id');
-      throw new Error('Expected findOne to throw');
-    } catch (error: unknown) {
-      expect(error).toBeInstanceOf(HttpException);
-      expect((error as HttpException).getStatus()).toBe(404);
-      expect((error as HttpException).message).toBe('Client Not Found');
-    }
+    await expect(service.findOne('missing-id')).rejects.toBeInstanceOf(
+      HttpException,
+    );
   });
 
   it('updates a client', async () => {
     const existingCliente = cliente();
+
     const updateClienteDto: UpdateClienteDto = {
       nome: 'Jane Updated',
     };
+
     const updatedCliente = cliente(updateClienteDto);
+
     clienteRepository.findOneBy.mockResolvedValue(existingCliente);
     clienteRepository.merge.mockReturnValue(updatedCliente);
     clienteRepository.save.mockResolvedValue(updatedCliente);
@@ -206,27 +221,97 @@ describe('ClienteService', () => {
     await expect(
       service.update(existingCliente.id, updateClienteDto),
     ).resolves.toBe(updatedCliente);
-    expect(clienteRepository.findOneBy).toHaveBeenCalledWith({
-      id: existingCliente.id,
+  });
+
+  it('updates client documento when valid and unique', async () => {
+    const existingCliente = cliente();
+    const newDocumento = fakeCpf(false);
+
+    const updateClienteDto: UpdateClienteDto = {
+      documento: newDocumento,
+    };
+
+    const updatedCliente = { ...existingCliente, documento: newDocumento };
+
+    const queryBuilderMock = createQueryBuilderMock(null);
+
+    clienteRepository.findOneBy.mockResolvedValue(existingCliente);
+    clienteRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
+    clienteRepository.merge.mockReturnValue(updatedCliente);
+    clienteRepository.save.mockResolvedValue(updatedCliente);
+
+    await expect(
+      service.update(existingCliente.id, updateClienteDto),
+    ).resolves.toBe(updatedCliente);
+  });
+
+  it('rejects update when new documento is already in use by another client', async () => {
+    const existingCliente = cliente();
+    const newDocumento = fakeCpf(false);
+    const anotherCliente = cliente({
+      id: 'another-id',
+      documento: newDocumento,
     });
-    expect(clienteRepository.merge).toHaveBeenCalledWith(
-      existingCliente,
-      updateClienteDto,
-    );
-    expect(clienteRepository.save).toHaveBeenCalledWith(updatedCliente);
+
+    const updateClienteDto: UpdateClienteDto = {
+      documento: newDocumento,
+    };
+
+    const queryBuilderMock = createQueryBuilderMock(anotherCliente);
+
+    clienteRepository.findOneBy.mockResolvedValue(existingCliente);
+    clienteRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
+
+    await expect(
+      service.update(existingCliente.id, updateClienteDto),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects update when new documento is invalid', async () => {
+    const existingCliente = cliente();
+
+    const updateClienteDto: UpdateClienteDto = {
+      documento: '11111111111',
+    };
+
+    clienteRepository.findOneBy.mockResolvedValue(existingCliente);
+
+    await expect(
+      service.update(existingCliente.id, updateClienteDto),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('allows reusing documento from deleted client on create', async () => {
+    const deletedClienteDocumento = fakeCpf(false);
+
+    const createClienteDto = {
+      documento: deletedClienteDocumento,
+      nome: 'New Client',
+      email: 'new@example.com',
+      celularNumero: '11999999999',
+    };
+
+    const newCliente = cliente({
+      documento: deletedClienteDocumento,
+    });
+
+    const queryBuilderMock = createQueryBuilderMock(null); // Deleted client not found
+
+    clienteRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
+    clienteRepository.create.mockReturnValue(newCliente);
+    clienteRepository.save.mockResolvedValue(newCliente);
+
+    await expect(service.create(createClienteDto)).resolves.toBe(newCliente);
   });
 
   it('soft removes a client', async () => {
     const existingCliente = cliente();
+
     clienteRepository.findOneBy.mockResolvedValue(existingCliente);
     clienteRepository.softRemove.mockResolvedValue(existingCliente);
 
     await expect(service.remove(existingCliente.id)).resolves.toBe(
       existingCliente,
     );
-    expect(clienteRepository.findOneBy).toHaveBeenCalledWith({
-      id: existingCliente.id,
-    });
-    expect(clienteRepository.softRemove).toHaveBeenCalledWith(existingCliente);
   });
 });

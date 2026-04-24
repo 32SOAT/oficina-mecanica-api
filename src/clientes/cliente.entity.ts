@@ -3,14 +3,12 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('cliente')
-@Index('IDX_cliente_documento', ['documento'], { unique: true })
 export class ClienteEntity {
   @ApiProperty({ description: 'ID único do cliente', example: 'uuid-string' })
   @PrimaryGeneratedColumn('uuid')

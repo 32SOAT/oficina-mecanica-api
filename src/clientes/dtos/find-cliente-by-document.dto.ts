@@ -6,7 +6,7 @@ export class FindClienteByDocumentDto {
     description: 'Documento do cliente (CPF ou CNPJ)',
     example: '12345678901',
   })
-  @IsNotEmpty()
-  @IsString()
+  @IsNotEmpty({ message: 'Documento (CPF ou CNPJ) é obrigatório.' })
+  @IsString({ message: 'Documento deve ser uma string.' })
   documento: string;
 }

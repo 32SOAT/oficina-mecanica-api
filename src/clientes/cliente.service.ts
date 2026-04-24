@@ -25,13 +25,15 @@ export class ClienteService {
   async create(createClienteDto: CreateClienteDto): Promise<ClienteEntity> {
     const documento = normalizeTaxId(createClienteDto.documento);
     if (!isValidBrazilianTaxId(documento)) {
-      throw new BadRequestException('Invalid CPF/CNPJ');
+      throw new BadRequestException('CPF/CNPJ inválido.');
     }
-    const duplicate = await this.clienteRepository.findOne({
-      where: { documento },
-    });
+    const duplicate = await this.clienteRepository
+      .createQueryBuilder('cliente')
+      .where('cliente.documento = :documento', { documento })
+      .andWhere('cliente.deletedAt IS NULL')
+      .getOne();
     if (duplicate) {
-      throw new ConflictException('CPF/CNPJ is already registered');
+      throw new ConflictException('CPF/CNPJ vinculado a outro cliente.');
     }
     const clienteData = this.clienteRepository.create({
       documento,
@@ -43,8 +45,8 @@ export class ClienteService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const page = paginationDto.page ?? 1;
-    const take = paginationDto.take ?? DefaultPageSize.CLIENTE;
+    const page = Number(paginationDto.page ?? 1);
+    const take = Number(paginationDto.take ?? DefaultPageSize.CLIENTE);
     const offset = this.paginationService.calculateOffset(take, page);
     const [data, count] = await this.clienteRepository.findAndCount({
       skip: offset,
@@ -60,13 +62,13 @@ export class ClienteService {
   async findByDocumento(documentoRaw: string): Promise<ClienteEntity> {
     const documento = normalizeTaxId(documentoRaw);
     if (!isValidBrazilianTaxId(documento)) {
-      throw new BadRequestException('Invalid CPF/CNPJ');
+      throw new BadRequestException('CPF/CNPJ inválido.');
     }
     const cliente = await this.clienteRepository.findOne({
       where: { documento },
     });
     if (!cliente) {
-      throw new HttpException('Client Not Found', 404);
+      throw new HttpException('Cliente não encontrado.', 404);
     }
     return cliente;
   }
@@ -74,7 +76,7 @@ export class ClienteService {
   async findOne(id: string): Promise<ClienteEntity> {
     const cliente = await this.clienteRepository.findOneBy({ id });
     if (!cliente) {
-      throw new HttpException('Client Not Found', 404);
+      throw new HttpException('Cliente não encontrado.', 404);
     }
     return cliente;
   }
@@ -88,7 +90,24 @@ export class ClienteService {
       existingCliente,
       updateClienteDto,
     );
-    clienteData.documento = existingCliente.documento;
+    if (updateClienteDto.documento) {
+      const documento = normalizeTaxId(updateClienteDto.documento);
+      if (!isValidBrazilianTaxId(documento)) {
+        throw new BadRequestException('CPF/CNPJ inválido.');
+      }
+      const duplicate = await this.clienteRepository
+        .createQueryBuilder('cliente')
+        .where('cliente.documento = :documento', { documento })
+        .andWhere('cliente.deletedAt IS NULL')
+        .andWhere('cliente.id != :id', { id })
+        .getOne();
+      if (duplicate) {
+        throw new ConflictException('CPF/CNPJ vinculado a outro cliente.');
+      }
+      clienteData.documento = documento;
+    } else {
+      clienteData.documento = existingCliente.documento;
+    }
     return this.clienteRepository.save(clienteData);
   }
 

@@ -18,7 +18,7 @@ export class CreateCliente1745200000001 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "IDX_cliente_documento" ON "cliente" ("documento")`,
+      `CREATE UNIQUE INDEX "IDX_cliente_documento" ON "cliente" ("documento") WHERE "deleted_at" IS NULL`,
     );
   }
 

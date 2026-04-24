@@ -34,10 +34,14 @@ export class ClienteController {
     description: 'Cria um novo cliente com os dados fornecidos.',
   })
   @ApiBody({ type: CreateClienteDto })
-  @ApiResponse({ status: 201, description: 'Cliente criado com sucesso' })
+  @ApiResponse({ status: 201, description: 'Cliente criado com sucesso.' })
   @ApiResponse({
     status: 400,
-    description: 'Dados inválidos ou documento já existe',
+    description: 'Dados inválidos ou documento já existe.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Documento já está em uso por outro cliente.',
   })
   async create(@Body() createClienteDto: CreateClienteDto) {
     return this.clienteService.create(createClienteDto);
@@ -52,20 +56,20 @@ export class ClienteController {
     name: 'page',
     required: false,
     type: Number,
-    description: 'Número da página (inicia em 1)',
+    description: 'Número da página (inicia em 1).',
     example: 1,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
-    description: 'Limite de itens por página',
+    description: 'Limite de itens por página.',
     example: 10,
   })
-  @ApiResponse({ status: 200, description: 'Lista de clientes retornada' })
+  @ApiResponse({ status: 200, description: 'Lista de clientes retornada.' })
   @ApiResponse({
     status: 400,
-    description: 'Parâmetros de paginação inválidos',
+    description: 'Parâmetros de paginação inválidos.',
   })
   async findAll(@Query() paginationDto: PaginationDto) {
     return this.clienteService.findAll(paginationDto);
@@ -77,9 +81,9 @@ export class ClienteController {
     description: 'Busca um cliente ativo pelo documento (CPF ou CNPJ).',
   })
   @ApiBody({ type: FindClienteByDocumentDto })
-  @ApiResponse({ status: 200, description: 'Cliente encontrado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
-  @ApiResponse({ status: 400, description: 'Documento inválido' })
+  @ApiResponse({ status: 200, description: 'Cliente encontrado com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
+  @ApiResponse({ status: 400, description: 'Documento inválido.' })
   async findByDocumento(
     @Body() findClienteByDocumentDto: FindClienteByDocumentDto,
   ) {
@@ -89,7 +93,7 @@ export class ClienteController {
     return {
       success: true,
       data,
-      message: 'Client Fetched Successfully',
+      message: 'Cliente encontrado com sucesso.',
     };
   }
 
@@ -105,9 +109,9 @@ export class ClienteController {
     description: 'ID único do cliente (UUID)',
     example: 'uuid-string',
   })
-  @ApiResponse({ status: 200, description: 'Cliente atualizado com sucesso' })
-  @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 200, description: 'Cliente atualizado com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateClienteDto: UpdateClienteDto,
@@ -115,7 +119,7 @@ export class ClienteController {
     await this.clienteService.update(id, updateClienteDto);
     return {
       success: true,
-      message: 'Client Updated Successfully',
+      message: 'Cliente atualizado com sucesso.',
     };
   }
 
@@ -130,13 +134,13 @@ export class ClienteController {
     description: 'ID único do cliente (UUID)',
     example: 'uuid-string',
   })
-  @ApiResponse({ status: 200, description: 'Cliente removido com sucesso' })
-  @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
+  @ApiResponse({ status: 200, description: 'Cliente removido com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.clienteService.remove(id);
     return {
       success: true,
-      message: 'Client Deleted Successfully',
+      message: 'Cliente removido com sucesso.',
     };
   }
 }
