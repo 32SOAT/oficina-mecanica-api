@@ -4,9 +4,9 @@ import { Repository } from 'typeorm';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UserEntity } from './user.entity';
-import { PaginationDto } from 'src/querying/dtos/pagination.dto';
-import { DefaultPageSize } from 'src/querying/constants';
-import { PaginationService } from 'src/querying/pagination.service';
+import { PaginationDto } from '../querying/dtos/pagination.dto';
+import { DefaultPageSize } from '../querying/constants';
+import { PaginationService } from '../querying/pagination.service';
 
 @Injectable()
 export class UserService {

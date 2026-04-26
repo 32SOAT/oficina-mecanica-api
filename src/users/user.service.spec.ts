@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { DefaultPageSize } from 'src/querying/constants';
-import { PaginationService } from 'src/querying/pagination.service';
+import { DefaultPageSize } from '../querying/constants';
+import { PaginationService } from '../querying/pagination.service';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { UserEntity } from './user.entity';
 import { UserService } from './user.service';
