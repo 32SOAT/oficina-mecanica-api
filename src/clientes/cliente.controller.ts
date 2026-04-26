@@ -19,9 +19,15 @@ import {
 } from '@nestjs/swagger';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { ClienteService } from './cliente.service';
+import { ClienteEntity } from './cliente.entity';
 import { CreateClienteDto } from './dtos/create-cliente.dto';
 import { FindClienteByDocumentDto } from './dtos/find-cliente-by-document.dto';
 import { UpdateClienteDto } from './dtos/update-cliente.dto';
+import {
+  ApiDataResponse,
+  ApiPaginatedResponse,
+  ApiWrappedResponse,
+} from '../common/decorators/swagger-response.decorator';
 
 @ApiTags('Clientes')
 @Controller('clientes')
@@ -34,11 +40,7 @@ export class ClienteController {
     description: 'Cria um novo cliente com os dados fornecidos.',
   })
   @ApiBody({ type: CreateClienteDto })
-  @ApiResponse({ status: 201, description: 'Cliente criado com sucesso.' })
-  @ApiResponse({
-    status: 400,
-    description: 'Dados inválidos ou documento já existe.',
-  })
+  @ApiDataResponse(ClienteEntity, 201, 'Cliente criado com sucesso')
   @ApiResponse({
     status: 409,
     description: 'Documento já está em uso por outro cliente.',
@@ -60,17 +62,13 @@ export class ClienteController {
     example: 1,
   })
   @ApiQuery({
-    name: 'limit',
+    name: 'take',
     required: false,
     type: Number,
     description: 'Limite de itens por página.',
     example: 10,
   })
-  @ApiResponse({ status: 200, description: 'Lista de clientes retornada.' })
-  @ApiResponse({
-    status: 400,
-    description: 'Parâmetros de paginação inválidos.',
-  })
+  @ApiPaginatedResponse(ClienteEntity, 200, 'Lista de clientes retornada')
   async findAll(@Query() paginationDto: PaginationDto) {
     return this.clienteService.findAll(paginationDto);
   }
@@ -81,9 +79,8 @@ export class ClienteController {
     description: 'Busca um cliente ativo pelo documento (CPF ou CNPJ).',
   })
   @ApiBody({ type: FindClienteByDocumentDto })
-  @ApiResponse({ status: 200, description: 'Cliente encontrado com sucesso.' })
+  @ApiWrappedResponse(ClienteEntity, 200, 'Cliente encontrado com sucesso')
   @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
-  @ApiResponse({ status: 400, description: 'Documento inválido.' })
   async findByDocumento(
     @Body() findClienteByDocumentDto: FindClienteByDocumentDto,
   ) {
@@ -102,16 +99,19 @@ export class ClienteController {
     summary: 'Atualizar cliente',
     description: 'Atualiza os dados de um cliente existente.',
   })
-  @ApiBody({ type: UpdateClienteDto })
   @ApiParam({
     name: 'id',
     type: String,
     description: 'ID único do cliente (UUID)',
     example: 'uuid-string',
   })
-  @ApiResponse({ status: 200, description: 'Cliente atualizado com sucesso.' })
+  @ApiBody({ type: UpdateClienteDto })
+  @ApiWrappedResponse(undefined, 200, 'Cliente atualizado com sucesso')
   @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  @ApiResponse({
+    status: 409,
+    description: 'Documento já está em uso por outro cliente.',
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateClienteDto: UpdateClienteDto,
@@ -134,7 +134,7 @@ export class ClienteController {
     description: 'ID único do cliente (UUID)',
     example: 'uuid-string',
   })
-  @ApiResponse({ status: 200, description: 'Cliente removido com sucesso.' })
+  @ApiWrappedResponse(undefined, 200, 'Cliente removido com sucesso')
   @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.clienteService.remove(id);
