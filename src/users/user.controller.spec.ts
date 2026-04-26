@@ -22,7 +22,7 @@ describe('UserController', () => {
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
-    } as UserServiceMock;
+    };
 
     controller = new UserController(userService as UserService);
   });

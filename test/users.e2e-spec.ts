@@ -35,7 +35,7 @@ describe('UserController (e2e)', () => {
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
-    } as UserServiceMock;
+    };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [UserController],
