@@ -3,7 +3,7 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from './user.entity';
-import { QueryingModule } from 'src/querying/querying.module';
+import { QueryingModule } from '../querying/querying.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity]), QueryingModule],

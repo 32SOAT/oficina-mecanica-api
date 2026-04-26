@@ -5,15 +5,15 @@ import { MAX_PAGE_NUMBER, MAX_PAGE_SIZE } from '../constants';
 export class PaginationDto {
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @IsPositive()
-  @Max(MAX_PAGE_SIZE)
-  readonly take?: number;
+  @IsInt({ message: 'Take deve ser um número inteiro.' })
+  @IsPositive({ message: 'Take deve ser positivo.' })
+  @Max(MAX_PAGE_SIZE, { message: 'Take excede o limite permitido.' })
+  take?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @IsPositive()
-  @Max(MAX_PAGE_NUMBER)
-  readonly page?: number = 1;
+  @IsInt({ message: 'Page deve ser um número inteiro.' })
+  @IsPositive({ message: 'Page deve ser positivo.' })
+  @Max(MAX_PAGE_NUMBER, { message: 'Page excede o limite permitido. ' })
+  page?: number;
 }
