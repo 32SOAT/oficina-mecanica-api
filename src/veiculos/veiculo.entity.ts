@@ -36,7 +36,10 @@ export class VeiculoEntity {
   @Column()
   ano: number;
 
-  @ApiProperty({ description: 'ID do cliente proprietário', example: 'uuid-string' })
+  @ApiProperty({
+    description: 'ID do cliente proprietário',
+    example: 'uuid-string',
+  })
   @Column({ name: 'cliente_id' })
   cliente_id: string;
 
@@ -45,15 +48,24 @@ export class VeiculoEntity {
   @JoinColumn({ name: 'cliente_id' })
   cliente: ClienteEntity;
 
-  @ApiProperty({ description: 'Data de criação', example: '2023-10-01T12:00:00.000Z' })
+  @ApiProperty({
+    description: 'Data de criação',
+    example: '2023-10-01T12:00:00.000Z',
+  })
   @CreateDateColumn({ name: 'created_at', type: 'timestamp', precision: 3 })
   createdAt: Date;
 
-  @ApiProperty({ description: 'Data de atualização', example: '2023-10-01T12:00:00.000Z' })
+  @ApiProperty({
+    description: 'Data de atualização',
+    example: '2023-10-01T12:00:00.000Z',
+  })
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp', precision: 3 })
   updatedAt: Date;
 
-  @ApiProperty({ description: 'Data de exclusão (soft delete)', example: null })
+  @ApiProperty({
+    description: 'Data de exclusão (soft delete)',
+    example: null,
+  })
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', precision: 3 })
   deletedAt: Date | null;
 }

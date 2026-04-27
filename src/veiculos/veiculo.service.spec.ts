@@ -7,22 +7,30 @@ import { UpdateVeiculoDto } from './dtos/update-veiculo.dto';
 import { VeiculoEntity } from './veiculo.entity';
 import { VeiculoService } from './veiculo.service';
 
-type VeiculoServiceMock = jest.Mocked<
-  Pick<
-    VeiculoService,
-    'create' | 'findAll' | 'findByPlaca' | 'update' | 'remove'
-  >
->;
+type MockRepository = {
+  create: jest.Mock;
+  save: jest.Mock;
+  findAndCount: jest.Mock;
+  findOneBy: jest.Mock;
+  merge: jest.Mock;
+  softRemove: jest.Mock;
+  findOne: jest.Mock;
+};
 
-type ClienteServiceMock = jest.Mocked<
-  Pick<ClienteService, 'findByDocumento'>
->;
+type ClienteServiceMock = {
+  findByDocumento: jest.Mock;
+};
+
+type PaginationServiceMock = {
+  calculateOffset: jest.Mock;
+  createMeta: jest.Mock;
+};
 
 describe('VeiculoService', () => {
   let service: VeiculoService;
-  let veiculoRepository: jest.Mocked<Repository<VeiculoEntity>>;
+  let veiculoRepository: MockRepository;
   let clienteService: ClienteServiceMock;
-  let paginationService: jest.Mocked<PaginationService>;
+  let paginationService: PaginationServiceMock;
 
   const cliente = {
     id: 'cliente-id',
@@ -57,20 +65,20 @@ describe('VeiculoService', () => {
       merge: jest.fn(),
       softRemove: jest.fn(),
       findOne: jest.fn(),
-    } as any;
+    };
 
     clienteService = {
       findByDocumento: jest.fn(),
-    } as any;
+    };
 
     paginationService = {
       calculateOffset: jest.fn(),
       createMeta: jest.fn(),
-    } as any;
+    };
 
     service = new VeiculoService(
-      veiculoRepository as Repository<VeiculoEntity>,
-      paginationService,
+      veiculoRepository as unknown as Repository<VeiculoEntity>,
+      paginationService as unknown as PaginationService,
       clienteService as unknown as ClienteService,
     );
   });
@@ -88,8 +96,12 @@ describe('VeiculoService', () => {
     veiculoRepository.create.mockReturnValue(createdVeiculo);
     veiculoRepository.save.mockResolvedValue(createdVeiculo);
 
-    await expect(service.create(createVeiculoDto)).resolves.toBe(createdVeiculo);
-    expect(clienteService.findByDocumento).toHaveBeenCalledWith(createVeiculoDto.documentoCliente);
+    await expect(service.create(createVeiculoDto)).resolves.toBe(
+      createdVeiculo,
+    );
+    expect(clienteService.findByDocumento).toHaveBeenCalledWith(
+      createVeiculoDto.documentoCliente,
+    );
     expect(veiculoRepository.create).toHaveBeenCalledWith({
       placa: 'ABC1234',
       marca: 'Toyota',
@@ -110,7 +122,9 @@ describe('VeiculoService', () => {
     };
     clienteService.findByDocumento.mockResolvedValue(cliente);
 
-    await expect(service.create(createVeiculoDto)).rejects.toThrow('Invalid plate');
+    await expect(service.create(createVeiculoDto)).rejects.toThrow(
+      'Placa inválida.',
+    );
   });
 
   it('creates vehicle with Mercosul plate format', async () => {
@@ -126,7 +140,9 @@ describe('VeiculoService', () => {
     veiculoRepository.create.mockReturnValue(createdVeiculo);
     veiculoRepository.save.mockResolvedValue(createdVeiculo);
 
-    await expect(service.create(createVeiculoDto)).resolves.toBe(createdVeiculo);
+    await expect(service.create(createVeiculoDto)).resolves.toBe(
+      createdVeiculo,
+    );
     expect(veiculoRepository.create).toHaveBeenCalledWith({
       placa: 'ABC1D23',
       marca: 'Toyota',
@@ -147,7 +163,9 @@ describe('VeiculoService', () => {
     clienteService.findByDocumento.mockResolvedValue(cliente);
     veiculoRepository.findOne.mockResolvedValue(veiculo);
 
-    await expect(service.create(createVeiculoDto)).rejects.toThrow('Plate is already registered');
+    await expect(service.create(createVeiculoDto)).rejects.toThrow(
+      'Placa já cadastrada para outro veículo.',
+    );
   });
 
   it('throws error if client not found', async () => {
@@ -158,9 +176,13 @@ describe('VeiculoService', () => {
       ano: 2020,
       documentoCliente: 'invalid',
     };
-    clienteService.findByDocumento.mockRejectedValue(new HttpException('Client Not Found', 404));
+    clienteService.findByDocumento.mockRejectedValue(
+      new HttpException('Cliente não encontrado.', 404),
+    );
 
-    await expect(service.create(createVeiculoDto)).rejects.toThrow('Client Not Found');
+    await expect(service.create(createVeiculoDto)).rejects.toThrow(
+      'Cliente não encontrado.',
+    );
   });
 
   it('finds all vehicles with pagination', async () => {
@@ -191,7 +213,7 @@ describe('VeiculoService', () => {
     const result = {
       data: [veiculo],
       meta: {
-        itemsPerPage: DefaultPageSize.VEICULO,
+        itemsPerPage: Number(DefaultPageSize.VEICULO),
         totalItems: 1,
         currentPage: 1,
         totalPages: 1,
@@ -205,12 +227,12 @@ describe('VeiculoService', () => {
 
     await expect(service.findAll({})).resolves.toEqual(result);
     expect(paginationService.calculateOffset).toHaveBeenCalledWith(
-      DefaultPageSize.VEICULO,
+      Number(DefaultPageSize.VEICULO),
       1,
     );
     expect(veiculoRepository.findAndCount).toHaveBeenCalledWith({
       skip: 0,
-      take: DefaultPageSize.VEICULO,
+      take: Number(DefaultPageSize.VEICULO),
     });
   });
 
@@ -227,23 +249,31 @@ describe('VeiculoService', () => {
     veiculoRepository.findOneBy.mockResolvedValue(veiculo);
 
     await expect(service.findOne(veiculo.id)).resolves.toBe(veiculo);
-    expect(veiculoRepository.findOneBy).toHaveBeenCalledWith({ id: veiculo.id });
+    expect(veiculoRepository.findOneBy).toHaveBeenCalledWith({
+      id: veiculo.id,
+    });
   });
 
   it('throws 404 when vehicle not found by id', async () => {
     veiculoRepository.findOneBy.mockResolvedValue(null);
 
-    await expect(service.findOne('missing-id')).rejects.toThrow('Vehicle Not Found');
+    await expect(service.findOne('missing-id')).rejects.toThrow(
+      'Veiculo não encontrado.',
+    );
   });
 
   it('throws 404 when vehicle not found by placa', async () => {
     veiculoRepository.findOne.mockResolvedValue(null);
 
-    await expect(service.findByPlaca('XYZ9999')).rejects.toThrow('Vehicle Not Found');
+    await expect(service.findByPlaca('XYZ9999')).rejects.toThrow(
+      'Veiculo não encontrado.',
+    );
   });
 
   it('throws error for invalid plate in findByPlaca', async () => {
-    await expect(service.findByPlaca('INVALID')).rejects.toThrow('Invalid plate');
+    await expect(service.findByPlaca('INVALID')).rejects.toThrow(
+      'Placa inválida.',
+    );
   });
 
   it('updates a vehicle', async () => {
@@ -255,14 +285,25 @@ describe('VeiculoService', () => {
     veiculoRepository.merge.mockReturnValue(updatedVeiculo);
     veiculoRepository.save.mockResolvedValue(updatedVeiculo);
 
-    await expect(service.update(veiculo.id, updateVeiculoDto)).resolves.toBe(updatedVeiculo);
-    expect(veiculoRepository.findOneBy).toHaveBeenCalledWith({ id: veiculo.id });
-    expect(veiculoRepository.merge).toHaveBeenCalledWith(veiculo, updateVeiculoDto);
+    await expect(service.update(veiculo.id, updateVeiculoDto)).resolves.toBe(
+      updatedVeiculo,
+    );
+    expect(veiculoRepository.findOneBy).toHaveBeenCalledWith({
+      id: veiculo.id,
+    });
+    expect(veiculoRepository.merge).toHaveBeenCalledWith(
+      veiculo,
+      updateVeiculoDto,
+    );
     expect(veiculoRepository.save).toHaveBeenCalledWith(updatedVeiculo);
   });
 
   it('updates client relationship using documentoCliente', async () => {
-    const novoCliente = { ...cliente, id: 'novo-cliente-id', documento: '19463217000128' };
+    const novoCliente = {
+      ...cliente,
+      id: 'novo-cliente-id',
+      documento: '19463217000128',
+    };
     const updateVeiculoDto: UpdateVeiculoDto = {
       documentoCliente: novoCliente.documento,
     };
@@ -272,8 +313,12 @@ describe('VeiculoService', () => {
     veiculoRepository.merge.mockReturnValue(updatedVeiculo);
     veiculoRepository.save.mockResolvedValue(updatedVeiculo);
 
-    await expect(service.update(veiculo.id, updateVeiculoDto)).resolves.toBe(updatedVeiculo);
-    expect(clienteService.findByDocumento).toHaveBeenCalledWith(novoCliente.documento);
+    await expect(service.update(veiculo.id, updateVeiculoDto)).resolves.toBe(
+      updatedVeiculo,
+    );
+    expect(clienteService.findByDocumento).toHaveBeenCalledWith(
+      novoCliente.documento,
+    );
     expect(veiculoRepository.merge).toHaveBeenCalledWith(veiculo, {});
     expect(veiculoRepository.save).toHaveBeenCalledWith(updatedVeiculo);
     expect(updatedVeiculo.cliente_id).toBe(novoCliente.id);
@@ -284,7 +329,9 @@ describe('VeiculoService', () => {
     veiculoRepository.softRemove.mockResolvedValue(veiculo);
 
     await expect(service.remove(veiculo.id)).resolves.toBe(veiculo);
-    expect(veiculoRepository.findOneBy).toHaveBeenCalledWith({ id: veiculo.id });
+    expect(veiculoRepository.findOneBy).toHaveBeenCalledWith({
+      id: veiculo.id,
+    });
     expect(veiculoRepository.softRemove).toHaveBeenCalledWith(veiculo);
   });
 });

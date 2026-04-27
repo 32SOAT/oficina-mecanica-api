@@ -46,7 +46,9 @@ describe('VeiculoController', () => {
       remove: jest.fn(),
     };
 
-    controller = new VeiculoController(veiculoService as unknown as VeiculoService);
+    controller = new VeiculoController(
+      veiculoService as unknown as VeiculoService,
+    );
   });
 
   it('creates a vehicle', async () => {
@@ -134,7 +136,7 @@ describe('VeiculoController', () => {
     const error = new HttpException('Vehicle Not Found', 404);
     veiculoService.findByPlaca.mockRejectedValue(error);
 
-    await expect(controller.findByPlaca({ placa: 'INVALID' })).rejects.toBe(error);
+    await expect(controller.findByPlaca('INVALID')).rejects.toBe(error);
   });
 
   it('updates a vehicle', async () => {
@@ -149,7 +151,10 @@ describe('VeiculoController', () => {
       success: true,
       message: 'Veículo atualizado com sucesso.',
     });
-    expect(veiculoService.update).toHaveBeenCalledWith(veiculo.id, updateVeiculoDto);
+    expect(veiculoService.update).toHaveBeenCalledWith(
+      veiculo.id,
+      updateVeiculoDto,
+    );
   });
 
   it('lets update service exceptions propagate to Nest', async () => {

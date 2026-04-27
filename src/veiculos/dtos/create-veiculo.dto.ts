@@ -2,7 +2,10 @@ import { IsNotEmpty, IsString, IsInt, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateVeiculoDto {
-  @ApiProperty({ description: 'Placa do veículo (formato brasileiro)', example: 'ABC-1234' })
+  @ApiProperty({
+    description: 'Placa do veículo (formato brasileiro)',
+    example: 'ABC-1234',
+  })
   @IsNotEmpty()
   @IsString()
   placa: string;
@@ -24,7 +27,10 @@ export class CreateVeiculoDto {
   @Max(new Date().getFullYear() + 1)
   ano: number;
 
-  @ApiProperty({ description: 'Documento do cliente proprietário (CPF ou CNPJ)', example: '12345678901' })
+  @ApiProperty({
+    description: 'Documento do cliente proprietário (CPF ou CNPJ)',
+    example: '12345678901',
+  })
   @IsNotEmpty()
   @IsString()
   documentoCliente: string;

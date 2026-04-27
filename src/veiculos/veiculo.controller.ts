@@ -34,7 +34,10 @@ export class VeiculoController {
   constructor(private readonly veiculoService: VeiculoService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Criar novo veículo', description: 'Cria um novo veículo vinculado a um cliente existente.' })
+  @ApiOperation({
+    summary: 'Criar novo veículo',
+    description: 'Cria um novo veículo vinculado a um cliente existente.',
+  })
   @ApiBody({ type: CreateVeiculoDto })
   @ApiDataResponse(VeiculoEntity, 201, 'Veículo criado com sucesso')
   @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
@@ -44,17 +47,40 @@ export class VeiculoController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar veículos com paginação', description: 'Retorna uma lista paginada de veículos ativos.' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número da página (inicia em 1)', example: 1 })
-  @ApiQuery({ name: 'take', required: false, type: Number, description: 'Limite de itens por página', example: 10 })
+  @ApiOperation({
+    summary: 'Listar veículos com paginação',
+    description: 'Retorna uma lista paginada de veículos ativos.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Número da página (inicia em 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'take',
+    required: false,
+    type: Number,
+    description: 'Limite de itens por página',
+    example: 10,
+  })
   @ApiPaginatedResponse(VeiculoEntity, 200, 'Lista de veículos retornada')
   async findAll(@Query() paginationDto: PaginationDto) {
     return this.veiculoService.findAll(paginationDto);
   }
 
-  @Get('by-placa/:placa')
-  @ApiOperation({ summary: 'Buscar veículo por placa', description: 'Busca um veículo pela placa fornecida na URL.' })
-  @ApiParam({ name: 'placa', type: String, description: 'Placa do veículo', example: 'ABC1234' })
+  @Get('placa/:placa')
+  @ApiOperation({
+    summary: 'Buscar veículo por placa',
+    description: 'Busca um veículo pela placa fornecida na URL.',
+  })
+  @ApiParam({
+    name: 'placa',
+    type: String,
+    description: 'Placa do veículo',
+    example: 'ABC1234',
+  })
   @ApiWrappedResponse(VeiculoEntity, 200, 'Veículo encontrado com sucesso')
   @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
   async findByPlaca(@Param('placa') placa: string) {
@@ -67,8 +93,16 @@ export class VeiculoController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualizar veículo', description: 'Atualiza os dados de um veículo existente.' })
-  @ApiParam({ name: 'id', type: String, description: 'ID único do veículo (UUID)', example: 'uuid-string' })
+  @ApiOperation({
+    summary: 'Atualizar veículo',
+    description: 'Atualiza os dados de um veículo existente.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID único do veículo (UUID)',
+    example: 'uuid-string',
+  })
   @ApiBody({ type: UpdateVeiculoDto })
   @ApiWrappedResponse(undefined, 200, 'Veículo atualizado com sucesso')
   @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
@@ -85,8 +119,16 @@ export class VeiculoController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Remover veículo', description: 'Remove um veículo (soft delete).' })
-  @ApiParam({ name: 'id', type: String, description: 'ID único do veículo (UUID)', example: 'uuid-string' })
+  @ApiOperation({
+    summary: 'Remover veículo',
+    description: 'Remove um veículo (soft delete).',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID único do veículo (UUID)',
+    example: 'uuid-string',
+  })
   @ApiWrappedResponse(undefined, 200, 'Veículo removido com sucesso')
   @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {

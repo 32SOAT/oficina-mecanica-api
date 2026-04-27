@@ -27,15 +27,17 @@ export class VeiculoService {
   async create(createVeiculoDto: CreateVeiculoDto): Promise<VeiculoEntity> {
     const placa = normalizePlate(createVeiculoDto.placa);
     if (!isValidBrazilianPlate(placa)) {
-      throw new BadRequestException('Invalid plate');
+      throw new BadRequestException('Placa inválida.');
     }
     const duplicate = await this.veiculoRepository.findOne({
       where: { placa },
     });
     if (duplicate) {
-      throw new ConflictException('Plate is already registered');
+      throw new ConflictException('Placa já cadastrada para outro veículo.');
     }
-    const cliente = await this.clienteService.findByDocumento(createVeiculoDto.documentoCliente);
+    const cliente = await this.clienteService.findByDocumento(
+      createVeiculoDto.documentoCliente,
+    );
     const veiculoData = this.veiculoRepository.create({
       placa,
       marca: createVeiculoDto.marca,
@@ -47,8 +49,8 @@ export class VeiculoService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const page = paginationDto.page ?? 1;
-    const take = paginationDto.take ?? DefaultPageSize.VEICULO;
+    const page = Number(paginationDto.page ?? 1);
+    const take = Number(paginationDto.take ?? DefaultPageSize.VEICULO);
     const offset = this.paginationService.calculateOffset(take, page);
     const [data, count] = await this.veiculoRepository.findAndCount({
       skip: offset,
@@ -64,7 +66,7 @@ export class VeiculoService {
   async findOne(id: string): Promise<VeiculoEntity> {
     const veiculo = await this.veiculoRepository.findOneBy({ id });
     if (!veiculo) {
-      throw new HttpException('Vehicle Not Found', 404);
+      throw new HttpException('Veiculo não encontrado.', 404);
     }
     return veiculo;
   }
@@ -72,13 +74,13 @@ export class VeiculoService {
   async findByPlaca(placaRaw: string): Promise<VeiculoEntity> {
     const placa = normalizePlate(placaRaw);
     if (!isValidBrazilianPlate(placa)) {
-      throw new BadRequestException('Invalid plate');
+      throw new BadRequestException('Placa inválida.');
     }
     const veiculo = await this.veiculoRepository.findOne({
       where: { placa },
     });
     if (!veiculo) {
-      throw new HttpException('Vehicle Not Found', 404);
+      throw new HttpException('Veiculo não encontrado.', 404);
     }
     return veiculo;
   }
@@ -92,7 +94,8 @@ export class VeiculoService {
     let clienteId = existingVeiculo.cliente_id;
 
     if (documentoCliente !== undefined) {
-      const cliente = await this.clienteService.findByDocumento(documentoCliente);
+      const cliente =
+        await this.clienteService.findByDocumento(documentoCliente);
       clienteId = cliente.id;
     }
 
