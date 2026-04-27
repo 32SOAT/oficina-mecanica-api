@@ -19,9 +19,14 @@ import {
 } from '@nestjs/swagger';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { VeiculoService } from './veiculo.service';
+import { VeiculoEntity } from './veiculo.entity';
 import { CreateVeiculoDto } from './dtos/create-veiculo.dto';
 import { UpdateVeiculoDto } from './dtos/update-veiculo.dto';
-import { FindVeiculoByPlacaDto } from './dtos/find-veiculo-by-placa.dto';
+import {
+  ApiDataResponse,
+  ApiPaginatedResponse,
+  ApiWrappedResponse,
+} from '../common/decorators/swagger-response.decorator';
 
 @ApiTags('Veículos')
 @Controller('veiculos')
@@ -31,8 +36,7 @@ export class VeiculoController {
   @Post()
   @ApiOperation({ summary: 'Criar novo veículo', description: 'Cria um novo veículo vinculado a um cliente existente.' })
   @ApiBody({ type: CreateVeiculoDto })
-  @ApiResponse({ status: 201, description: 'Veículo criado com sucesso' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos ou placa inválida' })
+  @ApiDataResponse(VeiculoEntity, 201, 'Veículo criado com sucesso')
   @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
   @ApiResponse({ status: 409, description: 'Placa já cadastrada' })
   async create(@Body() createVeiculoDto: CreateVeiculoDto) {
@@ -42,30 +46,33 @@ export class VeiculoController {
   @Get()
   @ApiOperation({ summary: 'Listar veículos com paginação', description: 'Retorna uma lista paginada de veículos ativos.' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número da página (inicia em 1)', example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Limite de itens por página', example: 10 })
-  @ApiResponse({ status: 200, description: 'Lista de veículos retornada' })
-  @ApiResponse({ status: 400, description: 'Parâmetros de paginação inválidos' })
+  @ApiQuery({ name: 'take', required: false, type: Number, description: 'Limite de itens por página', example: 10 })
+  @ApiPaginatedResponse(VeiculoEntity, 200, 'Lista de veículos retornada')
   async findAll(@Query() paginationDto: PaginationDto) {
     return this.veiculoService.findAll(paginationDto);
   }
 
-  @Post('by-placa')
-  @ApiOperation({ summary: 'Buscar veículo por placa', description: 'Busca um veículo pela placa fornecida no body.' })
-  @ApiBody({ type: FindVeiculoByPlacaDto })
-  @ApiResponse({ status: 200, description: 'Veículo encontrado' })
+  @Get('by-placa/:placa')
+  @ApiOperation({ summary: 'Buscar veículo por placa', description: 'Busca um veículo pela placa fornecida na URL.' })
+  @ApiParam({ name: 'placa', type: String, description: 'Placa do veículo', example: 'ABC1234' })
+  @ApiWrappedResponse(VeiculoEntity, 200, 'Veículo encontrado com sucesso')
   @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
-  @ApiResponse({ status: 400, description: 'Placa inválida' })
-  async findByPlaca(@Body() findDto: FindVeiculoByPlacaDto) {
-    return this.veiculoService.findByPlaca(findDto.placa);
+  async findByPlaca(@Param('placa') placa: string) {
+    const data = await this.veiculoService.findByPlaca(placa);
+    return {
+      success: true,
+      data,
+      message: 'Veículo encontrado com sucesso.',
+    };
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar veículo', description: 'Atualiza os dados de um veículo existente.' })
-  @ApiBody({ type: UpdateVeiculoDto })
   @ApiParam({ name: 'id', type: String, description: 'ID único do veículo (UUID)', example: 'uuid-string' })
-  @ApiResponse({ status: 200, description: 'Veículo atualizado com sucesso' })
+  @ApiBody({ type: UpdateVeiculoDto })
+  @ApiWrappedResponse(undefined, 200, 'Veículo atualizado com sucesso')
   @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 409, description: 'Placa já cadastrada' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateVeiculoDto: UpdateVeiculoDto,
@@ -73,20 +80,20 @@ export class VeiculoController {
     await this.veiculoService.update(id, updateVeiculoDto);
     return {
       success: true,
-      message: 'Vehicle Updated Successfully',
+      message: 'Veículo atualizado com sucesso.',
     };
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remover veículo', description: 'Remove um veículo (soft delete).' })
   @ApiParam({ name: 'id', type: String, description: 'ID único do veículo (UUID)', example: 'uuid-string' })
-  @ApiResponse({ status: 200, description: 'Veículo removido com sucesso' })
+  @ApiWrappedResponse(undefined, 200, 'Veículo removido com sucesso')
   @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.veiculoService.remove(id);
     return {
       success: true,
-      message: 'Vehicle Deleted Successfully',
+      message: 'Veículo removido com sucesso.',
     };
   }
 }

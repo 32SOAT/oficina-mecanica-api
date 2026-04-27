@@ -119,11 +119,15 @@ describe('VeiculoController', () => {
   });
 
   it('finds one vehicle by placa', async () => {
-    const findDto = { placa: veiculo.placa };
+    const placa = veiculo.placa;
     veiculoService.findByPlaca.mockResolvedValue(veiculo);
 
-    await expect(controller.findByPlaca(findDto)).resolves.toBe(veiculo);
-    expect(veiculoService.findByPlaca).toHaveBeenCalledWith(findDto.placa);
+    await expect(controller.findByPlaca(placa)).resolves.toEqual({
+      success: true,
+      data: veiculo,
+      message: 'Veículo encontrado com sucesso.',
+    });
+    expect(veiculoService.findByPlaca).toHaveBeenCalledWith(placa);
   });
 
   it('lets findByPlaca service exceptions propagate to Nest', async () => {
@@ -143,7 +147,7 @@ describe('VeiculoController', () => {
       controller.update(veiculo.id, updateVeiculoDto),
     ).resolves.toEqual({
       success: true,
-      message: 'Vehicle Updated Successfully',
+      message: 'Veículo atualizado com sucesso.',
     });
     expect(veiculoService.update).toHaveBeenCalledWith(veiculo.id, updateVeiculoDto);
   });
@@ -160,7 +164,7 @@ describe('VeiculoController', () => {
 
     await expect(controller.remove(veiculo.id)).resolves.toEqual({
       success: true,
-      message: 'Vehicle Deleted Successfully',
+      message: 'Veículo removido com sucesso.',
     });
     expect(veiculoService.remove).toHaveBeenCalledWith(veiculo.id);
   });
