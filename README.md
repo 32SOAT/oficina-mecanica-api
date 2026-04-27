@@ -33,10 +33,12 @@ npm install
 
 1. **Clone o repositório** e entre na pasta do projeto.
 2. **Crie o arquivo `.env`** na raiz (o Git não versiona o `.env`). Copie o exemplo:
-  ```bash
-   cp .env.example .env
-  ```
-3. **Ajuste as variáveis** em `.env` se necessário (usuário/senha do banco, porta da API, etc.). O arquivo `.env.example` documenta os campos usados pelo Compose e pela aplicação.
+
+```bash
+ cp .env.example .env
+```
+
+1. **Ajuste as variáveis** em `.env` se necessário (usuário/senha do banco, porta da API, etc.). O arquivo `.env.example` documenta os campos usados pelo Compose e pela aplicação.
 
 **Importante sobre `POSTGRES_HOST`:**
 
@@ -138,7 +140,7 @@ O `Dockerfile` faz **multi-stage build**: compila a aplicação (`npm run build`
 
 ### 1. Garantir o `.env` na raiz
 
-O Compose usa variáveis do `.env` para `POSTGRES_`*, `APP_PORT`, `NODE_ENV`, etc.
+O Compose usa variáveis do `.env` para `POSTGRES_`, `APP_PORT`, `NODE_ENV`, etc.
 
 ### 2. Build da imagem da aplicação
 
@@ -235,3 +237,66 @@ Para e2e com API e banco, garanta que o ambiente (variáveis e Postgres) esteja 
 | Seeding          | `curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`  | `docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`   |
 
 
+---
+
+## Autenticação
+
+A API utiliza **JWT** (JSON Web Token) para autenticação. O administrador envia email e senha no endpoint de login, recebe um token e o inclui no cabeçalho `Authorization: Bearer <token>` nas requisições protegidas.
+
+### Variáveis de ambiente
+
+
+| Variável         | Descrição                                                                          | Obrigatória |
+| ---------------- | ---------------------------------------------------------------------------------- | ----------- |
+| `JWT_SECRET`     | Chave secreta para assinar tokens JWT                                              | Sim         |
+| `JWT_EXPIRES_IN` | Tempo de expiração do token (padrão: `1h`). Aceita valores como `30m`, `7d`, `24h` | Não         |
+
+
+Configure ambas no arquivo `.env`. Consulte `.env.example` para a lista completa.
+
+### Login
+
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@oficina.com", "password": "admin123"}'
+```
+
+Resposta esperada:
+
+```json
+{
+  "data": {
+    "user": {
+      "id": "uuid-do-admin",
+      "username": "admin",
+      "email": "admin@oficina.com"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIs..."
+  }
+}
+```
+
+### Usando o token
+
+Inclua o token JWT no cabeçalho `Authorization` com o prefixo `Bearer`. Todas as rotas de clientes exigem autenticação:
+
+```bash
+curl http://localhost:3000/api/v1/clientes \
+  -H "Authorization: Bearer <seu-token-aqui>"
+```
+
+### Alterar senha
+
+O administrador autenticado pode alterar sua própria senha:
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/auth/password \
+  -H "Authorization: Bearer <seu-token-aqui>" \
+  -H "Content-Type: application/json" \
+  -d '{"currentPassword": "admin123", "newPassword": "novaSenha456"}'
+```
+
+### Swagger UI
+
+O Swagger UI disponível em `/api` possui autenticação Bearer habilitada. Clique no botão **Authorize** (ícone de cadeado) no topo da página e cole o token JWT para testar endpoints protegidos diretamente pela interface.
