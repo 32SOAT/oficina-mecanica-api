@@ -11,6 +11,12 @@ async function bootstrap() {
   const configService: TypedConfigService = app.get(ConfigService);
   const port = configService.get<AppConfig>('app')?.port;
 
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
+  app.setGlobalPrefix('api');
+
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -22,17 +28,11 @@ async function bootstrap() {
     .setTitle('oficina-mecanica-api')
     .setDescription('API para gerenciamento de oficina mecânica')
     .setVersion('1.0')
-    // .addBearerAuth()
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
-
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-  });
-  app.setGlobalPrefix('api');
   await app.listen(port ?? 3000);
 }
 bootstrap().catch((err) => {

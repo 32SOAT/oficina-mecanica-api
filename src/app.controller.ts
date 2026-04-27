@@ -1,12 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
+import { Public } from './auth/public.decorator';
 
 @ApiTags('Health')
 @Controller('health')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  @Public()
   @Get()
   @ApiOperation({
     summary: 'Verifica se a API está online',
