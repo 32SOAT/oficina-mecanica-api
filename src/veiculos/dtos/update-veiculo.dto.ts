@@ -33,20 +33,17 @@ export class UpdateVeiculoDto {
   ano?: number;
 
   @ApiProperty({
-    description: 'ID do cliente proprietário do veículo',
-    example: 'uuid-string',
+    description: 'Documento do cliente proprietário do veículo (CPF ou CNPJ)',
+    example: '12345678901',
     required: false,
   })
   @IsOptional()
   @IsString()
-  clienteId?: string;
+  documentoCliente?: string;
 
   @IsImmutable({ message: 'ID não pode ser alterado' })
   id?: never;
 
   @IsImmutable({ message: 'Placa não pode ser alterada' })
   placa?: never;
-
-  @IsImmutable({ message: 'Documento do cliente não pode ser alterado' })
-  documentoCliente?: never;
 }

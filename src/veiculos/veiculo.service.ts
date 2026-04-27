@@ -88,12 +88,20 @@ export class VeiculoService {
     updateVeiculoDto: UpdateVeiculoDto,
   ): Promise<VeiculoEntity> {
     const existingVeiculo = await this.findOne(id);
+    const { documentoCliente, ...veiculoUpdateFields } = updateVeiculoDto;
+    let clienteId = existingVeiculo.cliente_id;
+
+    if (documentoCliente !== undefined) {
+      const cliente = await this.clienteService.findByDocumento(documentoCliente);
+      clienteId = cliente.id;
+    }
+
     const veiculoData = this.veiculoRepository.merge(
       existingVeiculo,
-      updateVeiculoDto,
+      veiculoUpdateFields,
     );
     veiculoData.placa = existingVeiculo.placa;
-    veiculoData.cliente_id = existingVeiculo.cliente_id;
+    veiculoData.cliente_id = clienteId;
     return this.veiculoRepository.save(veiculoData);
   }
 

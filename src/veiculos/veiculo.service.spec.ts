@@ -71,7 +71,7 @@ describe('VeiculoService', () => {
     service = new VeiculoService(
       veiculoRepository as Repository<VeiculoEntity>,
       paginationService,
-      clienteService as ClienteService,
+      clienteService as unknown as ClienteService,
     );
   });
 
@@ -187,6 +187,33 @@ describe('VeiculoService', () => {
     });
   });
 
+  it('finds all vehicles with default pagination when query is empty', async () => {
+    const result = {
+      data: [veiculo],
+      meta: {
+        itemsPerPage: DefaultPageSize.VEICULO,
+        totalItems: 1,
+        currentPage: 1,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    };
+    veiculoRepository.findAndCount.mockResolvedValue([[veiculo], 1]);
+    paginationService.calculateOffset.mockReturnValue(0);
+    paginationService.createMeta.mockReturnValue(result.meta);
+
+    await expect(service.findAll({})).resolves.toEqual(result);
+    expect(paginationService.calculateOffset).toHaveBeenCalledWith(
+      DefaultPageSize.VEICULO,
+      1,
+    );
+    expect(veiculoRepository.findAndCount).toHaveBeenCalledWith({
+      skip: 0,
+      take: DefaultPageSize.VEICULO,
+    });
+  });
+
   it('finds vehicle by placa', async () => {
     veiculoRepository.findOne.mockResolvedValue(veiculo);
 
@@ -194,6 +221,19 @@ describe('VeiculoService', () => {
     expect(veiculoRepository.findOne).toHaveBeenCalledWith({
       where: { placa: veiculo.placa },
     });
+  });
+
+  it('finds one vehicle by id', async () => {
+    veiculoRepository.findOneBy.mockResolvedValue(veiculo);
+
+    await expect(service.findOne(veiculo.id)).resolves.toBe(veiculo);
+    expect(veiculoRepository.findOneBy).toHaveBeenCalledWith({ id: veiculo.id });
+  });
+
+  it('throws 404 when vehicle not found by id', async () => {
+    veiculoRepository.findOneBy.mockResolvedValue(null);
+
+    await expect(service.findOne('missing-id')).rejects.toThrow('Vehicle Not Found');
   });
 
   it('throws 404 when vehicle not found by placa', async () => {
@@ -219,6 +259,24 @@ describe('VeiculoService', () => {
     expect(veiculoRepository.findOneBy).toHaveBeenCalledWith({ id: veiculo.id });
     expect(veiculoRepository.merge).toHaveBeenCalledWith(veiculo, updateVeiculoDto);
     expect(veiculoRepository.save).toHaveBeenCalledWith(updatedVeiculo);
+  });
+
+  it('updates client relationship using documentoCliente', async () => {
+    const novoCliente = { ...cliente, id: 'novo-cliente-id', documento: '19463217000128' };
+    const updateVeiculoDto: UpdateVeiculoDto = {
+      documentoCliente: novoCliente.documento,
+    };
+    const updatedVeiculo = { ...veiculo, cliente_id: novoCliente.id };
+    veiculoRepository.findOneBy.mockResolvedValue(veiculo);
+    clienteService.findByDocumento.mockResolvedValue(novoCliente as any);
+    veiculoRepository.merge.mockReturnValue(updatedVeiculo);
+    veiculoRepository.save.mockResolvedValue(updatedVeiculo);
+
+    await expect(service.update(veiculo.id, updateVeiculoDto)).resolves.toBe(updatedVeiculo);
+    expect(clienteService.findByDocumento).toHaveBeenCalledWith(novoCliente.documento);
+    expect(veiculoRepository.merge).toHaveBeenCalledWith(veiculo, {});
+    expect(veiculoRepository.save).toHaveBeenCalledWith(updatedVeiculo);
+    expect(updatedVeiculo.cliente_id).toBe(novoCliente.id);
   });
 
   it('removes a vehicle', async () => {
