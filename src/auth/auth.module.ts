@@ -19,8 +19,7 @@ import { JwtAuthGuard } from './auth.guard';
           configService.getOrThrow<JwtConfig>('jwt');
         return {
           secret,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          signOptions: { expiresIn: expiresIn as any },
+          signOptions: { expiresIn },
         };
       },
     }),

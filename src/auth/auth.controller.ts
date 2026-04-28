@@ -13,6 +13,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import type { AuthenticatedRequest } from './authenticated-request.interface';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dtos/login.dto';
 import { ChangePasswordDto } from './dtos/change-password.dto';
@@ -60,10 +61,9 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
   async changePassword(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userId: string = req.user.sub;
     await this.authService.changePassword(
       userId,

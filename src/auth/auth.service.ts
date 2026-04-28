@@ -24,13 +24,13 @@ export class AuthService {
       return null;
     }
 
-    const isValid = await bcrypt.compare(password, user.password!);
+    const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return null;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...result } = user;
+    void _password;
     return result;
   }
 
@@ -66,7 +66,7 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado.');
     }
 
-    const isValid = await bcrypt.compare(currentPassword, user.password!);
+    const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
       throw new UnauthorizedException('Senha atual incorreta.');
     }

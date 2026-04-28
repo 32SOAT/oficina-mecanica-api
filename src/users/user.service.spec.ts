@@ -21,6 +21,7 @@ describe('UserService', () => {
     id: 'user-id',
     username: 'Jane',
     email: 'jane@example.com',
+    password: 'hashed-password',
     ...overrides,
   });
 
@@ -35,7 +36,7 @@ describe('UserService', () => {
     } as UserRepositoryMock;
 
     service = new UserService(
-      userRepository as Repository<UserEntity>,
+      userRepository as unknown as Repository<UserEntity>,
       new PaginationService(),
     );
   });

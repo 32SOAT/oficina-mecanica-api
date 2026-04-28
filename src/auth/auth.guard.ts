@@ -8,6 +8,10 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import {
+  AuthenticatedRequest,
+  JwtPayload,
+} from './authenticated-request.interface';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -26,7 +30,7 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -36,10 +40,9 @@ export class JwtAuthGuard implements CanActivate {
     const token = authHeader.split(' ')[1];
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const payload = await this.jwtService.verifyAsync(token);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      (request as any).user = payload;
+      const payload: JwtPayload =
+        await this.jwtService.verifyAsync<JwtPayload>(token);
+      request.user = payload;
       return true;
     } catch {
       throw new UnauthorizedException('Token inválido ou expirado.');

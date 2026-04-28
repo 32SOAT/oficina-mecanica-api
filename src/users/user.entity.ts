@@ -13,6 +13,6 @@ export class UserEntity {
   email: string;
 
   @Exclude()
-  @Column({ select: false, nullable: true })
-  password?: string;
+  @Column({ select: false })
+  password: string;
 }
