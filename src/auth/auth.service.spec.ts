@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
+import { LoginResponseDto } from './dtos/login-response.dto';
 import { UserEntity } from '../users/user.entity';
 
 jest.mock('bcryptjs', () => ({
@@ -104,14 +105,13 @@ describe('AuthService', () => {
     it('returns user data and jwt token', () => {
       const result = service.login(mockUser);
 
-      expect(result).toEqual({
-        user: {
-          id: mockUser.id,
-          username: mockUser.username,
-          email: mockUser.email,
-        },
-        token: 'jwt-token',
+      expect(result).toBeInstanceOf(LoginResponseDto);
+      expect(result.user).toEqual({
+        id: mockUser.id,
+        username: mockUser.username,
+        email: mockUser.email,
       });
+      expect(result.token).toBe('jwt-token');
       expect(jwtSign).toHaveBeenCalledWith({
         sub: mockUser.id,
         email: mockUser.email,

@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UserEntity } from '../users/user.entity';
+import { LoginResponseDto } from './dtos/login-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,21 +35,21 @@ export class AuthService {
     return result;
   }
 
-  login(user: Partial<UserEntity>) {
+  login(user: Partial<UserEntity>): LoginResponseDto {
     const payload = {
       sub: user.id,
       email: user.email,
       username: user.username,
     };
 
-    return {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-      },
-      token: this.jwtService.sign(payload),
+    const response = new LoginResponseDto();
+    response.user = {
+      id: user.id!,
+      username: user.username!,
+      email: user.email!,
     };
+    response.token = this.jwtService.sign(payload);
+    return response;
   }
 
   async changePassword(

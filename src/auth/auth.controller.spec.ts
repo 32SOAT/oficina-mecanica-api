@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtAuthGuard } from './auth.guard';
+import { LoginResponseDto } from './dtos/login-response.dto';
 import type { AuthenticatedRequest } from './authenticated-request.interface';
 
 describe('AuthController', () => {
@@ -29,7 +30,9 @@ describe('AuthController', () => {
   describe('login', () => {
     it('returns token on valid credentials', async () => {
       const user = { id: '1', username: 'admin', email: 'admin@oficina.com' };
-      const loginResponse = { user, token: 'jwt-token' };
+      const loginResponse = new LoginResponseDto();
+      loginResponse.user = user;
+      loginResponse.token = 'jwt-token';
       validateUser.mockResolvedValue(user);
       login.mockReturnValue(loginResponse);
 
