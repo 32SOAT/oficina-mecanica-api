@@ -20,7 +20,7 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 
 @ApiBearerAuth()
-@ApiTags('Users')
+@ApiTags('Usuários')
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
