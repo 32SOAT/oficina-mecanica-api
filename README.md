@@ -1,30 +1,10 @@
-# Oficina Mecânica API
+# 🚗Oficina Mecânica API
 
 **MVP** (produto mínimo viável) para **gerenciamento de oficina mecânica**: cadastro de clientes e veículos, ordens de serviço, itens (serviços e peças), estoque e histórico de status. O escopo é propositalmente enxuto para validar fluxo e modelo de dados antes de evoluir para funcionalidades mais amplas.
 
 API em [NestJS](https://nestjs.com/) com TypeORM e PostgreSQL.
 
-### Por que um banco relacional (PostgreSQL) neste projeto?
-
-O domínio de uma **oficina mecânica** não é um conjunto de registros isolados: existe uma **malha de dependências** que o sistema precisa respeitar. Um **cliente** possui **veículos**; cada **ordem de serviço** está ligada a um veículo; os **itens** da ordem apontam para **serviços** cadastrados ou para **linhas de estoque**; o **histórico de status** precisa estar sempre associado à ordem correta. Ou seja, o negócio é naturalmente **estruturado em entidades e relacionamentos** — exatamente o que o **modelo relacional** descreve com tabelas, chaves e integridade referencial.
-
-#### Encaixe com o modelo de dados
-
-Em um SGBDR (sistema gerenciador de banco de dados relacional), você declara **no próprio schema** quem pode referenciar quem: chaves estrangeiras impedem, por exemplo, uma ordem de serviço órfã (sem veículo) ou um item apontando para um serviço que não existe. Restrições de **unicidade** (como documento do cliente ou placa do veículo) evitam duplicidade que geraria confusão operacional. Isso reduz a quantidade de validações “só na aplicação” e diminui o risco de dois caminhos de código divergirem sobre a mesma regra.
-
-#### Transações e consistência (ACID)
-
-Operações de oficina costumam exigir **várias escritas coordenadas**: abrir item na OS, atualizar quantidade reservada no estoque, registrar mudança de status no histórico. Se uma etapa falhar no meio, o sistema não pode ficar “meio atualizado”. Bancos relacionais oferecem **transações ACID** (atomicidade, consistência, isolamento, durabilidade): ou tudo que pertence àquela operação é confirmado, ou nada é — o que é essencial para **integridade financeira e de estoque** em um MVP que pretende crescer para cenários reais.
-
-#### Consultas, relatórios e evolução do MVP
-
-Grandes parte das perguntas de negócio são **relacionais** por natureza: total por período, ordens em aberto por status, consumo de peças, histórico de uma OS. **SQL** é a ferramenta madura para isso; o time consegue prototipar relatórios e validar números sem reimplementar agregações em código para cada caso. Além disso, o uso de **migrações versionadas** (como as deste repositório) permite que o **schema evolua junto com o código**, com revisão em pull request e histórico claro do que mudou no banco — importante em produto que ainda está definindo escopo.
-
-#### Por que PostgreSQL em particular
-
-**PostgreSQL** é um banco relacional **robusto, open source** e amplamente adotado: bom desempenho para cargas típicas de sistema administrativo, recursos sólidos de tipos (incluindo `UUID`, `NUMERIC`, timestamps com fuso), e ecossistema compatível com **Docker**, nuvem e ferramentas de backup. Quando surgir necessidade de algo menos estruturado em um ponto específico, o Postgres ainda oferece tipos como **JSON/JSONB** para casos pontuais **sem** abandonar o modelo relacional como base.
-
-## Pré-requisitos
+## 📋 Pré-requisitos
 
 
 | Ferramenta                       | Uso                                               |
@@ -34,11 +14,9 @@ Grandes parte das perguntas de negócio são **relacionais** por natureza: total
 | **Docker** e **Docker Compose**  | Subir PostgreSQL e/ou a aplicação em containers   |
 
 
-### Versão do Node (evitar `EBADENGINE` e instalação “lenta” no terminal)
+### Versão do Node
 
-Este projeto precisa de **Node ≥ 20.11** (Nest 11, Joi 18, Jest 30, etc.). Com **Node 16**, o `npm install` gera centenas de linhas `EBADENGINE` — **é o Node errado**, não o projeto.
-
-O repositório inclui um script `**preinstall`**: se a versão for antiga, o install **para na primeira mensagem** (em vez de listar todos os pacotes). Para instalar mesmo assim (não recomendado): `npm install --ignore-scripts`.
+Este projeto precisa de **Node ≥ 20.11** (Nest 11, Joi 18, Jest 30, etc.). 
 
 **Fluxo recomendado** — com **[nvm](https://github.com/nvm-sh/nvm)** e o `.nvmrc` na raiz:
 
@@ -49,21 +27,9 @@ node -v   # v22.x ou v20.11+
 npm install
 ```
 
-Com **[fnm](https://github.com/Schniz/fnm)**:
-
-```bash
-fnm install
-fnm use
-npm install
-```
-
-Há um `**.npmrc**` com `audit=false` e `fund=false` para o final do `npm install` ficar mais limpo; você pode rodar `npm audit` quando quiser um relatório.
-
-Avisos `npm WARN deprecated` (ex.: `glob`, `inflight`) vêm de **dependências transitivas**; tendem a sumir quando os mantenedores atualizarem as cadeias — não é algo que você precise corrigir à mão no dia a dia.
-
 ---
 
-## Configuração do ambiente
+## 🚧 Configuração do ambiente
 
 1. **Clone o repositório** e entre na pasta do projeto.
 2. **Crie o arquivo `.env`** na raiz (o Git não versiona o `.env`). Copie o exemplo:
@@ -79,7 +45,7 @@ Avisos `npm WARN deprecated` (ex.: `glob`, `inflight`) vêm de **dependências t
 
 ---
 
-## Desenvolvimento com npm (código na máquina)
+## 💻 Desenvolvimento com npm (código na máquina)
 
 ### 1. Instalar dependências
 
@@ -133,7 +99,25 @@ npm run start:dev
 
 O primeiro comando sobe só o serviço `db` em segundo plano; o segundo inicia a API com reload.
 
-### 6. Comandos da API (referência)
+### 6. Seeding (popular dados iniciais)
+
+A API possui uma rota para popular automaticamente o banco de dados com dados iniciais, útil para desenvolvimento e testes. Executa o seed das tabelas principais do sistema: Clientes, Veículos, Serviços e Estoque.
+
+- Endpoint:
+
+```bash
+POST /api/v1/seeding
+```
+
+- Exemplo completo:
+
+```bash
+http://localhost:3000/api/v1/seeding
+```
+
+⚠️ Importante: A rota não cria ordens de serviço — isso deve ser feito manualmente pelo usuário.
+
+## Comandos da API (referência)
 
 
 | Modo                  | Comando               | Descrição                    |
@@ -148,7 +132,7 @@ A porta vem de `APP_PORT` no `.env` (padrão comum: `3000`).
 
 ---
 
-## Build e execução com Docker
+## 🐋 Build e execução com Docker
 
 O `Dockerfile` faz **multi-stage build**: compila a aplicação (`npm run build`) na etapa de build e na imagem final copia só `dist/` e dependências de produção.
 
@@ -203,9 +187,19 @@ docker compose exec app npx typeorm migration:revert -d dist/config/app-data-sou
 
 **Se você alterou arquivos de migration no repositório**, é preciso **reconstruir a imagem** do `app` para que o `dist/` dentro do container inclua essas alterações; depois suba de novo e rode o `migration:run` como acima.
 
+### 5. Seeding dentro do container
+
+Após subir a aplicação e rodar as migrations, você pode popular o banco executando o endpoint de seed de dentro do container.
+
+**Executar seed:**
+
+```bash
+docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}'
+```
+
 ---
 
-## Testes e qualidade
+## 📊 Testes e qualidade
 
 ```bash
 # Testes unitários
@@ -238,5 +232,6 @@ Para e2e com API e banco, garanta que o ambiente (variáveis e Postgres) esteja 
 | Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
 | Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
 | Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
+| Seeding          | `curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`  | `docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`   |
 
 
