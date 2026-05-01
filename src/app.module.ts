@@ -11,8 +11,12 @@ import { ClienteEntity } from './clientes/cliente.entity';
 import { ClienteModule } from './clientes/cliente.module';
 import { PecaEntity } from './pecas/peca.entity';
 import { PecaModule } from './pecas/peca.module';
+import { ServicoEntity } from './servicos/servico.entity';
+import { ServicoModule } from './servicos/servico.module';
 import { UserEntity } from './users/user.entity';
 import { UserModule } from './users/user.module';
+import { VeiculoEntity } from './veiculos/veiculo.entity';
+import { VeiculoModule } from './veiculos/veiculo.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformResponseInterceptor } from './interceptors/transform-response.interceptor';
 import { QueryingModule } from './querying/querying.module';
@@ -32,7 +36,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
 
         return {
           ...databaseConfig,
-          entities: [ClienteEntity, PecaEntity, UserEntity],
+          entities: [ClienteEntity, ServicoEntity, VeiculoEntity, PecaEntity, UserEntity],
         };
       },
     }),
@@ -46,7 +50,9 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
     }),
     ClienteModule,
     PecaModule,
+    ServicoModule,
     UserModule,
+    VeiculoModule,
     QueryingModule,
     ...(shouldEnableSeedingModule(process.env.NODE_ENV) ? [SeedingModule] : []),
   ],
