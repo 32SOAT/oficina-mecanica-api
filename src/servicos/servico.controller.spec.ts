@@ -1,6 +1,10 @@
-import { HttpException } from '@nestjs/common';
+import { HttpException, UnauthorizedException } from '@nestjs/common';
 import { ServicoController } from './servico.controller';
 import { ServicoService } from './servico.service';
+import { JwtAuthGuard } from '../auth/auth.guard';
+import { IS_PUBLIC_KEY } from '../auth/public.decorator';
+import { JwtService } from '@nestjs/jwt';
+import { Reflector } from '@nestjs/core';
 
 type ServicoServiceMock = jest.Mocked<
   Pick<ServicoService, 'create' | 'findAll' | 'findOne' | 'update' | 'remove'>
@@ -94,8 +98,8 @@ describe('ServicoController', () => {
     };
     servicoService.findAll.mockResolvedValue(result);
 
-    await expect(controller.findAll({} as any)).resolves.toBe(result);
-    expect(servicoService.findAll).toHaveBeenCalledWith({} as any);
+    await expect(controller.findAll({})).resolves.toBe(result);
+    expect(servicoService.findAll).toHaveBeenCalledWith({});
   });
 
   it('finds one servico by id', async () => {
@@ -156,5 +160,66 @@ describe('ServicoController', () => {
     servicoService.remove.mockRejectedValue(error);
 
     await expect(controller.remove(999)).rejects.toBe(error);
+  });
+
+  describe('authentication', () => {
+    let guard: JwtAuthGuard;
+    let jwtService: JwtService;
+    let reflector: Reflector;
+
+    beforeEach(() => {
+      jwtService = new JwtService({
+        secret: 'test-secret',
+        signOptions: { expiresIn: '1h' },
+      });
+      reflector = new Reflector();
+      guard = new JwtAuthGuard(jwtService, reflector);
+    });
+
+    const routeNames = ['create', 'findAll', 'findOne', 'update', 'remove'];
+
+    const getHandler = (name: string) =>
+      Object.getOwnPropertyDescriptor(ServicoController.prototype, name)!
+        .value as (...args: unknown[]) => unknown;
+
+    it('no route is marked as @Public()', () => {
+      for (const routeName of routeNames) {
+        const isPublic = reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+          getHandler(routeName),
+          ServicoController,
+        ]);
+        expect(isPublic).not.toBe(true);
+      }
+    });
+
+    const createGuardContext = (headers: Record<string, string>) =>
+      ({
+        switchToHttp: () => ({
+          getRequest: () => ({ headers }),
+        }),
+        getHandler: () => getHandler(routeNames[0]),
+        getClass: () => ServicoController,
+      }) as never;
+
+    it('blocks unauthenticated request', async () => {
+      const context = createGuardContext({});
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('allows authenticated request with valid token', async () => {
+      const token = jwtService.sign({
+        sub: 'user-id',
+        email: 'admin@test.com',
+        username: 'admin',
+      });
+      const context = createGuardContext({
+        authorization: `Bearer ${token}`,
+      });
+
+      const result = await guard.canActivate(context);
+      expect(result).toBe(true);
+    });
   });
 });
