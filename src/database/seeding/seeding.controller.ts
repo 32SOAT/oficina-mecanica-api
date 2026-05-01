@@ -13,7 +13,7 @@ export class SeedingController {
   @ApiOperation({
     summary: 'Executa o seed das tabelas',
     description:
-      'Popula clientes, veiculos, servicos e estoque. A ordem de servico e seus itens/historico devem ser criados pelo usuario.',
+      'Popula clientes, veiculos, servicos e estoque. A ordem de servico deve ser criada pelo usuario.',
   })
   @ApiBody({
     required: false,
