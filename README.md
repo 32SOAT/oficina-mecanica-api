@@ -222,7 +222,7 @@ Para e2e com API e banco, garanta que o ambiente (variáveis e Postgres) esteja 
 
 ---
 
-## Resumo rápido
+## ⚡Resumo rápido
 
 
 | Objetivo         | npm (local)                                                  | Docker                                                                                |
