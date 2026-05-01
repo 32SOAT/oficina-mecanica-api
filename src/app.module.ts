@@ -13,6 +13,8 @@ import { ServicoEntity } from './servicos/servico.entity';
 import { ServicoModule } from './servicos/servico.module';
 import { UserEntity } from './users/user.entity';
 import { UserModule } from './users/user.module';
+import { VeiculoEntity } from './veiculos/veiculo.entity';
+import { VeiculoModule } from './veiculos/veiculo.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformResponseInterceptor } from './interceptors/transform-response.interceptor';
 import { QueryingModule } from './querying/querying.module';
@@ -32,7 +34,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
 
         return {
           ...databaseConfig,
-          entities: [ClienteEntity, ServicoEntity, UserEntity],
+          entities: [ClienteEntity, ServicoEntity, VeiculoEntity, UserEntity],
         };
       },
     }),
@@ -47,6 +49,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
     ClienteModule,
     ServicoModule,
     UserModule,
+    VeiculoModule,
     QueryingModule,
     ...(shouldEnableSeedingModule(process.env.NODE_ENV) ? [SeedingModule] : []),
   ],
