@@ -6,7 +6,9 @@ describe('main bootstrap', () => {
 
   it('bootstraps app with global settings', async () => {
     const appMock = {
-      get: jest.fn().mockReturnValue({ get: jest.fn().mockReturnValue({ port: 3333 }) }),
+      get: jest
+        .fn()
+        .mockReturnValue({ get: jest.fn().mockReturnValue({ port: 3333 }) }),
       useGlobalPipes: jest.fn(),
       enableVersioning: jest.fn(),
       setGlobalPrefix: jest.fn(),
@@ -66,7 +68,9 @@ describe('main bootstrap', () => {
   it('logs and exits on bootstrap error', async () => {
     const error = new Error('boom');
     const create = jest.fn().mockRejectedValue(error);
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
     const exitSpy = jest
       .spyOn(process, 'exit')
       .mockImplementation((() => undefined) as never);

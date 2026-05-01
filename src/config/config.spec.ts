@@ -9,10 +9,12 @@ describe('Config files', () => {
     process.env.NODE_ENV = 'development';
     process.env.APP_PORT = '4000';
 
-    const value = (appConfig as unknown as () => {
-      environment: string;
-      port: number;
-    })();
+    const value = (
+      appConfig as unknown as () => {
+        environment: string;
+        port: number;
+      }
+    )();
 
     expect(value.environment).toBe('development');
     expect(value.port).toBe(4000);
@@ -36,9 +38,9 @@ describe('Config files', () => {
       synchronize: true,
     });
 
-    const dbOptions = (typeOrmConfig as unknown as () => ReturnType<
-      typeof getDatabaseOptions
-    >)();
+    const dbOptions = (
+      typeOrmConfig as unknown as () => ReturnType<typeof getDatabaseOptions>
+    )();
     expect(dbOptions.host).toBe('db');
   });
 
