@@ -133,8 +133,7 @@ export class EstoqueController {
   @Patch(':id/operacao')
   @ApiOperation({
     summary: 'Executar operação de estoque',
-    description:
-      'Realiza operações de reserva ou baixa em um item de estoque.',
+    description: 'Realiza operações de reserva ou baixa em um item de estoque.',
   })
   @ApiBody({ type: OperacaoEstoqueDto })
   @ApiParam({

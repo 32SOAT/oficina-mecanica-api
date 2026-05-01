@@ -61,7 +61,7 @@ describe('ServicoService', () => {
       merge: jest.fn(),
       softRemove: jest.fn(),
       createQueryBuilder: jest.fn(),
-    } as unknown as ServicoRepositoryMock;
+    };
 
     service = new ServicoService(servicoRepository, new PaginationService());
   });
@@ -219,7 +219,7 @@ describe('ServicoService', () => {
     const servicos = [servico()];
     servicoRepository.findAndCount.mockResolvedValue([servicos, 1]);
 
-    const result = await service.findAll({} as PaginationDto);
+    const result = await service.findAll({});
 
     expect(result.data).toEqual(servicos);
     expect(result.meta.currentPage).toBe(1);

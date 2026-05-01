@@ -9,11 +9,15 @@ import { TransformResponseInterceptor } from '../src/interceptors/transform-resp
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
-  let appService: jest.Mocked<Pick<AppService, 'getHello'>>;
+  let appService: jest.Mocked<Pick<AppService, 'check'>>;
+  const healthPayload = {
+    status: 'ok',
+    timestamp: '2023-10-01T12:00:00.000Z',
+  };
 
   beforeEach(async () => {
     appService = {
-      getHello: jest.fn().mockReturnValue('Hello World!'),
+      check: jest.fn().mockReturnValue(healthPayload),
     };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -38,13 +42,13 @@ describe('AppController (e2e)', () => {
     await app.close();
   });
 
-  it('/ (GET)', () => {
+  it('/health (GET)', () => {
     return request(app.getHttpServer())
-      .get('/')
+      .get('/health')
       .expect('Content-Type', /json/)
       .expect(200)
       .expect({
-        data: 'Hello World!',
+        data: healthPayload,
       });
   });
 });

@@ -89,7 +89,8 @@ export class ServicoService {
 
     // Validar preço se informado
     if (
-      updateServicoDto.precoMaoDeObra !== undefined && updateServicoDto.precoMaoDeObra < 0
+      updateServicoDto.precoMaoDeObra !== undefined &&
+      updateServicoDto.precoMaoDeObra < 0
     ) {
       throw new BadRequestException('Preço não pode ser negativo.');
     }
