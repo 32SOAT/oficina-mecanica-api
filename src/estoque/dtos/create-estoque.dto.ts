@@ -8,9 +8,9 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreatePecaDto {
+export class CreateEstoqueDto {
   @ApiProperty({
-    description: 'Código único da peça/insumo',
+    description: 'Código único do item de estoque',
     example: 'PCA-001',
   })
   @IsNotEmpty({ message: 'Código é obrigatório.' })

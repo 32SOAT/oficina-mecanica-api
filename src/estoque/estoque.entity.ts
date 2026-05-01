@@ -10,13 +10,13 @@ import { ApiProperty } from '@nestjs/swagger';
 import { BadRequestException } from '@nestjs/common';
 
 @Entity('estoque')
-export class PecaEntity {
-  @ApiProperty({ description: 'ID único da peça/insumo', example: 1 })
+export class EstoqueEntity {
+  @ApiProperty({ description: 'ID único do item de estoque', example: 1 })
   @PrimaryGeneratedColumn()
   id: number;
 
   @ApiProperty({
-    description: 'Código único da peça/insumo',
+    description: 'Código único do item de estoque',
     example: 'PCA-001',
   })
   @Column({ unique: true })

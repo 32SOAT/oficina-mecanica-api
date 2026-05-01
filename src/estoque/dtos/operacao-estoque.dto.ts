@@ -6,7 +6,7 @@ export enum TipoOperacaoEstoque {
   DAR_BAIXA = 'dar_baixa',
 }
 
-export class UpdateEstoqueDto {
+export class OperacaoEstoqueDto {
   @ApiProperty({
     description: 'Tipo de operação no estoque',
     enum: TipoOperacaoEstoque,
