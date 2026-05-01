@@ -36,7 +36,13 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
 
         return {
           ...databaseConfig,
-          entities: [ClienteEntity, ServicoEntity, VeiculoEntity, EstoqueEntity, UserEntity],
+          entities: [
+            ClienteEntity,
+            ServicoEntity,
+            VeiculoEntity,
+            EstoqueEntity,
+            UserEntity,
+          ],
         };
       },
     }),

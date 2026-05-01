@@ -1,7 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { DefaultPageSize } from '../querying/constants';
-import { PaginationService } from '../querying/pagination.service';
 import { ClienteService } from '../clientes/cliente.service';
 import { UpdateVeiculoDto } from './dtos/update-veiculo.dto';
 import { VeiculoEntity } from './veiculo.entity';
@@ -78,7 +77,7 @@ describe('VeiculoService', () => {
 
     service = new VeiculoService(
       veiculoRepository as unknown as Repository<VeiculoEntity>,
-      paginationService as unknown as PaginationService,
+      paginationService,
       clienteService as unknown as ClienteService,
     );
   });

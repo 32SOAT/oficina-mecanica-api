@@ -128,7 +128,7 @@ describe('UserController (e2e)', () => {
       .expect(400);
 
     expectValidationMessages(response.body as unknown, [
-      'page must be a positive number',
+      'Page deve ser positivo.',
     ]);
     expect(userService.findAll).not.toHaveBeenCalled();
   });
