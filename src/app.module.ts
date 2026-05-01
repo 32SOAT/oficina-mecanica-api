@@ -9,6 +9,8 @@ import { typeOrmConfig } from './config/database.config';
 import { TypedConfigService } from './config/typed-config.service';
 import { ClienteEntity } from './clientes/cliente.entity';
 import { ClienteModule } from './clientes/cliente.module';
+import { ServicoEntity } from './servicos/servico.entity';
+import { ServicoModule } from './servicos/servico.module';
 import { UserEntity } from './users/user.entity';
 import { UserModule } from './users/user.module';
 import { VeiculoEntity } from './veiculos/veiculo.entity';
@@ -32,7 +34,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
 
         return {
           ...databaseConfig,
-          entities: [ClienteEntity, VeiculoEntity, UserEntity],
+          entities: [ClienteEntity, ServicoEntity, VeiculoEntity, UserEntity],
         };
       },
     }),
@@ -45,6 +47,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
       isGlobal: true,
     }),
     ClienteModule,
+    ServicoModule,
     UserModule,
     VeiculoModule,
     QueryingModule,
