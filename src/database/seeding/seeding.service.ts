@@ -13,7 +13,7 @@ const SEEDED_USER_PLAIN_PASSWORD = 'SeedPassword123!';
 
 const CLIENTES_TO_SEED = 5;
 const ESTOQUE_TO_SEED = 5;
-const USERS_TO_SEED = 5;
+const USUARIOS_TO_SEED = 5;
 const faker = new Faker({ locale: [pt_BR] });
 const OFICINA_ITENS_ESTOQUE = [
   'Pastilha de freio dianteira',
@@ -80,7 +80,7 @@ export class SeedingService {
       SEEDED_USER_PLAIN_PASSWORD,
       BCRYPT_ROUNDS,
     );
-    const users = Array.from({ length: USERS_TO_SEED }, () =>
+    const users = Array.from({ length: USUARIOS_TO_SEED }, () =>
       userRepository.create(this.createFakeUser(passwordHash)),
     );
     const createdUsers = await userRepository.save(users);
