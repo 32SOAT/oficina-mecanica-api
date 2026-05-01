@@ -1,6 +1,6 @@
 import { Faker, pt_BR } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { fake as fakeCpf } from 'validation-br/dist/cpf';
 import { ClienteEntity } from '../../clientes/cliente.entity';
 import { ServicoEntity } from '../../servicos/servico.entity';
@@ -23,11 +23,23 @@ const OFICINA_ITENS_ESTOQUE = [
   'Limpador de bico injetor',
 ];
 const OFICINA_SERVICOS = [
-  { nome: 'Troca de oleo e filtro', descricao: 'Substituicao de oleo e filtro' },
-  { nome: 'Revisao do sistema de freio', descricao: 'Inspecao do sistema de freio' },
-  { nome: 'Troca de filtro de ar e combustivel', descricao: 'Substituicao de filtros' },
+  {
+    nome: 'Troca de oleo e filtro',
+    descricao: 'Substituicao de oleo e filtro',
+  },
+  {
+    nome: 'Revisao do sistema de freio',
+    descricao: 'Inspecao do sistema de freio',
+  },
+  {
+    nome: 'Troca de filtro de ar e combustivel',
+    descricao: 'Substituicao de filtros',
+  },
   { nome: 'Troca de velas de ignicao', descricao: 'Substituicao de velas' },
-  { nome: 'Limpeza de sistema de injecao', descricao: 'Limpeza de bicos injetores' },
+  {
+    nome: 'Limpeza de sistema de injecao',
+    descricao: 'Limpeza de bicos injetores',
+  },
 ];
 
 const MONTADORAS = [
@@ -58,11 +70,7 @@ export class SeedingService {
     let createdClientes: ClienteEntity[] = [];
 
     await this.dataSource.transaction(async (manager) => {
-      /**
-       * =========================
-       * CLIENTES
-       * =========================
-       */
+
       const clienteRepo = manager.getRepository(ClienteEntity);
 
       const existingClientes = await clienteRepo.find({
@@ -83,11 +91,6 @@ export class SeedingService {
       createdClientes = [...existingClientes, ...newClientes];
       stats.clientes = newClientes.length;
 
-      /**
-       * =========================
-       * SERVIÇOS
-       * =========================
-       */
       const servicoRepo = manager.getRepository(ServicoEntity);
 
       const existingServicos = await servicoRepo.find({
@@ -98,26 +101,21 @@ export class SeedingService {
         existingServicos.map((s) => s.servico).filter(Boolean),
       );
 
-      const servicosToCreate = OFICINA_SERVICOS
-        .filter((s) => !existingNames.has(s.nome))
-        .map((s) =>
-          servicoRepo.create({
-            servico: s.nome,
-            descricao: s.descricao,
-            precoMaoDeObra: Number(
-              faker.commerce.price({ min: 90, max: 780, dec: 2 }),
-            ),
-          }),
-        );
+      const servicosToCreate = OFICINA_SERVICOS.filter(
+        (s) => !existingNames.has(s.nome),
+      ).map((s) =>
+        servicoRepo.create({
+          servico: s.nome,
+          descricao: s.descricao,
+          precoMaoDeObra: Number(
+            faker.commerce.price({ min: 90, max: 780, dec: 2 }),
+          ),
+        }),
+      );
 
       const newServicos = await servicoRepo.save(servicosToCreate);
       stats.servicos = newServicos.length;
 
-      /**
-       * =========================
-       * ESTOQUE (CORRIGIDO E SEGURO)
-       * =========================
-       */
       const estoqueRepo = manager.getRepository(EstoqueEntity);
 
       const existingEstoque = await estoqueRepo.find({
@@ -130,8 +128,7 @@ export class SeedingService {
           .filter((v): v is string => typeof v === 'string'),
       );
 
-      const estoqueToCreate = OFICINA_ITENS_ESTOQUE
-        .slice(0, ESTOQUE_TO_SEED)
+      const estoqueToCreate = OFICINA_ITENS_ESTOQUE.slice(0, ESTOQUE_TO_SEED)
         .filter(Boolean)
         .filter((nome) => !existingStockNames.has(nome))
         .map((nome) =>
@@ -151,11 +148,6 @@ export class SeedingService {
         stats.estoque = estoqueToCreate.length;
       }
 
-      /**
-       * =========================
-       * VEÍCULOS
-       * =========================
-       */
       const existingVeiculos = await manager
         .createQueryBuilder()
         .select('v.id', 'id')
@@ -199,11 +191,6 @@ export class SeedingService {
     };
   }
 
-  /**
-   * =========================
-   * CLIENTE
-   * =========================
-   */
   private createFakeCliente() {
     const first = faker.person.firstName();
     const last = faker.person.lastName();
@@ -217,11 +204,6 @@ export class SeedingService {
     };
   }
 
-  /**
-   * =========================
-   * VEÍCULO
-   * =========================
-   */
   private createFakeVeiculo(clienteId: string, sequence: number) {
     const m = MONTADORAS[sequence % MONTADORAS.length];
 
