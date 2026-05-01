@@ -16,6 +16,7 @@ import {
   ApiBody,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { VeiculoService } from './veiculo.service';
@@ -28,6 +29,7 @@ import {
   ApiWrappedResponse,
 } from '../common/decorators/swagger-response.decorator';
 
+@ApiBearerAuth()
 @ApiTags('Veículos')
 @Controller('veiculos')
 export class VeiculoController {
