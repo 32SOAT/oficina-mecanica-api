@@ -29,7 +29,9 @@ describe('ServicoController', () => {
       remove: jest.fn(),
     };
 
-    controller = new ServicoController(servicoService as unknown as ServicoService);
+    controller = new ServicoController(
+      servicoService as unknown as ServicoService,
+    );
   });
 
   it('creates a servico', async () => {
@@ -126,7 +128,10 @@ describe('ServicoController', () => {
       success: true,
       message: 'Serviço atualizado com sucesso.',
     });
-    expect(servicoService.update).toHaveBeenCalledWith(servico.id, updateServicoDto);
+    expect(servicoService.update).toHaveBeenCalledWith(
+      servico.id,
+      updateServicoDto,
+    );
   });
 
   it('propagates update service exceptions to Nest', async () => {

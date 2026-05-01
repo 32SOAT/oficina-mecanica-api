@@ -77,7 +77,10 @@ export class EstoqueService {
   ): Promise<EstoqueEntity> {
     const existing = await this.findOne(id);
 
-    if (updateEstoqueDto.codigo && updateEstoqueDto.codigo !== existing.codigo) {
+    if (
+      updateEstoqueDto.codigo &&
+      updateEstoqueDto.codigo !== existing.codigo
+    ) {
       const duplicate = await this.estoqueRepository.findOne({
         where: { codigo: updateEstoqueDto.codigo },
       });

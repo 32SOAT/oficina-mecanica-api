@@ -38,7 +38,7 @@ export class ServicoEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-})
+  })
   precoMaoDeObra: number;
 
   @ApiProperty({
