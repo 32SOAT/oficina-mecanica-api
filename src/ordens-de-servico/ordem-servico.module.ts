@@ -11,6 +11,7 @@ import { ItemOsServicoEntity } from './entities/item-os-servico.entity';
 import { ItemOsEstoqueEntity } from './entities/item-os-estoque.entity';
 import { HistoricoStatusOsEntity } from './entities/historico-status-os.entity';
 import { OrdemServicoService } from './ordem-servico.service';
+import { PersistirHistoricoListener } from './events/listeners/persistir-historico.listener';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { OrdemServicoService } from './ordem-servico.service';
     QueryingModule,
   ],
   controllers: [],
-  providers: [OrdemServicoService],
+  providers: [OrdemServicoService, PersistirHistoricoListener],
   exports: [OrdemServicoService],
 })
 export class OrdemServicoModule {}
