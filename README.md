@@ -345,6 +345,5 @@ docker run --rm -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_LO
 | Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
 | Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
 | Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
-| Seeding          | `curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`  | `docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`   |
 
 
