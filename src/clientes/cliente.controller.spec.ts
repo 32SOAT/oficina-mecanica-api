@@ -100,8 +100,8 @@ describe('ClienteController', () => {
     };
     clienteService.findAll.mockResolvedValue(result);
 
-    await expect(controller.findAll({} as any)).resolves.toBe(result);
-    expect(clienteService.findAll).toHaveBeenCalledWith({} as any);
+    await expect(controller.findAll({})).resolves.toBe(result);
+    expect(clienteService.findAll).toHaveBeenCalledWith({});
   });
 
   it('finds one client by documento', async () => {

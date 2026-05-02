@@ -51,7 +51,10 @@ describe('Config files', () => {
       POSTGRES_PASSWORD: 'postgres',
       POSTGRES_DB: 'oficina',
       POSTGRES_SYNC: 1,
-    });
+    }) as {
+      error: unknown;
+      value: { APP_PORT: number; POSTGRES_HOST: string };
+    };
 
     expect(error).toBeUndefined();
     expect(value.APP_PORT).toBe(3000);

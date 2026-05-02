@@ -116,8 +116,8 @@ describe('VeiculoController', () => {
     };
     veiculoService.findAll.mockResolvedValue(result);
 
-    await expect(controller.findAll({} as any)).resolves.toBe(result);
-    expect(veiculoService.findAll).toHaveBeenCalledWith({} as any);
+    await expect(controller.findAll({})).resolves.toBe(result);
+    expect(veiculoService.findAll).toHaveBeenCalledWith({});
   });
 
   it('finds one vehicle by placa', async () => {

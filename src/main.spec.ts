@@ -49,6 +49,7 @@ describe('main bootstrap', () => {
     });
 
     jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('./main');
     });
     await new Promise((resolve) => setImmediate(resolve));
@@ -83,6 +84,7 @@ describe('main bootstrap', () => {
     }));
 
     jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('./main');
     });
     await new Promise((resolve) => setImmediate(resolve));

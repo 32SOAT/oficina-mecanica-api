@@ -94,8 +94,8 @@ describe('ServicoController', () => {
     };
     servicoService.findAll.mockResolvedValue(result);
 
-    await expect(controller.findAll({} as any)).resolves.toBe(result);
-    expect(servicoService.findAll).toHaveBeenCalledWith({} as any);
+    await expect(controller.findAll({})).resolves.toBe(result);
+    expect(servicoService.findAll).toHaveBeenCalledWith({});
   });
 
   it('finds one servico by id', async () => {
