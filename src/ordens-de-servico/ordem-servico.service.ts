@@ -25,6 +25,12 @@ import { StatusOrdemServico } from './state-machine/status-ordem-servico.enum';
 import {
   OsCriadaEvent,
   OsCriadaEventName,
+  OrcamentoAprovadoEvent,
+  OrcamentoAprovadoEventName,
+  OrcamentoReprovadoEvent,
+  OrcamentoReprovadoEventName,
+  OsEmExecucaoEvent,
+  OsEmExecucaoEventName,
   StatusAlteradoEvent,
   StatusAlteradoEventName,
 } from './events/ordem-servico.events';
@@ -139,6 +145,225 @@ export class OrdemServicoService {
       this.eventEmitter.emit(OsCriadaEventName, new OsCriadaEvent(saved.id));
 
       return saved;
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  // Helper compartilhado: carrega OS, executa transição, persiste, emite evento.
+  private async transicionar(
+    osId: string,
+    para: StatusOrdemServico,
+  ): Promise<OrdemServicoEntity> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const os = await qr.manager.findOne(OrdemServicoEntity, {
+        where: { id: osId },
+        relations: ['itensServico', 'itensPeca'],
+      });
+      if (!os) {
+        throw new NotFoundException('Ordem de serviço não encontrada.');
+      }
+      const { anterior, novo } = os.avancarStatus(para);
+      await qr.manager.save(OrdemServicoEntity, os);
+      await qr.commitTransaction();
+      this.eventEmitter.emit(
+        StatusAlteradoEventName,
+        new StatusAlteradoEvent(os.id, anterior, novo),
+      );
+      return os;
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  iniciarDiagnostico(id: string): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, StatusOrdemServico.EmDiagnostico);
+  }
+
+  finalizar(id: string): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, StatusOrdemServico.Finalizada);
+  }
+
+  entregar(id: string): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, StatusOrdemServico.Entregue);
+  }
+
+  cancelar(id: string): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, StatusOrdemServico.Cancelada);
+  }
+
+  avancarStatus(
+    id: string,
+    novo: StatusOrdemServico,
+  ): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, novo);
+  }
+
+  async gerarOrcamento(osId: string): Promise<OrdemServicoEntity> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const os = await qr.manager.findOne(OrdemServicoEntity, {
+        where: { id: osId },
+        relations: ['itensServico', 'itensPeca'],
+      });
+      if (!os) {
+        throw new NotFoundException('Ordem de serviço não encontrada.');
+      }
+      const { anterior, novo } = os.avancarStatus(
+        StatusOrdemServico.AguardandoAprovacao,
+      );
+      os.valorTotal = os.calcularValorTotal();
+      await qr.manager.save(OrdemServicoEntity, os);
+      await qr.commitTransaction();
+      this.eventEmitter.emit(
+        StatusAlteradoEventName,
+        new StatusAlteradoEvent(os.id, anterior, novo),
+      );
+      return os;
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  async aprovarOrcamento(osId: string): Promise<OrdemServicoEntity> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const os = await qr.manager.findOne(OrdemServicoEntity, {
+        where: { id: osId },
+        relations: ['itensServico', 'itensPeca'],
+      });
+      if (!os) {
+        throw new NotFoundException('Ordem de serviço não encontrada.');
+      }
+      const t1 = os.avancarStatus(StatusOrdemServico.Aprovada);
+      const proximo = os.todasPecasDisponiveis()
+        ? StatusOrdemServico.AguardandoServico
+        : StatusOrdemServico.AguardandoPecasInsumos;
+      const t2 = os.avancarStatus(proximo);
+      await qr.manager.save(OrdemServicoEntity, os);
+      await qr.commitTransaction();
+      this.eventEmitter.emit(
+        StatusAlteradoEventName,
+        new StatusAlteradoEvent(os.id, t1.anterior, t1.novo),
+      );
+      this.eventEmitter.emit(
+        StatusAlteradoEventName,
+        new StatusAlteradoEvent(os.id, t2.anterior, t2.novo),
+      );
+      this.eventEmitter.emit(
+        OrcamentoAprovadoEventName,
+        new OrcamentoAprovadoEvent(os.id),
+      );
+      return os;
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  async reprovarOrcamento(osId: string): Promise<OrdemServicoEntity> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const os = await qr.manager.findOne(OrdemServicoEntity, {
+        where: { id: osId },
+        relations: ['itensPeca'],
+      });
+      if (!os) {
+        throw new NotFoundException('Ordem de serviço não encontrada.');
+      }
+      const { anterior, novo } = os.avancarStatus(
+        StatusOrdemServico.Reprovada,
+      );
+      // Estorno inline com lock pessimista
+      for (const item of os.itensPeca ?? []) {
+        const est = await qr.manager.findOne(EstoqueEntity, {
+          where: { id: item.estoque_id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (est) {
+          est.quantidadeReservada = Math.max(
+            0,
+            est.quantidadeReservada - item.quantidade,
+          );
+          await qr.manager.save(EstoqueEntity, est);
+        }
+      }
+      await qr.manager.save(OrdemServicoEntity, os);
+      await qr.commitTransaction();
+      this.eventEmitter.emit(
+        StatusAlteradoEventName,
+        new StatusAlteradoEvent(os.id, anterior, novo),
+      );
+      this.eventEmitter.emit(
+        OrcamentoReprovadoEventName,
+        new OrcamentoReprovadoEvent(os.id),
+      );
+      return os;
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  async iniciarExecucao(osId: string): Promise<OrdemServicoEntity> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const os = await qr.manager.findOne(OrdemServicoEntity, {
+        where: { id: osId },
+        relations: ['itensPeca'],
+      });
+      if (!os) {
+        throw new NotFoundException('Ordem de serviço não encontrada.');
+      }
+      const { anterior, novo } = os.avancarStatus(
+        StatusOrdemServico.EmExecucao,
+      );
+      // Baixa inline com lock pessimista
+      for (const item of os.itensPeca ?? []) {
+        const est = await qr.manager.findOne(EstoqueEntity, {
+          where: { id: item.estoque_id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (est) {
+          est.darBaixa(item.quantidade);
+          await qr.manager.save(EstoqueEntity, est);
+        }
+      }
+      await qr.manager.save(OrdemServicoEntity, os);
+      await qr.commitTransaction();
+      this.eventEmitter.emit(
+        StatusAlteradoEventName,
+        new StatusAlteradoEvent(os.id, anterior, novo),
+      );
+      this.eventEmitter.emit(
+        OsEmExecucaoEventName,
+        new OsEmExecucaoEvent(os.id),
+      );
+      return os;
     } catch (err) {
       await qr.rollbackTransaction();
       throw err;
