@@ -1,0 +1,149 @@
+/* eslint-disable prettier/prettier */
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ClienteEntity } from '../clientes/cliente.entity';
+import { VeiculoEntity } from '../veiculos/veiculo.entity';
+import { ServicoEntity } from '../servicos/servico.entity';
+import { EstoqueEntity } from '../estoque/estoque.entity';
+import {
+  isValidBrazilianTaxId,
+  normalizeTaxId,
+} from '../clientes/br-document.validator';
+import { PaginationService } from '../querying/pagination.service';
+import { OrdemServicoEntity } from './ordem-servico.entity';
+import { ItemOsServicoEntity } from './entities/item-os-servico.entity';
+import { ItemOsEstoqueEntity } from './entities/item-os-estoque.entity';
+import { CriarOrdemServicoDto } from './dtos/criar-ordem-servico.dto';
+import { StatusOrdemServico } from './state-machine/status-ordem-servico.enum';
+import {
+  OsCriadaEvent,
+  OsCriadaEventName,
+  StatusAlteradoEvent,
+  StatusAlteradoEventName,
+} from './events/ordem-servico.events';
+
+@Injectable()
+export class OrdemServicoService {
+  constructor(
+    @InjectRepository(OrdemServicoEntity)
+    private readonly osRepository: Repository<OrdemServicoEntity>,
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly paginationService: PaginationService,
+  ) {}
+
+  async criar(dto: CriarOrdemServicoDto): Promise<OrdemServicoEntity> {
+    const totalItens =
+      (dto.itensServico?.length ?? 0) + (dto.itensPeca?.length ?? 0);
+    if (totalItens === 0) {
+      throw new BadRequestException(
+        'A OS precisa de ao menos um serviço ou uma peça.',
+      );
+    }
+
+    const documento = normalizeTaxId(dto.documentoCliente);
+    if (!isValidBrazilianTaxId(documento)) {
+      throw new BadRequestException('CPF/CNPJ inválido.');
+    }
+
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      const cliente = await qr.manager.findOne(ClienteEntity, {
+        where: { documento },
+      });
+      if (!cliente) {
+        throw new NotFoundException('Cliente não encontrado.');
+      }
+
+      const veiculo = await qr.manager.findOne(VeiculoEntity, {
+        where: { id: dto.veiculoId },
+      });
+      if (!veiculo) {
+        throw new NotFoundException('Veículo não encontrado.');
+      }
+      if (veiculo.cliente_id !== cliente.id) {
+        throw new ConflictException('Veículo não pertence a este cliente.');
+      }
+
+      const itensServico: ItemOsServicoEntity[] = [];
+      for (const i of dto.itensServico ?? []) {
+        const srv = await qr.manager.findOne(ServicoEntity, {
+          where: { id: i.servicoId },
+        });
+        if (!srv) {
+          throw new NotFoundException(`Serviço ${i.servicoId} não encontrado.`);
+        }
+        const item = qr.manager.create(ItemOsServicoEntity, {
+          servico_id: srv.id,
+          servico: srv,
+          precoAplicado: Number(srv.precoMaoDeObra),
+        });
+        itensServico.push(item);
+      }
+
+      const itensPeca: ItemOsEstoqueEntity[] = [];
+      for (const i of dto.itensPeca ?? []) {
+        // pessimistic lock: prevents oversell under concurrent OS creation for same item
+        const est = await qr.manager.findOne(EstoqueEntity, {
+          where: { id: i.estoqueId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!est) {
+          throw new NotFoundException(`Peça ${i.estoqueId} não encontrada.`);
+        }
+        est.reservar(i.quantidade);
+        await qr.manager.save(EstoqueEntity, est);
+        const item = qr.manager.create(ItemOsEstoqueEntity, {
+          estoque_id: est.id,
+          peca: est,
+          quantidade: i.quantidade,
+          precoAplicado: Number(est.precoUnitario),
+          disponivelNoDiagnostico: true,
+        });
+        itensPeca.push(item);
+      }
+
+      const os = qr.manager.create(OrdemServicoEntity, {
+        cliente_id: cliente.id,
+        veiculo_id: veiculo.id,
+        observacao: dto.observacao ?? null,
+        status: StatusOrdemServico.Recebida,
+        itensServico,
+        itensPeca,
+        valorTotal: 0,
+      });
+
+      const calc = new OrdemServicoEntity();
+      Object.assign(calc, os);
+      os.valorTotal = calc.calcularValorTotal();
+
+      const saved = (await qr.manager.save(
+        OrdemServicoEntity,
+        os,
+      ));
+      await qr.commitTransaction();
+
+      this.eventEmitter.emit(
+        StatusAlteradoEventName,
+        new StatusAlteradoEvent(saved.id, null, StatusOrdemServico.Recebida),
+      );
+      this.eventEmitter.emit(OsCriadaEventName, new OsCriadaEvent(saved.id));
+
+      return saved;
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+}
