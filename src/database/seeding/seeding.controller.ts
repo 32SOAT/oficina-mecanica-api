@@ -3,12 +3,14 @@ import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiWrappedResponse } from '../../common/decorators/swagger-response.decorator';
 import { SeedingService } from './seeding.service';
 import { SeedSummaryDto } from './dtos/seed-summary.dto';
+import { Public } from '../../auth/public.decorator';
 
 @ApiTags('Seeding')
 @Controller('seeding')
 export class SeedingController {
-  constructor(private readonly seedingService: SeedingService) {}
+  constructor(private readonly seedingService: SeedingService) { }
 
+  @Public()
   @Post()
   @ApiOperation({
     summary: 'Executa o seed das tabelas',
