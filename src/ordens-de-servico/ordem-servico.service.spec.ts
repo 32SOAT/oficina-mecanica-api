@@ -514,4 +514,157 @@ describe('OrdemServicoService', () => {
       expect(peca.quantidadeReservada).toBe(1); // 3 - 2
     });
   });
+
+  describe('findAll', () => {
+    it('aplica filtros e retorna { data, meta } paginado', async () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      } as unknown as ReturnType<
+        Repository<OrdemServicoEntity>['createQueryBuilder']
+      >;
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      const result = await service.findAll({
+        page: 1,
+        take: 5,
+        status: S.EmExecucao,
+        clienteId: 'cli-1',
+      });
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(qb.andWhere).toHaveBeenCalledWith('os.status = :status', {
+        status: S.EmExecucao,
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(qb.andWhere).toHaveBeenCalledWith('os.cliente_id = :clienteId', {
+        clienteId: 'cli-1',
+      });
+      expect(result.meta.currentPage).toBe(1);
+      expect(result.meta.itemsPerPage).toBe(5);
+    });
+
+    it('aplica os filtros de data quando presentes', async () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      } as unknown as ReturnType<
+        Repository<OrdemServicoEntity>['createQueryBuilder']
+      >;
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      await service.findAll({
+        page: 1,
+        take: 10,
+        dataInicio: '2026-04-01',
+        dataFim: '2026-04-30',
+      });
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(qb.andWhere).toHaveBeenCalledWith('os.createdAt >= :dataInicio', {
+        dataInicio: '2026-04-01',
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(qb.andWhere).toHaveBeenCalledWith('os.createdAt <= :dataFim', {
+        dataFim: '2026-04-30',
+      });
+    });
+
+    it('usa defaults quando page/take ausentes', async () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      } as unknown as ReturnType<
+        Repository<OrdemServicoEntity>['createQueryBuilder']
+      >;
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      const result = await service.findAll({});
+      expect(result.meta.itemsPerPage).toBe(10); // DefaultPageSize.ORDEM_SERVICO
+      expect(result.meta.currentPage).toBe(1);
+    });
+  });
+
+  describe('findOne', () => {
+    it('retorna OS com relations carregados', async () => {
+      const os = new OrdemServicoEntity();
+      Object.assign(os, { id: 'os-1' });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      (osRepo.findOne as jest.Mock).mockResolvedValue(os);
+
+      const result = await service.findOne('os-1');
+      expect(result).toBe(os);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(osRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'os-1' },
+          relations: expect.arrayContaining([
+            'cliente',
+            'veiculo',
+            'itensServico',
+            'itensServico.servico',
+            'itensPeca',
+            'itensPeca.peca',
+          ]),
+        }),
+      );
+    });
+
+    it('lança 404 quando não existe', async () => {
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      (osRepo.findOne as jest.Mock).mockResolvedValue(null);
+      await expect(service.findOne('nope')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findHistorico', () => {
+    it('retorna histórico ordenado e exige OS existente', async () => {
+      const histEntries = [
+        { id: 'h1', createdAt: new Date('2026-04-01') },
+        { id: 'h2', createdAt: new Date('2026-04-02') },
+      ];
+      const histRepo = {
+        find: jest.fn().mockResolvedValue(histEntries),
+      };
+      const ds = service as unknown as {
+        dataSource: { getRepository: jest.Mock };
+      };
+      ds.dataSource.getRepository = jest.fn().mockReturnValue(histRepo);
+
+      const os = new OrdemServicoEntity();
+      Object.assign(os, { id: 'os-1' });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      (osRepo.findOne as jest.Mock).mockResolvedValue(os);
+
+      const result = await service.findHistorico('os-1');
+      expect(result).toBe(histEntries);
+      expect(histRepo.find).toHaveBeenCalledWith({
+        where: { os_id: 'os-1' },
+        order: { createdAt: 'ASC' },
+      });
+    });
+
+    it('propaga 404 quando OS não existe', async () => {
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      (osRepo.findOne as jest.Mock).mockResolvedValue(null);
+      await expect(service.findHistorico('nope')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });

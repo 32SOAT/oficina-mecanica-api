@@ -16,11 +16,14 @@ import {
   isValidBrazilianTaxId,
   normalizeTaxId,
 } from '../clientes/br-document.validator';
+import { DefaultPageSize } from '../querying/constants';
 import { PaginationService } from '../querying/pagination.service';
 import { OrdemServicoEntity } from './ordem-servico.entity';
 import { ItemOsServicoEntity } from './entities/item-os-servico.entity';
 import { ItemOsEstoqueEntity } from './entities/item-os-estoque.entity';
 import { CriarOrdemServicoDto } from './dtos/criar-ordem-servico.dto';
+import { FiltrosOrdemServicoDto } from './dtos/filtros-ordem-servico.dto';
+import { HistoricoStatusOsEntity } from './entities/historico-status-os.entity';
 import { StatusOrdemServico } from './state-machine/status-ordem-servico.enum';
 import {
   OsCriadaEvent,
@@ -370,5 +373,72 @@ export class OrdemServicoService {
     } finally {
       await qr.release();
     }
+  }
+
+  async findAll(filtros: FiltrosOrdemServicoDto) {
+    const page = Number(filtros.page ?? 1);
+    const take = Number(filtros.take ?? DefaultPageSize.ORDEM_SERVICO);
+    const offset = this.paginationService.calculateOffset(take, page);
+
+    const qb = this.osRepository
+      .createQueryBuilder('os')
+      .leftJoinAndSelect('os.cliente', 'cliente')
+      .leftJoinAndSelect('os.veiculo', 'veiculo');
+
+    if (filtros.status) {
+      qb.andWhere('os.status = :status', { status: filtros.status });
+    }
+    if (filtros.clienteId) {
+      qb.andWhere('os.cliente_id = :clienteId', {
+        clienteId: filtros.clienteId,
+      });
+    }
+    if (filtros.dataInicio) {
+      qb.andWhere('os.createdAt >= :dataInicio', {
+        dataInicio: filtros.dataInicio,
+      });
+    }
+    if (filtros.dataFim) {
+      qb.andWhere('os.createdAt <= :dataFim', { dataFim: filtros.dataFim });
+    }
+
+    qb.orderBy('os.createdAt', 'DESC').skip(offset).take(take);
+
+    const [data, count] = await qb.getManyAndCount();
+    const meta = this.paginationService.createMeta(take, page, count) ?? {
+      itemsPerPage: take,
+      totalItems: count,
+      currentPage: page,
+      totalPages: 0,
+      hasNextPage: false,
+      hasPreviousPage: page > 1,
+    };
+    return { data, meta };
+  }
+
+  async findOne(id: string): Promise<OrdemServicoEntity> {
+    const os = await this.osRepository.findOne({
+      where: { id },
+      relations: [
+        'cliente',
+        'veiculo',
+        'itensServico',
+        'itensServico.servico',
+        'itensPeca',
+        'itensPeca.peca',
+      ],
+    });
+    if (!os) {
+      throw new NotFoundException('Ordem de serviço não encontrada.');
+    }
+    return os;
+  }
+
+  async findHistorico(id: string): Promise<HistoricoStatusOsEntity[]> {
+    await this.findOne(id); // garante 404 se OS não existe
+    return this.dataSource.getRepository(HistoricoStatusOsEntity).find({
+      where: { os_id: id },
+      order: { createdAt: 'ASC' },
+    });
   }
 }
