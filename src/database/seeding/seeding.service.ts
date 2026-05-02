@@ -70,7 +70,6 @@ export class SeedingService {
     let createdClientes: ClienteEntity[] = [];
 
     await this.dataSource.transaction(async (manager) => {
-
       const clienteRepo = manager.getRepository(ClienteEntity);
 
       const existingClientes = await clienteRepo.find({

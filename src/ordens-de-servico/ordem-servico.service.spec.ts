@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { fake as fakeCpf } from 'validation-br/dist/cpf';
 import { Repository, DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -188,7 +189,6 @@ describe('OrdemServicoService', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.criada',
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         expect.objectContaining({ osId: expect.anything() }),
       );
       // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -263,6 +263,78 @@ describe('OrdemServicoService', () => {
           itensPeca: [],
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lança 400 quando CPF/CNPJ é inválido', async () => {
+      await expect(
+        service.criar({
+          documentoCliente: '00000000000',
+          veiculoId: 'vei-1',
+          itensServico: [{ servicoId: 1 }],
+          itensPeca: [],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lança 404 quando veículo não existe', async () => {
+      const cli = cliente();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) => {
+        if (E === ClienteEntity) return Promise.resolve(cli);
+        if (E === VeiculoEntity) return Promise.resolve(null);
+        return Promise.resolve(null);
+      });
+      await expect(
+        service.criar({
+          documentoCliente: cli.documento,
+          veiculoId: 'vei-x',
+          itensServico: [{ servicoId: 1 }],
+          itensPeca: [],
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('lança 404 quando serviço não existe', async () => {
+      const cli = cliente();
+      const vei = veiculo({ cliente_id: cli.id });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) => {
+        if (E === ClienteEntity) return Promise.resolve(cli);
+        if (E === VeiculoEntity) return Promise.resolve(vei);
+        if (E === ServicoEntity) return Promise.resolve(null);
+        return Promise.resolve(null);
+      });
+      await expect(
+        service.criar({
+          documentoCliente: cli.documento,
+          veiculoId: vei.id,
+          itensServico: [{ servicoId: 99 }],
+          itensPeca: [],
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('lança 404 quando peça não existe no estoque', async () => {
+      const cli = cliente();
+      const vei = veiculo({ cliente_id: cli.id });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) => {
+        if (E === ClienteEntity) return Promise.resolve(cli);
+        if (E === VeiculoEntity) return Promise.resolve(vei);
+        if (E === EstoqueEntity) return Promise.resolve(null);
+        return Promise.resolve(null);
+      });
+      await expect(
+        service.criar({
+          documentoCliente: cli.documento,
+          veiculoId: vei.id,
+          itensServico: [],
+          itensPeca: [{ estoqueId: 99, quantidade: 1 }],
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
     });
   });
 
@@ -382,6 +454,19 @@ describe('OrdemServicoService', () => {
         BadRequestException,
       );
     });
+
+    it('lança 404 quando OS não existe', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) =>
+        E === OrdemServicoEntity
+          ? Promise.resolve(null)
+          : Promise.resolve(null),
+      );
+      await expect(service.gerarOrcamento('os-x')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
   });
 
   describe('aprovarOrcamento', () => {
@@ -458,6 +543,19 @@ describe('OrdemServicoService', () => {
         BadRequestException,
       );
     });
+
+    it('lança 404 quando OS não existe', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) =>
+        E === OrdemServicoEntity
+          ? Promise.resolve(null)
+          : Promise.resolve(null),
+      );
+      await expect(service.aprovarOrcamento('os-x')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
   });
 
   describe('reprovarOrcamento', () => {
@@ -484,6 +582,19 @@ describe('OrdemServicoService', () => {
       await service.reprovarOrcamento('os-1');
       expect(os.status).toBe(S.Reprovada);
       expect(peca.quantidadeReservada).toBe(0); // 3 - 3
+    });
+
+    it('lança 404 quando OS não existe', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) =>
+        E === OrdemServicoEntity
+          ? Promise.resolve(null)
+          : Promise.resolve(null),
+      );
+      await expect(service.reprovarOrcamento('os-x')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
     });
   });
 
@@ -513,6 +624,19 @@ describe('OrdemServicoService', () => {
       expect(peca.quantidadeFisica).toBe(8); // 10 - 2
       expect(peca.quantidadeReservada).toBe(1); // 3 - 2
     });
+
+    it('lança 404 quando OS não existe', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) =>
+        E === OrdemServicoEntity
+          ? Promise.resolve(null)
+          : Promise.resolve(null),
+      );
+      await expect(service.iniciarExecucao('os-x')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
   });
 
   describe('findAll', () => {
@@ -527,7 +651,7 @@ describe('OrdemServicoService', () => {
       } as unknown as ReturnType<
         Repository<OrdemServicoEntity>['createQueryBuilder']
       >;
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
 
       const result = await service.findAll({
@@ -560,7 +684,7 @@ describe('OrdemServicoService', () => {
       } as unknown as ReturnType<
         Repository<OrdemServicoEntity>['createQueryBuilder']
       >;
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
 
       await service.findAll({
@@ -591,7 +715,7 @@ describe('OrdemServicoService', () => {
       } as unknown as ReturnType<
         Repository<OrdemServicoEntity>['createQueryBuilder']
       >;
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
 
       const result = await service.findAll({});
@@ -604,7 +728,7 @@ describe('OrdemServicoService', () => {
     it('retorna OS com relations carregados', async () => {
       const os = new OrdemServicoEntity();
       Object.assign(os, { id: 'os-1' });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       (osRepo.findOne as jest.Mock).mockResolvedValue(os);
 
       const result = await service.findOne('os-1');
@@ -626,7 +750,6 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança 404 quando não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       (osRepo.findOne as jest.Mock).mockResolvedValue(null);
       await expect(service.findOne('nope')).rejects.toThrow(NotFoundException);
     });
@@ -648,7 +771,7 @@ describe('OrdemServicoService', () => {
 
       const os = new OrdemServicoEntity();
       Object.assign(os, { id: 'os-1' });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       (osRepo.findOne as jest.Mock).mockResolvedValue(os);
 
       const result = await service.findHistorico('os-1');
@@ -660,7 +783,6 @@ describe('OrdemServicoService', () => {
     });
 
     it('propaga 404 quando OS não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       (osRepo.findOne as jest.Mock).mockResolvedValue(null);
       await expect(service.findHistorico('nope')).rejects.toThrow(
         NotFoundException,

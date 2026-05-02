@@ -15,9 +15,9 @@ describe('PersistirHistoricoListener', () => {
       create: jest.fn((data: unknown) => data) as unknown as jest.Mocked<
         Repository<HistoricoStatusOsEntity>
       >['create'],
-      save: jest.fn(async (x: unknown) => x) as unknown as jest.Mocked<
-        Repository<HistoricoStatusOsEntity>
-      >['save'],
+      save: jest.fn((x: unknown) =>
+        Promise.resolve(x),
+      ) as unknown as jest.Mocked<Repository<HistoricoStatusOsEntity>>['save'],
     };
     listener = new PersistirHistoricoListener(
       repo as unknown as Repository<HistoricoStatusOsEntity>,
