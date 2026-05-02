@@ -224,22 +224,7 @@ Para e2e com API e banco, garanta que o ambiente (variáveis e Postgres) esteja 
 
 ---
 
-## ⚡Resumo rápido
-
-
-| Objetivo         | npm (local)                                                  | Docker                                                                                |
-| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Instalar deps    | `npm install`                                                | (na build da imagem)                                                                  |
-| Build            | `npm run build`                                              | `docker compose build`                                                                |
-| Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
-| Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
-| Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
-| Seeding          | `curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`  | `docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`   |
-
-
----
-
-## Autenticação
+## 🔐 Autenticação
 
 A API utiliza **JWT** (JSON Web Token) para autenticação. O administrador envia email e senha no endpoint de login, recebe um token e o inclui no cabeçalho `Authorization: Bearer <token>` nas requisições protegidas.
 
@@ -300,3 +285,66 @@ curl -X PATCH http://localhost:3000/api/v1/auth/password \
 ### Swagger UI
 
 O Swagger UI disponível em `/api` possui autenticação Bearer habilitada. Clique no botão **Authorize** (ícone de cadeado) no topo da página e cole o token JWT para testar endpoints protegidos diretamente pela interface.
+
+---
+
+## 🔍 Análise de código com SonarQube
+
+O projeto utiliza o SonarQube para análise estática de código e cobertura de testes. Caso ainda não esteja rodando :
+
+```bash
+docker compose up -d sonarqube
+```
+
+Acesse o painel:
+
+```bash
+http://localhost:9000
+```
+
+Login padrão:
+
+- usuário: admin
+- senha: admin
+
+#### 🔹Rodar análise com Sonar NPM e NPX 
+
+A análise é feita em duas etapas separadas, lembre de substituir de colocar no arquivo sonar-project.properties o token gerado.
+
+1. Gerar cobertura de testes
+
+```bash
+npm run test:cov
+```
+
+1. Executar o Sonar Scanner (local)
+
+```bash
+npx sonar-scanner
+```
+
+#### 🔹Rodar o Sonar Scanner via Docker
+
+Alternativamente, você pode rodar o scanner sem instalar nada localmente, lembre de adicionar o token gerado onde está "SEU_TOKEN":
+
+```bash
+docker run --rm -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_LOGIN="SEU_TOKEN" -v ${PWD}:/usr/src sonarsource/sonar-scanner-cli
+```
+
+⚠️ No Windows/Mac, use host.docker.internal em vez de localhost para acessar o SonarQube rodando no Docker.
+
+---
+
+## ⚡Resumo rápido
+
+
+| Objetivo         | npm (local)                                                  | Docker                                                                                |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Instalar deps    | `npm install`                                                | (na build da imagem)                                                                  |
+| Build            | `npm run build`                                              | `docker compose build`                                                                |
+| Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
+| Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
+| Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
+| Seeding          | `curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`  | `docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`   |
+
+
