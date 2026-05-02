@@ -16,6 +16,7 @@ import {
   ApiBody,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ServicoService } from './servico.service';
 import { ServicoEntity } from './servico.entity';
@@ -28,6 +29,7 @@ import {
   ApiWrappedResponse,
 } from '../common/decorators/swagger-response.decorator';
 
+@ApiBearerAuth()
 @ApiTags('Serviços')
 @Controller('servicos')
 export class ServicoController {

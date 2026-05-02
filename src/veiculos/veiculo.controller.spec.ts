@@ -1,6 +1,10 @@
-import { HttpException } from '@nestjs/common';
+import { HttpException, UnauthorizedException } from '@nestjs/common';
 import { VeiculoController } from './veiculo.controller';
 import { VeiculoService } from './veiculo.service';
+import { JwtAuthGuard } from '../auth/auth.guard';
+import { IS_PUBLIC_KEY } from '../auth/public.decorator';
+import { JwtService } from '@nestjs/jwt';
+import { Reflector } from '@nestjs/core';
 
 type VeiculoServiceMock = jest.Mocked<
   Pick<
@@ -179,5 +183,66 @@ describe('VeiculoController', () => {
     veiculoService.remove.mockRejectedValue(error);
 
     await expect(controller.remove('missing-id')).rejects.toBe(error);
+  });
+
+  describe('authentication', () => {
+    let guard: JwtAuthGuard;
+    let jwtService: JwtService;
+    let reflector: Reflector;
+
+    beforeEach(() => {
+      jwtService = new JwtService({
+        secret: 'test-secret',
+        signOptions: { expiresIn: '1h' },
+      });
+      reflector = new Reflector();
+      guard = new JwtAuthGuard(jwtService, reflector);
+    });
+
+    const routeNames = ['create', 'findAll', 'findByPlaca', 'update', 'remove'];
+
+    const getHandler = (name: string) =>
+      Object.getOwnPropertyDescriptor(VeiculoController.prototype, name)!
+        .value as (...args: unknown[]) => unknown;
+
+    it('no route is marked as @Public()', () => {
+      for (const routeName of routeNames) {
+        const isPublic = reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+          getHandler(routeName),
+          VeiculoController,
+        ]);
+        expect(isPublic).not.toBe(true);
+      }
+    });
+
+    const createGuardContext = (headers: Record<string, string>) =>
+      ({
+        switchToHttp: () => ({
+          getRequest: () => ({ headers }),
+        }),
+        getHandler: () => getHandler(routeNames[0]),
+        getClass: () => VeiculoController,
+      }) as never;
+
+    it('blocks unauthenticated request', async () => {
+      const context = createGuardContext({});
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('allows authenticated request with valid token', async () => {
+      const token = jwtService.sign({
+        sub: 'user-id',
+        email: 'admin@test.com',
+        username: 'admin',
+      });
+      const context = createGuardContext({
+        authorization: `Bearer ${token}`,
+      });
+
+      const result = await guard.canActivate(context);
+      expect(result).toBe(true);
+    });
   });
 });

@@ -1,13 +1,19 @@
 import { Faker, pt_BR } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import { fake as fakeCpf } from 'validation-br/dist/cpf';
 import { ClienteEntity } from '../../clientes/cliente.entity';
 import { ServicoEntity } from '../../servicos/servico.entity';
 import { EstoqueEntity } from '../../estoque/estoque.entity';
+import { UserEntity } from '../../users/user.entity';
+
+const BCRYPT_ROUNDS = 10;
+const SEEDED_USER_PLAIN_PASSWORD = 'SeedPassword123!';
 
 const CLIENTES_TO_SEED = 5;
 const ESTOQUE_TO_SEED = 5;
+const USUARIOS_TO_SEED = 5;
 const faker = new Faker({ locale: [pt_BR] });
 const OFICINA_ITENS_ESTOQUE = [
   'Pastilha de freio dianteira',
@@ -57,7 +63,7 @@ type VeiculoSeedRow = {
 
 @Injectable()
 export class SeedingService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly dataSource: DataSource) { }
 
   async seed() {
     const stats = {
@@ -65,7 +71,20 @@ export class SeedingService {
       veiculos: 0,
       servicos: 0,
       estoque: 0,
+      usuarios: 0
     };
+
+    const userRepository: Repository<UserEntity> =
+      this.dataSource.getRepository(UserEntity);
+    const passwordHash = await bcrypt.hash(
+      SEEDED_USER_PLAIN_PASSWORD,
+      BCRYPT_ROUNDS,
+    );
+    const users = Array.from({ length: USUARIOS_TO_SEED }, () =>
+      userRepository.create(this.createFakeUser(passwordHash)),
+    );
+    const createdUsers = await userRepository.save(users);
+    stats.usuarios = createdUsers.length;
 
     let createdClientes: ClienteEntity[] = [];
 
@@ -174,6 +193,10 @@ export class SeedingService {
 
     return {
       message: 'Seeding concluído com sucesso',
+      users: {
+        count: stats.usuarios,
+        data: createdUsers,
+      },
       clientes: {
         count: stats.clientes,
         data: createdClientes,
@@ -212,6 +235,20 @@ export class SeedingService {
       modelo: m.modelos[sequence % m.modelos.length],
       ano: faker.number.int({ min: 2008, max: new Date().getFullYear() }),
       cliente_id: clienteId,
+    }
+  }
+
+  private createFakeUser(
+    passwordHash: string,
+  ): Pick<UserEntity, 'username' | 'email' | 'password'> {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const suffix = faker.string.alphanumeric(6).toLowerCase();
+
+    return {
+      username: `${faker.internet.userName({ firstName, lastName }).toLowerCase()}_${suffix}`,
+      email: `${this.normalize(firstName)}.${this.normalize(lastName)}.${suffix}@example.com`,
+      password: passwordHash,
     };
   }
 

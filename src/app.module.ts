@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { appConfig } from './config/app.config';
 import { type ConfigType, appConfigSchema } from './config/config.types';
 import { typeOrmConfig } from './config/database.config';
+import { jwtConfig } from './config/jwt.config';
 import { TypedConfigService } from './config/typed-config.service';
 import { ClienteEntity } from './clientes/cliente.entity';
 import { ClienteModule } from './clientes/cliente.module';
@@ -27,6 +28,7 @@ import { TransformResponseInterceptor } from './interceptors/transform-response.
 import { QueryingModule } from './querying/querying.module';
 import { SeedingModule } from './database/seeding/seeding.module';
 import { shouldEnableSeedingModule } from './database/seeding/seeding-environment';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -56,7 +58,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
       },
     }),
     ConfigModule.forRoot({
-      load: [appConfig, typeOrmConfig],
+      load: [appConfig, typeOrmConfig, jwtConfig],
       validationSchema: appConfigSchema,
       validationOptions: {
         abortEarly: true,
@@ -69,6 +71,7 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
     UserModule,
     VeiculoModule,
     OrdemServicoModule,
+    AuthModule,
     QueryingModule,
     ...(shouldEnableSeedingModule(process.env.NODE_ENV) ? [SeedingModule] : []),
   ],
@@ -85,4 +88,4 @@ import { shouldEnableSeedingModule } from './database/seeding/seeding-environmen
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
