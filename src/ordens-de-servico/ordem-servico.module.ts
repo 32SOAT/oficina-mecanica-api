@@ -14,6 +14,8 @@ import { OrdemServicoService } from './ordem-servico.service';
 import { PersistirHistoricoListener } from './events/listeners/persistir-historico.listener';
 import { OrdemServicoController } from './ordem-servico.controller';
 import { ConsultaOrdemServicoController } from './consulta-ordem-servico.controller';
+import { RelatorioService } from './relatorio.service';
+import { RelatorioController } from './relatorio.controller';
 
 @Module({
   imports: [
@@ -30,8 +32,16 @@ import { ConsultaOrdemServicoController } from './consulta-ordem-servico.control
     EventEmitterModule.forRoot(),
     QueryingModule,
   ],
-  controllers: [ConsultaOrdemServicoController, OrdemServicoController],
-  providers: [OrdemServicoService, PersistirHistoricoListener],
+  controllers: [
+    ConsultaOrdemServicoController,
+    OrdemServicoController,
+    RelatorioController,
+  ],
+  providers: [
+    OrdemServicoService,
+    RelatorioService,
+    PersistirHistoricoListener,
+  ],
   exports: [OrdemServicoService],
 })
 export class OrdemServicoModule {}
