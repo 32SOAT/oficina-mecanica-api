@@ -18,6 +18,11 @@ import { UserEntity } from './users/user.entity';
 import { UserModule } from './users/user.module';
 import { VeiculoEntity } from './veiculos/veiculo.entity';
 import { VeiculoModule } from './veiculos/veiculo.module';
+import { OrdemServicoEntity } from './ordens-de-servico/ordem-servico.entity';
+import { ItemOsServicoEntity } from './ordens-de-servico/entities/item-os-servico.entity';
+import { ItemOsEstoqueEntity } from './ordens-de-servico/entities/item-os-estoque.entity';
+import { HistoricoStatusOsEntity } from './ordens-de-servico/entities/historico-status-os.entity';
+import { OrdemServicoModule } from './ordens-de-servico/ordem-servico.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformResponseInterceptor } from './interceptors/transform-response.interceptor';
 import { QueryingModule } from './querying/querying.module';
@@ -44,6 +49,10 @@ import { AuthModule } from './auth/auth.module';
             VeiculoEntity,
             EstoqueEntity,
             UserEntity,
+            OrdemServicoEntity,
+            ItemOsServicoEntity,
+            ItemOsEstoqueEntity,
+            HistoricoStatusOsEntity,
           ],
         };
       },
@@ -61,6 +70,7 @@ import { AuthModule } from './auth/auth.module';
     ServicoModule,
     UserModule,
     VeiculoModule,
+    OrdemServicoModule,
     AuthModule,
     QueryingModule,
     ...(shouldEnableSeedingModule(process.env.NODE_ENV) ? [SeedingModule] : []),
@@ -78,4 +88,4 @@ import { AuthModule } from './auth/auth.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}
