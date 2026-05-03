@@ -63,7 +63,7 @@ type VeiculoSeedRow = {
 
 @Injectable()
 export class SeedingService {
-  constructor(private readonly dataSource: DataSource) { }
+  constructor(private readonly dataSource: DataSource) {}
 
   async seed() {
     const stats = {
@@ -71,7 +71,7 @@ export class SeedingService {
       veiculos: 0,
       servicos: 0,
       estoque: 0,
-      usuarios: 0
+      usuarios: 0,
     };
 
     const userRepository: Repository<UserEntity> =
@@ -89,7 +89,6 @@ export class SeedingService {
     let createdClientes: ClienteEntity[] = [];
 
     await this.dataSource.transaction(async (manager) => {
-
       const clienteRepo = manager.getRepository(ClienteEntity);
 
       const existingClientes = await clienteRepo.find({
@@ -236,7 +235,7 @@ export class SeedingService {
       modelo: m.modelos[sequence % m.modelos.length],
       ano: faker.number.int({ min: 2008, max: new Date().getFullYear() }),
       cliente_id: clienteId,
-    }
+    };
   }
 
   private createFakeUser(

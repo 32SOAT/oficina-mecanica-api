@@ -8,7 +8,7 @@ import { Public } from '../../auth/public.decorator';
 @ApiTags('Seeding')
 @Controller('seeding')
 export class SeedingController {
-  constructor(private readonly seedingService: SeedingService) { }
+  constructor(private readonly seedingService: SeedingService) {}
 
   @Public()
   @Post()

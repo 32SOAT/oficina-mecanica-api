@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { ClienteEntity } from '../../clientes/cliente.entity';
 import { ServicoEntity } from '../../servicos/servico.entity';
 import { EstoqueEntity } from '../../estoque/estoque.entity';
+import { UserEntity } from '../../users/user.entity';
 import { SeedingService } from './seeding.service';
 
 describe('SeedingService', () => {
@@ -19,50 +20,70 @@ describe('SeedingService', () => {
     const existingEstoque = options?.existingEstoque ?? [];
     const existingVeiculos = options?.existingVeiculos ?? [];
 
+    const userRepository = {
+      create: jest.fn((payload: unknown) => payload),
+      save: jest.fn((data: unknown[]) =>
+        Promise.resolve(
+          data.map((item, i) => ({
+            id: `user-${i + 1}`,
+            ...(item as object),
+          })),
+        ),
+      ),
+    };
+
     const clienteRepository = {
       find: jest.fn().mockResolvedValue(existingClientes),
-      create: jest.fn((payload) => payload),
-      save: jest.fn(async (data) =>
-        data.map((item, i) => ({
-          id: `cliente-${i + 1}`,
-          ...item,
-        })),
+      create: jest.fn((payload: unknown) => payload),
+      save: jest.fn((data: unknown[]) =>
+        Promise.resolve(
+          data.map((item, i) => ({
+            id: `cliente-${i + 1}`,
+            ...(item as object),
+          })),
+        ),
       ),
     };
 
     const servicoRepository = {
       find: jest.fn().mockResolvedValue(existingServicos),
-      create: jest.fn((payload) => payload),
-      save: jest.fn(async (data) =>
-        data.map((item, i) => ({
-          id: `servico-${i + 1}`,
-          ...item,
-        })),
+      create: jest.fn((payload: unknown) => payload),
+      save: jest.fn((data: unknown[]) =>
+        Promise.resolve(
+          data.map((item, i) => ({
+            id: `servico-${i + 1}`,
+            ...(item as object),
+          })),
+        ),
       ),
     };
 
     const estoqueRepository = {
       find: jest.fn().mockResolvedValue(existingEstoque),
-      create: jest.fn((payload) => payload),
-      save: jest.fn(async (data) =>
-        data.map((item, i) => ({
-          id: `estoque-${i + 1}`,
-          ...item,
-        })),
+      create: jest.fn((payload: unknown) => payload),
+      save: jest.fn((data: unknown[]) =>
+        Promise.resolve(
+          data.map((item, i) => ({
+            id: `estoque-${i + 1}`,
+            ...(item as object),
+          })),
+        ),
       ),
     };
 
     const veiculoRepository = {
-      save: jest.fn(async (data) =>
-        data.map((item, i) => ({
-          id: `veiculo-${i + 1}`,
-          ...item,
-        })),
+      save: jest.fn((data: unknown[]) =>
+        Promise.resolve(
+          data.map((item, i) => ({
+            id: `veiculo-${i + 1}`,
+            ...(item as object),
+          })),
+        ),
       ),
     };
 
     const manager = {
-      getRepository: jest.fn((entity) => {
+      getRepository: jest.fn((entity: unknown) => {
         if (entity === ClienteEntity) return clienteRepository;
         if (entity === ServicoEntity) return servicoRepository;
         if (entity === EstoqueEntity) return estoqueRepository;
@@ -74,13 +95,19 @@ describe('SeedingService', () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         from: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn(async () => existingVeiculos),
+        getRawMany: jest.fn(() => Promise.resolve(existingVeiculos)),
       })),
     };
 
     dataSource = {
-      transaction: jest.fn(async (cb) => cb(manager as any)),
-    } as any;
+      getRepository: jest.fn((entity: unknown) => {
+        if (entity === UserEntity) return userRepository;
+        return undefined;
+      }),
+      transaction: jest.fn((cb: (manager: typeof manager) => Promise<void>) =>
+        cb(manager),
+      ),
+    } as unknown as jest.Mocked<DataSource>;
 
     service = new SeedingService(dataSource);
   };
@@ -145,8 +172,12 @@ describe('SeedingService', () => {
   it('normalize and placa generator works', () => {
     setup();
 
-    const normalized = (service as any).normalize('Óleo de Motor');
-    const placa = (service as any).generatePlaca(7);
+    const svc = service as unknown as {
+      normalize: (v: string) => string;
+      generatePlaca: (n: number) => string;
+    };
+    const normalized = svc.normalize('Óleo de Motor');
+    const placa = svc.generatePlaca(7);
 
     expect(normalized).toBe('oleodemotor');
     expect(placa).toMatch(/^[A-Z]{3}[0-9][A-Z][0-9]{3}$/);
