@@ -325,10 +325,10 @@ npx sonar-scanner
 
 #### 🔹Rodar o Sonar Scanner via Docker
 
-Alternativamente, você pode rodar o scanner sem instalar nada localmente, lembre de adicionar o token gerado no comando e no arquivo [sonar-project.properties](http://sonar-project.properties) onde está "SEU_TOKEN" :
+Alternativamente, você pode rodar o scanner sem instalar nada localmente, lembre de adicionar o token gerado onde está "SEU_TOKEN" :
 
 ```bash
-docker run --rm -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_LOGIN="SEU_TOKEN" -v ${PWD}:/usr/src sonarsource/sonar-scanner-cli
+docker run --rm -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_TOKEN="SEU_TOKEN" -v ${PWD}:/usr/src sonarsource/sonar-scanner-cli
 ```
 
 ⚠️ No Windows/Mac, use host.docker.internal em vez de localhost para acessar o SonarQube rodando no Docker.

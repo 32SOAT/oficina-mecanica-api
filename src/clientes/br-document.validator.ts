@@ -14,7 +14,7 @@ export function normalizeTaxId(raw: string): string {
   try {
     return normalizeCpf(raw);
   } catch {
-    return String(raw).replace(/\D/g, '');
+    return String(raw).replaceAll(/\D/g, '');
   }
 }
 

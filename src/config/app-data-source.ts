@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import * as path from 'path';
+import * as path from 'node:path';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { getDatabaseOptions } from './database.config';
 
