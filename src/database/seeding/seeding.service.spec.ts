@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { ClienteEntity } from '../../clientes/cliente.entity';
 import { ServicoEntity } from '../../servicos/servico.entity';
 import { EstoqueEntity } from '../../estoque/estoque.entity';
+import { UserEntity } from '../../users/user.entity';
 import { SeedingService } from './seeding.service';
 
 describe('SeedingService', () => {
@@ -61,6 +62,16 @@ describe('SeedingService', () => {
       ),
     };
 
+    const userRepository = {
+      create: jest.fn((payload) => payload),
+      save: jest.fn(async (data) =>
+        data.map((item, i) => ({
+          id: `user-${i + 1}`,
+          ...item,
+        })),
+      ),
+    };
+
     const manager = {
       getRepository: jest.fn((entity) => {
         if (entity === ClienteEntity) return clienteRepository;
@@ -79,6 +90,10 @@ describe('SeedingService', () => {
     };
 
     dataSource = {
+      getRepository: jest.fn((entity) => {
+        if (entity === UserEntity) return userRepository;
+        return undefined;
+      }),
       transaction: jest.fn(async (cb) => cb(manager as any)),
     } as any;
 
@@ -95,6 +110,7 @@ describe('SeedingService', () => {
 
     const result = await service.seed();
 
+    expect(result.users.count).toBe(5);
     expect(result.clientes.count).toBe(5);
     expect(result.veiculos.count).toBe(5);
     expect(result.servicos.count).toBe(5);
@@ -136,6 +152,7 @@ describe('SeedingService', () => {
 
     const result = await service.seed();
 
+    expect(result.users.count).toBe(5);
     expect(result.clientes.count).toBe(0);
     expect(result.servicos.count).toBe(0);
     expect(result.estoque.count).toBe(0);

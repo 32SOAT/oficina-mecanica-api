@@ -51,6 +51,7 @@ describe('Config files', () => {
       POSTGRES_PASSWORD: 'postgres',
       POSTGRES_DB: 'oficina',
       POSTGRES_SYNC: 1,
+      JWT_SECRET: 'test-jwt-secret-for-validation',
     });
 
     expect(error).toBeUndefined();
