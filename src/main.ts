@@ -8,6 +8,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.getHttpAdapter().getInstance().disable('x-powered-by');
+
   const configService: TypedConfigService = app.get(ConfigService);
   const port = configService.get<AppConfig>('app')?.port;
 
