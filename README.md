@@ -335,6 +335,30 @@ docker run --rm -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_LO
 
 ---
 
+## 🔍 Análise de segurança com OWASP ZAP
+
+O projeto utiliza o OWASP ZAP para análise dinâmica de segurança (DAST), identificando vulnerabilidades como headers inseguros, falhas de autenticação, possíveis injeções (SQL/XSS), exposição de endpoints, etc.
+
+#### Pré-requisito
+
+- A API deve estar rodando localmente (http://localhost:3000), e como a API utiliza autenticação, é necessário obter um token antes do scan. Copie o token retornado e executa análise completa utilizando spider + ataques ativos utilizando o seguinte comando (🔁 substitua SEU_TOKEN pelo JWT obtido no login):
+
+
+```bash
+docker run --rm -t zaproxy/zap-stable zap-full-scan.py -t http://host.docker.internal:3000 -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN"
+```
+
+- Gerar relatório HTML na raiz do projeto :
+
+```bash
+
+docker run --rm -t -v ${PWD}:/zap/wrk zaproxy/zap-stable zap-full-scan.py -t http://host.docker.internal:3000 -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN" -r report.html
+```
+
+
+
+---
+
 ## ⚡Resumo rápido
 
 
