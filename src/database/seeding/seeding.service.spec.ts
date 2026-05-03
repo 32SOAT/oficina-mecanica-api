@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { ClienteEntity } from '../../clientes/cliente.entity';
 import { ServicoEntity } from '../../servicos/servico.entity';
 import { EstoqueEntity } from '../../estoque/estoque.entity';
+import { UserEntity } from '../../users/user.entity';
 import { SeedingService } from './seeding.service';
 
 describe('SeedingService', () => {
@@ -18,6 +19,18 @@ describe('SeedingService', () => {
     const existingServicos = options?.existingServicos ?? [];
     const existingEstoque = options?.existingEstoque ?? [];
     const existingVeiculos = options?.existingVeiculos ?? [];
+
+    const userRepository = {
+      create: jest.fn((payload: unknown) => payload),
+      save: jest.fn((data: unknown[]) =>
+        Promise.resolve(
+          data.map((item, i) => ({
+            id: `user-${i + 1}`,
+            ...(item as object),
+          })),
+        ),
+      ),
+    };
 
     const clienteRepository = {
       find: jest.fn().mockResolvedValue(existingClientes),
@@ -87,6 +100,10 @@ describe('SeedingService', () => {
     };
 
     dataSource = {
+      getRepository: jest.fn((entity: unknown) => {
+        if (entity === UserEntity) return userRepository;
+        return undefined;
+      }),
       transaction: jest.fn((cb: (manager: typeof manager) => Promise<void>) =>
         cb(manager),
       ),

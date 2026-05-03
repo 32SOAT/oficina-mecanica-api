@@ -17,6 +17,7 @@ export class StatusAlteradoEvent {
     public readonly osId: string,
     public readonly statusAnterior: StatusOrdemServico | null,
     public readonly statusNovo: StatusOrdemServico,
+    public readonly usuarioId: string | null,
     public readonly em: Date = new Date(),
   ) {}
 }

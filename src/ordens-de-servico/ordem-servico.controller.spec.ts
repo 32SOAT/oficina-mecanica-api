@@ -2,6 +2,11 @@
 import { OrdemServicoController } from './ordem-servico.controller';
 import { OrdemServicoService } from './ordem-servico.service';
 import { StatusOrdemServico as S } from './state-machine/status-ordem-servico.enum';
+import { type AuthenticatedRequest } from '../auth/authenticated-request.interface';
+
+const mockReq = {
+  user: { sub: 'usuario-1', email: 'a@b.c', username: 'admin' },
+} as unknown as AuthenticatedRequest;
 
 describe('OrdemServicoController', () => {
   let controller: OrdemServicoController;
@@ -34,8 +39,8 @@ describe('OrdemServicoController', () => {
       itensServico: [],
       itensPeca: [{ estoqueId: 1, quantidade: 1 }],
     };
-    const result = await controller.criar(dto);
-    expect(service.criar).toHaveBeenCalledWith(dto);
+    const result = await controller.criar(mockReq, dto);
+    expect(service.criar).toHaveBeenCalledWith(dto, 'usuario-1');
     expect(result).toEqual({ id: 'os-1' });
   });
 
@@ -66,17 +71,24 @@ describe('OrdemServicoController', () => {
     ['finalizar'] as const,
     ['entregar'] as const,
     ['cancelar'] as const,
-  ])('endpoint %s delega ao service', async (method) => {
+  ])('endpoint %s delega ao service com usuarioId', async (method) => {
     (service[method] as jest.Mock).mockResolvedValue({});
     await (
-      controller as unknown as Record<string, (id: string) => Promise<unknown>>
-    )[method]('os-1');
-    expect(service[method]).toHaveBeenCalledWith('os-1');
+      controller as unknown as Record<
+        string,
+        (req: AuthenticatedRequest, id: string) => Promise<unknown>
+      >
+    )[method](mockReq, 'os-1');
+    expect(service[method]).toHaveBeenCalledWith('os-1', 'usuario-1');
   });
 
-  it('POST avancar-status delega novoStatus', async () => {
+  it('POST avancar-status delega novoStatus com usuarioId', async () => {
     service.avancarStatus.mockResolvedValue({} as never);
-    await controller.avancar('os-1', { novoStatus: S.Entregue });
-    expect(service.avancarStatus).toHaveBeenCalledWith('os-1', S.Entregue);
+    await controller.avancar(mockReq, 'os-1', { novoStatus: S.Entregue });
+    expect(service.avancarStatus).toHaveBeenCalledWith(
+      'os-1',
+      S.Entregue,
+      'usuario-1',
+    );
   });
 });

@@ -195,6 +195,38 @@ describe('OrdemServicoService', () => {
       expect(emitter.emit).toHaveBeenCalledTimes(2);
     });
 
+    it('propaga usuarioId para o StatusAlteradoEvent', async () => {
+      const cli = cliente();
+      const vei = veiculo({ cliente_id: cli.id });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) => {
+        if (E === ClienteEntity) return Promise.resolve(cli);
+        if (E === VeiculoEntity) return Promise.resolve(vei);
+        if (E === ServicoEntity) return Promise.resolve(servico());
+        return Promise.resolve(null);
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.save.mockImplementation((_E: unknown, x: unknown) =>
+        Promise.resolve({ ...(x as object), id: 'os-saved-id' }),
+      );
+
+      await service.criar(
+        {
+          documentoCliente: cli.documento,
+          veiculoId: vei.id,
+          itensServico: [{ servicoId: 1 }],
+          itensPeca: [],
+        },
+        'usuario-x',
+      );
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(emitter.emit).toHaveBeenCalledWith(
+        'os.status.alterado',
+        expect.objectContaining({ usuarioId: 'usuario-x' }),
+      );
+    });
+
     it('lança 404 quando cliente não existe', async () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>

@@ -1,11 +1,27 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  INestApplication,
+  ValidationPipe,
+} from '@nestjs/common';
+import { APP_GUARD, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { OrdemServicoController } from '../src/ordens-de-servico/ordem-servico.controller';
 import { ConsultaOrdemServicoController } from '../src/ordens-de-servico/consulta-ordem-servico.controller';
 import { OrdemServicoService } from '../src/ordens-de-servico/ordem-servico.service';
 import { StatusOrdemServico as S } from '../src/ordens-de-servico/state-machine/status-ordem-servico.enum';
+
+class FakeJwtAuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const req = context
+      .switchToHttp()
+      .getRequest<{ user: { sub: string; email: string; username: string } }>();
+    req.user = { sub: 'e2e-user', email: 'e2e@test', username: 'e2e' };
+    return true;
+  }
+}
 
 describe('Ordens de Serviço (e2e)', () => {
   let app: INestApplication;
@@ -28,7 +44,11 @@ describe('Ordens de Serviço (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
       controllers: [OrdemServicoController, ConsultaOrdemServicoController],
-      providers: [{ provide: OrdemServicoService, useValue: serviceMock }],
+      providers: [
+        { provide: OrdemServicoService, useValue: serviceMock },
+        Reflector,
+        { provide: APP_GUARD, useClass: FakeJwtAuthGuard },
+      ],
     }).compile();
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
@@ -56,7 +76,10 @@ describe('Ordens de Serviço (e2e)', () => {
         itensPeca: [],
       });
     expect(res.status).toBe(201);
-    expect(serviceMock.criar).toHaveBeenCalled();
+    expect(serviceMock.criar).toHaveBeenCalledWith(
+      expect.objectContaining({ documentoCliente: '12345678901' }),
+      'e2e-user',
+    );
   });
 
   it('POST /ordens responde 400 quando o body é inválido (DTO falha)', async () => {
@@ -104,6 +127,7 @@ describe('Ordens de Serviço (e2e)', () => {
     expect(res.status).toBe(201);
     expect(serviceMock.aprovarOrcamento).toHaveBeenCalledWith(
       'aaaa1111-1111-1111-1111-111111111111',
+      'e2e-user',
     );
   });
 

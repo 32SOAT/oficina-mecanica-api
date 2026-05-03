@@ -48,7 +48,10 @@ export class OrdemServicoService {
     private readonly paginationService: PaginationService,
   ) {}
 
-  async criar(dto: CriarOrdemServicoDto): Promise<OrdemServicoEntity> {
+  async criar(
+    dto: CriarOrdemServicoDto,
+    usuarioId?: string | null,
+  ): Promise<OrdemServicoEntity> {
     const totalItens =
       (dto.itensServico?.length ?? 0) + (dto.itensPeca?.length ?? 0);
     if (totalItens === 0) {
@@ -143,7 +146,7 @@ export class OrdemServicoService {
 
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(saved.id, null, StatusOrdemServico.Recebida),
+        new StatusAlteradoEvent(saved.id, null, StatusOrdemServico.Recebida, usuarioId ?? null),
       );
       this.eventEmitter.emit(OsCriadaEventName, new OsCriadaEvent(saved.id));
 
@@ -160,6 +163,7 @@ export class OrdemServicoService {
   private async transicionar(
     osId: string,
     para: StatusOrdemServico,
+    usuarioId?: string | null,
   ): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
@@ -177,7 +181,7 @@ export class OrdemServicoService {
       await qr.commitTransaction();
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(os.id, anterior, novo),
+        new StatusAlteradoEvent(os.id, anterior, novo, usuarioId ?? null),
       );
       return os;
     } catch (err) {
@@ -188,30 +192,31 @@ export class OrdemServicoService {
     }
   }
 
-  iniciarDiagnostico(id: string): Promise<OrdemServicoEntity> {
-    return this.transicionar(id, StatusOrdemServico.EmDiagnostico);
+  iniciarDiagnostico(id: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, StatusOrdemServico.EmDiagnostico, usuarioId);
   }
 
-  finalizar(id: string): Promise<OrdemServicoEntity> {
-    return this.transicionar(id, StatusOrdemServico.Finalizada);
+  finalizar(id: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, StatusOrdemServico.Finalizada, usuarioId);
   }
 
-  entregar(id: string): Promise<OrdemServicoEntity> {
-    return this.transicionar(id, StatusOrdemServico.Entregue);
+  entregar(id: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, StatusOrdemServico.Entregue, usuarioId);
   }
 
-  cancelar(id: string): Promise<OrdemServicoEntity> {
-    return this.transicionar(id, StatusOrdemServico.Cancelada);
+  cancelar(id: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+    return this.transicionar(id, StatusOrdemServico.Cancelada, usuarioId);
   }
 
   avancarStatus(
     id: string,
     novo: StatusOrdemServico,
+    usuarioId?: string | null,
   ): Promise<OrdemServicoEntity> {
-    return this.transicionar(id, novo);
+    return this.transicionar(id, novo, usuarioId);
   }
 
-  async gerarOrcamento(osId: string): Promise<OrdemServicoEntity> {
+  async gerarOrcamento(osId: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
     await qr.startTransaction();
@@ -231,7 +236,7 @@ export class OrdemServicoService {
       await qr.commitTransaction();
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(os.id, anterior, novo),
+        new StatusAlteradoEvent(os.id, anterior, novo, usuarioId ?? null),
       );
       return os;
     } catch (err) {
@@ -242,7 +247,7 @@ export class OrdemServicoService {
     }
   }
 
-  async aprovarOrcamento(osId: string): Promise<OrdemServicoEntity> {
+  async aprovarOrcamento(osId: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
     await qr.startTransaction();
@@ -263,11 +268,11 @@ export class OrdemServicoService {
       await qr.commitTransaction();
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(os.id, t1.anterior, t1.novo),
+        new StatusAlteradoEvent(os.id, t1.anterior, t1.novo, usuarioId ?? null),
       );
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(os.id, t2.anterior, t2.novo),
+        new StatusAlteradoEvent(os.id, t2.anterior, t2.novo, usuarioId ?? null),
       );
       this.eventEmitter.emit(
         OrcamentoAprovadoEventName,
@@ -282,7 +287,7 @@ export class OrdemServicoService {
     }
   }
 
-  async reprovarOrcamento(osId: string): Promise<OrdemServicoEntity> {
+  async reprovarOrcamento(osId: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
     await qr.startTransaction();
@@ -315,7 +320,7 @@ export class OrdemServicoService {
       await qr.commitTransaction();
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(os.id, anterior, novo),
+        new StatusAlteradoEvent(os.id, anterior, novo, usuarioId ?? null),
       );
       this.eventEmitter.emit(
         OrcamentoReprovadoEventName,
@@ -330,7 +335,7 @@ export class OrdemServicoService {
     }
   }
 
-  async iniciarExecucao(osId: string): Promise<OrdemServicoEntity> {
+  async iniciarExecucao(osId: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
     await qr.startTransaction();
@@ -360,7 +365,7 @@ export class OrdemServicoService {
       await qr.commitTransaction();
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(os.id, anterior, novo),
+        new StatusAlteradoEvent(os.id, anterior, novo, usuarioId ?? null),
       );
       this.eventEmitter.emit(
         OsEmExecucaoEventName,

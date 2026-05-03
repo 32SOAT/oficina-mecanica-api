@@ -26,7 +26,12 @@ describe('PersistirHistoricoListener', () => {
 
   it('grava status_anterior, status_novo e os_id corretos', async () => {
     await listener.handle(
-      new StatusAlteradoEvent('os-1', S.EmDiagnostico, S.AguardandoAprovacao),
+      new StatusAlteradoEvent(
+        'os-1',
+        S.EmDiagnostico,
+        S.AguardandoAprovacao,
+        null,
+      ),
     );
 
     expect(repo.create).toHaveBeenCalledWith(
@@ -40,7 +45,9 @@ describe('PersistirHistoricoListener', () => {
   });
 
   it('aceita statusAnterior=null (criação inicial)', async () => {
-    await listener.handle(new StatusAlteradoEvent('os-2', null, S.Recebida));
+    await listener.handle(
+      new StatusAlteradoEvent('os-2', null, S.Recebida, null),
+    );
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         statusAnterior: null,
@@ -49,9 +56,23 @@ describe('PersistirHistoricoListener', () => {
     );
   });
 
-  it('grava usuarioId como null no MVP (sem auth ainda)', async () => {
+  it('grava usuarioId vindo do evento quando fornecido', async () => {
     await listener.handle(
-      new StatusAlteradoEvent('os-3', S.Aprovada, S.AguardandoServico),
+      new StatusAlteradoEvent(
+        'os-3',
+        S.Aprovada,
+        S.AguardandoServico,
+        'usuario-uuid-123',
+      ),
+    );
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ usuarioId: 'usuario-uuid-123' }),
+    );
+  });
+
+  it('grava usuarioId null quando evento não tem usuário', async () => {
+    await listener.handle(
+      new StatusAlteradoEvent('os-4', null, S.Recebida, null),
     );
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({ usuarioId: null }),

@@ -2,12 +2,14 @@ import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OrdemServicoService } from './ordem-servico.service';
 import { StatusPublicoResponse } from './dtos/status-publico.response';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('Ordens de Serviço (público)')
 @Controller('ordens')
 export class ConsultaOrdemServicoController {
   constructor(private readonly service: OrdemServicoService) {}
 
+  @Public()
   @Get(':id/status')
   @ApiOperation({
     summary: 'Consulta pública do status da OS (sem autenticação)',

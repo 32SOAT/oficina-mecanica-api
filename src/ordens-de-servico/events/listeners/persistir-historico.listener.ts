@@ -21,7 +21,7 @@ export class PersistirHistoricoListener {
       os_id: event.osId,
       statusAnterior: event.statusAnterior,
       statusNovo: event.statusNovo,
-      usuarioId: null, // futuro: ler do contexto JWT
+      usuarioId: event.usuarioId,
     });
     await this.historicoRepository.save(linha);
   }

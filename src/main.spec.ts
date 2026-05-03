@@ -35,6 +35,9 @@ describe('main bootstrap', () => {
         setVersion() {
           return this;
         }
+        addBearerAuth() {
+          return this;
+        }
         build() {
           return {};
         }

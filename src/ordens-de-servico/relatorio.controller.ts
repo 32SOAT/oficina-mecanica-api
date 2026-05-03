@@ -1,5 +1,10 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOperation, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiPropertyOptional,
+  ApiTags,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { IsDateString, IsOptional } from 'class-validator';
 import { RelatorioService } from './relatorio.service';
 
@@ -15,6 +20,7 @@ class JanelaQuery {
   dataFim?: string;
 }
 
+@ApiBearerAuth()
 @ApiTags('Relatórios')
 @Controller('relatorios')
 export class RelatorioController {
