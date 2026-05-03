@@ -32,7 +32,7 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authHeader = request.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith('Bearer ')) {
       throw new UnauthorizedException('Token não fornecido.');
     }
 
