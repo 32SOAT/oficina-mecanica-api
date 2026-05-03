@@ -307,7 +307,7 @@ Login padrão:
 - usuário: admin
 - senha: admin
 
-#### 🔹Rodar análise com Sonar NPM e NPX 
+#### 🔹Rodar análise com Sonar NPM e NPX
 
 A análise é feita em duas etapas separadas, lembre de substituir de colocar no arquivo sonar-project.properties o token gerado.
 
@@ -325,7 +325,7 @@ npx sonar-scanner
 
 #### 🔹Rodar o Sonar Scanner via Docker
 
-Alternativamente, você pode rodar o scanner sem instalar nada localmente, lembre de adicionar o token gerado onde está "SEU_TOKEN":
+Alternativamente, você pode rodar o scanner sem instalar nada localmente, lembre de adicionar o token gerado no comando e no arquivo [sonar-project.properties](http://sonar-project.properties) onde está "SEU_TOKEN" :
 
 ```bash
 docker run --rm -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_LOGIN="SEU_TOKEN" -v ${PWD}:/usr/src sonarsource/sonar-scanner-cli
@@ -341,8 +341,7 @@ O projeto utiliza o OWASP ZAP para análise dinâmica de segurança (DAST), iden
 
 #### Pré-requisito
 
-- A API deve estar rodando localmente (http://localhost:3000), e como a API utiliza autenticação, é necessário obter um token antes do scan. Copie o token retornado e executa análise completa utilizando spider + ataques ativos utilizando o seguinte comando (🔁 substitua SEU_TOKEN pelo JWT obtido no login):
-
+- A API deve estar rodando localmente ([http://localhost:3000](http://localhost:3000)), e como a API utiliza autenticação, é necessário obter um token antes do scan. Copie o token retornado e executa análise completa utilizando spider + ataques ativos utilizando o seguinte comando (🔁 substitua SEU_TOKEN pelo JWT obtido no login):
 
 ```bash
 docker run --rm -t zaproxy/zap-stable zap-full-scan.py -t http://host.docker.internal:3000 -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN"
@@ -355,7 +354,7 @@ docker run --rm -t zaproxy/zap-stable zap-full-scan.py -t http://host.docker.int
 docker run --rm -t -v ${PWD}:/zap/wrk zaproxy/zap-stable zap-full-scan.py -t http://host.docker.internal:3000 -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN" -r report.html
 ```
 
-
+⚠️ No Windows/Mac, use host.docker.internal em vez de localhost para acessar o SonarQube rodando no Docker.
 
 ---
 
