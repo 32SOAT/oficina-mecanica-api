@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  IsUUID,
   MaxLength,
   MinLength,
   ValidateNested,
@@ -43,9 +42,14 @@ export class CriarOrdemServicoDto {
   @MaxLength(14)
   documentoCliente: string;
 
-  @ApiProperty({ description: 'ID do veículo', example: 'uuid-string' })
-  @IsUUID()
-  veiculoId: string;
+  @ApiProperty({
+    description:
+      'Placa do veículo (formato antigo AAA1234 ou Mercosul AAA1B23)',
+    example: 'ABC1D23',
+  })
+  @IsNotEmpty({ message: 'Placa é obrigatória.' })
+  @IsString()
+  placa: string;
 
   @ApiProperty({
     description: 'Observação livre sobre a OS',

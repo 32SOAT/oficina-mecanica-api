@@ -71,7 +71,7 @@ describe('Ordens de Serviço (e2e)', () => {
       .post('/ordens')
       .send({
         documentoCliente: '12345678901',
-        veiculoId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+        placa: 'ABC1D23',
         itensServico: [{ servicoId: 1 }],
         itensPeca: [],
       });
@@ -85,7 +85,7 @@ describe('Ordens de Serviço (e2e)', () => {
   it('POST /ordens responde 400 quando o body é inválido (DTO falha)', async () => {
     const res = await request(app.getHttpServer()).post('/ordens').send({
       documentoCliente: '12', // muito curto
-      veiculoId: 'not-a-uuid',
+      placa: '',
     });
     expect(res.status).toBe(400);
     expect(serviceMock.criar).not.toHaveBeenCalled();

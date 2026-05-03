@@ -168,7 +168,7 @@ describe('OrdemServicoService', () => {
 
       const result = await service.criar({
         documentoCliente: cli.documento,
-        veiculoId: vei.id,
+        placa: vei.placa,
         observacao: 'teste',
         itensServico: [{ servicoId: 1 }],
         itensPeca: [{ estoqueId: 7, quantidade: 2 }],
@@ -213,7 +213,7 @@ describe('OrdemServicoService', () => {
       await service.criar(
         {
           documentoCliente: cli.documento,
-          veiculoId: vei.id,
+          placa: vei.placa,
           itensServico: [{ servicoId: 1 }],
           itensPeca: [],
         },
@@ -235,7 +235,7 @@ describe('OrdemServicoService', () => {
       await expect(
         service.criar({
           documentoCliente: fakeCpf(false),
-          veiculoId: 'vei-1',
+          placa: 'ABC1D23',
           itensServico: [{ servicoId: 1 }],
           itensPeca: [],
         }),
@@ -255,7 +255,7 @@ describe('OrdemServicoService', () => {
       await expect(
         service.criar({
           documentoCliente: cli.documento,
-          veiculoId: vei.id,
+          placa: vei.placa,
           itensServico: [{ servicoId: 1 }],
           itensPeca: [],
         }),
@@ -278,7 +278,7 @@ describe('OrdemServicoService', () => {
       await expect(
         service.criar({
           documentoCliente: cli.documento,
-          veiculoId: vei.id,
+          placa: vei.placa,
           itensServico: [],
           itensPeca: [{ estoqueId: 7, quantidade: 5 }],
         }),
@@ -290,7 +290,7 @@ describe('OrdemServicoService', () => {
       await expect(
         service.criar({
           documentoCliente: fakeCpf(false),
-          veiculoId: 'vei-1',
+          placa: 'ABC1D23',
           itensServico: [],
           itensPeca: [],
         }),
@@ -301,7 +301,23 @@ describe('OrdemServicoService', () => {
       await expect(
         service.criar({
           documentoCliente: '00000000000',
-          veiculoId: 'vei-1',
+          placa: 'ABC1D23',
+          itensServico: [{ servicoId: 1 }],
+          itensPeca: [],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lança 400 quando placa é inválida', async () => {
+      const cli = cliente();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) =>
+        E === ClienteEntity ? Promise.resolve(cli) : Promise.resolve(null),
+      );
+      await expect(
+        service.criar({
+          documentoCliente: cli.documento,
+          placa: 'INVALIDO!',
           itensServico: [{ servicoId: 1 }],
           itensPeca: [],
         }),
@@ -319,7 +335,7 @@ describe('OrdemServicoService', () => {
       await expect(
         service.criar({
           documentoCliente: cli.documento,
-          veiculoId: 'vei-x',
+          placa: 'ABC1D23',
           itensServico: [{ servicoId: 1 }],
           itensPeca: [],
         }),
@@ -340,7 +356,7 @@ describe('OrdemServicoService', () => {
       await expect(
         service.criar({
           documentoCliente: cli.documento,
-          veiculoId: vei.id,
+          placa: vei.placa,
           itensServico: [{ servicoId: 99 }],
           itensPeca: [],
         }),
@@ -361,7 +377,7 @@ describe('OrdemServicoService', () => {
       await expect(
         service.criar({
           documentoCliente: cli.documento,
-          veiculoId: vei.id,
+          placa: vei.placa,
           itensServico: [],
           itensPeca: [{ estoqueId: 99, quantidade: 1 }],
         }),
@@ -498,6 +514,27 @@ describe('OrdemServicoService', () => {
         NotFoundException,
       );
       expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('emite OrcamentoGeradoEvent após commit', async () => {
+      const os = new OrdemServicoEntity();
+      Object.assign(os, {
+        id: 'os-1',
+        status: S.EmDiagnostico,
+        valorTotal: 0,
+        itensServico: [],
+        itensPeca: [],
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) =>
+        E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
+      );
+      await service.gerarOrcamento('os-1');
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(emitter.emit).toHaveBeenCalledWith(
+        'os.orcamento.gerado',
+        expect.objectContaining({ osId: 'os-1' }),
+      );
     });
   });
 

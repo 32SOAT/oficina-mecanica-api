@@ -16,6 +16,10 @@ import {
   isValidBrazilianTaxId,
   normalizeTaxId,
 } from '../clientes/br-document.validator';
+import {
+  isValidBrazilianPlate,
+  normalizePlate,
+} from '../veiculos/br-plate.validator';
 import { DefaultPageSize } from '../querying/constants';
 import { PaginationService } from '../querying/pagination.service';
 import { OrdemServicoEntity } from './ordem-servico.entity';
@@ -30,6 +34,8 @@ import {
   OsCriadaEventName,
   OrcamentoAprovadoEvent,
   OrcamentoAprovadoEventName,
+  OrcamentoGeradoEvent,
+  OrcamentoGeradoEventName,
   OrcamentoReprovadoEvent,
   OrcamentoReprovadoEventName,
   OsEmExecucaoEvent,
@@ -76,8 +82,12 @@ export class OrdemServicoService {
         throw new NotFoundException('Cliente não encontrado.');
       }
 
+      const placa = normalizePlate(dto.placa);
+      if (!isValidBrazilianPlate(placa)) {
+        throw new BadRequestException('Placa inválida.');
+      }
       const veiculo = await qr.manager.findOne(VeiculoEntity, {
-        where: { id: dto.veiculoId },
+        where: { placa },
       });
       if (!veiculo) {
         throw new NotFoundException('Veículo não encontrado.');
@@ -237,6 +247,10 @@ export class OrdemServicoService {
       this.eventEmitter.emit(
         StatusAlteradoEventName,
         new StatusAlteradoEvent(os.id, anterior, novo, usuarioId ?? null),
+      );
+      this.eventEmitter.emit(
+        OrcamentoGeradoEventName,
+        new OrcamentoGeradoEvent(os.id),
       );
       return os;
     } catch (err) {
