@@ -224,22 +224,7 @@ Para e2e com API e banco, garanta que o ambiente (variáveis e Postgres) esteja 
 
 ---
 
-## ⚡Resumo rápido
-
-
-| Objetivo         | npm (local)                                                  | Docker                                                                                |
-| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Instalar deps    | `npm install`                                                | (na build da imagem)                                                                  |
-| Build            | `npm run build`                                              | `docker compose build`                                                                |
-| Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
-| Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
-| Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
-| Seeding          | `curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`  | `docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}'`   |
-
-
----
-
-## Autenticação
+## 🔐 Autenticação
 
 A API utiliza **JWT** (JSON Web Token) para autenticação. O administrador envia email e senha no endpoint de login, recebe um token e o inclui no cabeçalho `Authorization: Bearer <token>` nas requisições protegidas.
 
@@ -300,3 +285,88 @@ curl -X PATCH http://localhost:3000/api/v1/auth/password \
 ### Swagger UI
 
 O Swagger UI disponível em `/api` possui autenticação Bearer habilitada. Clique no botão **Authorize** (ícone de cadeado) no topo da página e cole o token JWT para testar endpoints protegidos diretamente pela interface.
+
+---
+
+## 🔍 Análise de código com SonarQube
+
+O projeto utiliza o SonarQube para análise estática de código e cobertura de testes. Caso ainda não esteja rodando :
+
+```bash
+docker compose up -d sonarqube
+```
+
+Acesse o painel:
+
+```bash
+http://localhost:9000
+```
+
+Login padrão:
+
+- usuário: admin
+- senha: admin
+
+#### 🔹Rodar análise com Sonar NPM e NPX
+
+A análise é feita em duas etapas separadas, lembre de substituir de colocar no arquivo sonar-project.properties o token gerado.
+
+1. Gerar cobertura de testes
+
+```bash
+npm run test:cov
+```
+
+1. Executar o Sonar Scanner (local)
+
+```bash
+npx sonar-scanner
+```
+
+#### 🔹Rodar o Sonar Scanner via Docker
+
+Alternativamente, você pode rodar o scanner sem instalar nada localmente, lembre de adicionar o token gerado onde está "SEU_TOKEN" :
+
+```bash
+docker run --rm -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_TOKEN="SEU_TOKEN" -v ${PWD}:/usr/src sonarsource/sonar-scanner-cli
+```
+
+⚠️ No Windows/Mac, use host.docker.internal em vez de localhost para acessar o SonarQube rodando no Docker.
+
+---
+
+## 🔍 Análise de segurança com OWASP ZAP
+
+O projeto utiliza o OWASP ZAP para análise dinâmica de segurança (DAST), identificando vulnerabilidades como headers inseguros, falhas de autenticação, possíveis injeções (SQL/XSS), exposição de endpoints, etc.
+
+#### Pré-requisito
+
+- A API deve estar rodando localmente ([http://localhost:3000](http://localhost:3000)), e como a API utiliza autenticação, é necessário obter um token antes do scan. Copie o token retornado e executa análise completa utilizando spider + ataques ativos utilizando o seguinte comando (🔁 substitua SEU_TOKEN pelo JWT obtido no login):
+
+```bash
+docker run --rm -t zaproxy/zap-stable zap-full-scan.py -t http://host.docker.internal:3000 -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN"
+```
+
+- Gerar relatório HTML na raiz do projeto :
+
+```bash
+
+docker run --rm -t -v ${PWD}:/zap/wrk zaproxy/zap-stable zap-full-scan.py -t http://host.docker.internal:3000 -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN" -r report.html
+```
+
+⚠️ No Windows/Mac, use host.docker.internal em vez de localhost para acessar o SonarQube rodando no Docker.
+
+---
+
+## ⚡Resumo rápido
+
+
+| Objetivo         | npm (local)                                                  | Docker                                                                                |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Instalar deps    | `npm install`                                                | (na build da imagem)                                                                  |
+| Build            | `npm run build`                                              | `docker compose build`                                                                |
+| Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
+| Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
+| Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
+
+

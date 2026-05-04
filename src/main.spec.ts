@@ -9,6 +9,11 @@ describe('main bootstrap', () => {
       get: jest
         .fn()
         .mockReturnValue({ get: jest.fn().mockReturnValue({ port: 3333 }) }),
+      getHttpAdapter: jest.fn().mockReturnValue({
+        getInstance: jest.fn().mockReturnValue({
+          disable: jest.fn(),
+        }),
+      }),
       useGlobalPipes: jest.fn(),
       enableVersioning: jest.fn(),
       setGlobalPrefix: jest.fn(),

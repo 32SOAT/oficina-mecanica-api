@@ -51,11 +51,8 @@ describe('Config files', () => {
       POSTGRES_PASSWORD: 'postgres',
       POSTGRES_DB: 'oficina',
       POSTGRES_SYNC: 1,
-      JWT_SECRET: 'test-secret',
-    }) as {
-      error: unknown;
-      value: { APP_PORT: number; POSTGRES_HOST: string };
-    };
+      JWT_SECRET: 'test-jwt-secret-for-validation',
+    });
 
     expect(error).toBeUndefined();
     expect(value.APP_PORT).toBe(3000);

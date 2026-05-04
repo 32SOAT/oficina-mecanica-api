@@ -30,8 +30,8 @@ export class AuthService {
       return null;
     }
 
-    const { password: _password, ...result } = user;
-    void _password;
+    const result = { ...user };
+    Reflect.deleteProperty(result, 'password');
     return result;
   }
 

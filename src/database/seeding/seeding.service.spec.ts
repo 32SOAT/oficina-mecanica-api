@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+import { isValidBrazilianPlate } from '../../veiculos/br-plate.validator';
 import { ClienteEntity } from '../../clientes/cliente.entity';
 import { ServicoEntity } from '../../servicos/servico.entity';
 import { EstoqueEntity } from '../../estoque/estoque.entity';
@@ -100,14 +101,12 @@ describe('SeedingService', () => {
     };
 
     dataSource = {
-      getRepository: jest.fn((entity: unknown) => {
+      getRepository: jest.fn((entity) => {
         if (entity === UserEntity) return userRepository;
         return undefined;
       }),
-      transaction: jest.fn((cb: (manager: typeof manager) => Promise<void>) =>
-        cb(manager),
-      ),
-    } as unknown as jest.Mocked<DataSource>;
+      transaction: jest.fn(async (cb) => cb(manager as any)),
+    } as any;
 
     service = new SeedingService(dataSource);
   };
@@ -122,6 +121,7 @@ describe('SeedingService', () => {
 
     const result = await service.seed();
 
+    expect(result.users.count).toBe(5);
     expect(result.clientes.count).toBe(5);
     expect(result.veiculos.count).toBe(5);
     expect(result.servicos.count).toBe(5);
@@ -163,6 +163,7 @@ describe('SeedingService', () => {
 
     const result = await service.seed();
 
+    expect(result.users.count).toBe(5);
     expect(result.clientes.count).toBe(0);
     expect(result.servicos.count).toBe(0);
     expect(result.estoque.count).toBe(0);
@@ -180,6 +181,7 @@ describe('SeedingService', () => {
     const placa = svc.generatePlaca(7);
 
     expect(normalized).toBe('oleodemotor');
-    expect(placa).toMatch(/^[A-Z]{3}[0-9][A-Z][0-9]{3}$/);
+    expect(placa).toMatch(/^[A-Z]{3}\d[A-Z]\d{2}$/);
+    expect(isValidBrazilianPlate(placa)).toBe(true);
   });
 });
