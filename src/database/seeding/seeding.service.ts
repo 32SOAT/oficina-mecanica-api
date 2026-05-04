@@ -252,11 +252,13 @@ export class SeedingService {
     };
   }
 
+  /** Mercosul AAA9A99 (7 caracteres, sem hífen). */
   private generatePlaca(sequence: number): string {
     const letters = faker.string.alpha({ length: 3, casing: 'upper' });
     const middle = faker.string.alpha({ length: 1, casing: 'upper' });
+    const suffix = String(sequence % 100).padStart(2, '0');
 
-    return `${letters}${sequence % 10}${middle}${String(sequence).padStart(3, '0')}`;
+    return `${letters}${sequence % 10}${middle}${suffix}`;
   }
 
   private normalize(value: string): string {

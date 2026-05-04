@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+import { isValidBrazilianPlate } from '../../veiculos/br-plate.validator';
 import { ClienteEntity } from '../../clientes/cliente.entity';
 import { ServicoEntity } from '../../servicos/servico.entity';
 import { EstoqueEntity } from '../../estoque/estoque.entity';
@@ -79,16 +80,6 @@ describe('SeedingService', () => {
             ...(item as object),
           })),
         ),
-      ),
-    };
-
-    const userRepository = {
-      create: jest.fn((payload) => payload),
-      save: jest.fn(async (data) =>
-        data.map((item, i) => ({
-          id: `user-${i + 1}`,
-          ...item,
-        })),
       ),
     };
 
@@ -190,6 +181,7 @@ describe('SeedingService', () => {
     const placa = svc.generatePlaca(7);
 
     expect(normalized).toBe('oleodemotor');
-    expect(placa).toMatch(/^[A-Z]{3}[0-9][A-Z][0-9]{3}$/);
+    expect(placa).toMatch(/^[A-Z]{3}\d[A-Z]\d{2}$/);
+    expect(isValidBrazilianPlate(placa)).toBe(true);
   });
 });
