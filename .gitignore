@@ -57,6 +57,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # SonarQube
 /.scannerwork
+sonar-project.properties
 
 # OWASP ZAP
 report.html
