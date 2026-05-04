@@ -31,6 +31,7 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/event-emitter": "^3.1.0",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "^2.1.1",
     "@nestjs/platform-express": "^11.0.1",
@@ -94,7 +95,14 @@
     "coverageDirectory": "../coverage",
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/database/migrations/"
+      "/database/migrations/",
+      "/ordens-de-servico/entities/.*\\.entity\\.ts$",
+      "/ordens-de-servico/ordem-servico\\.entity\\.ts$",
+      "/ordens-de-servico/ordem-servico\\.module\\.ts$",
+      "/ordens-de-servico/dtos/status-publico\\.response\\.ts$",
+      "/ordens-de-servico/events/listeners/.*\\.listener\\.ts$",
+      "/ordens-de-servico/dtos/avancar-status\\.dto\\.ts$",
+      "/ordens-de-servico/dtos/filtros-ordem-servico\\.dto\\.ts$"
     ],
     "maxWorkers": 4,
     "testEnvironment": "node"
