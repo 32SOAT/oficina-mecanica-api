@@ -344,14 +344,7 @@ O projeto utiliza o OWASP ZAP para análise dinâmica de segurança (DAST), iden
 - A API deve estar rodando localmente ([http://localhost:3000](http://localhost:3000)), e como a API utiliza autenticação, é necessário obter um token antes do scan. Copie o token retornado e executa análise completa utilizando spider + ataques ativos utilizando o seguinte comando (🔁 substitua SEU_TOKEN pelo JWT obtido no login):
 
 ```bash
-docker run --rm -t zaproxy/zap-stable zap-full-scan.py -t http://host.docker.internal:3000 -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN"
-```
-
-- Gerar relatório HTML na raiz do projeto :
-
-```bash
-
-docker run --rm -t -v ${PWD}:/zap/wrk zaproxy/zap-stable zap-full-scan.py -t http://host.docker.internal:3000 -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN" -r report.html
+docker run --rm -t -v ${PWD}:/zap/wrk zaproxy/zap-stable zap-api-scan.py -t http://host.docker.internal:3000/api -f openapi -r report.html -z "-config replacer.full_list(0).description=auth -config replacer.full_list(0).enabled=true -config replacer.full_list(0).matchtype=REQ_HEADER -config replacer.full_list(0).matchstr=Authorization -config replacer.full_list(0).replacement=Bearer SEU_TOKEN"
 ```
 
 ⚠️ No Windows/Mac, use host.docker.internal em vez de localhost para acessar o SonarQube rodando no Docker.
