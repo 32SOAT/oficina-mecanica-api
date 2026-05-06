@@ -44,7 +44,7 @@ export class EstoqueController {
   @ApiOperation({
     summary: 'Criar novo item de estoque',
     description:
-      'Cria um novo item (peça ou insumo) no estoque. Em seguida reavalia OS em AGUARDANDO_PECAS_INSUMOS que dependiam desse SKU e pode avançá-las para AGUARDANDO_SERVICO se o estoque passar a cobrir todas as linhas.',
+      'Cria um novo item (peça ou insumo) no estoque.',
   })
   @ApiBody({ type: CreateEstoqueDto })
   @ApiResponse({ status: 201, description: 'Item criado com sucesso.' })
@@ -151,7 +151,7 @@ export class EstoqueController {
   @Patch(':id/operacao')
   @ApiOperation({
     summary: 'Executar operação de estoque',
-    description: 'Inclui `reposicao` (entrada no SKU com `:id`) e `reservar`.',
+    description: 'Inclui `reposicao` e `reservar`.',
   })
   @ApiBody({ type: OperacaoEstoqueDto })
   @ApiParam({

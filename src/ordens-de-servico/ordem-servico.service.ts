@@ -747,7 +747,6 @@ export class OrdemServicoService {
         if (!est) {
           continue;
         }
-        /* Reserva da OS já está em quantidade_reservada; basta o físico cobrir o compromisso do SKU. */
         if (est.quantidadeFisica < est.quantidadeReservada) {
           continue;
         }

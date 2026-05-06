@@ -36,7 +36,7 @@ export class OrdemServicoController {
     description:
       'Abre OS em RECEBIDA com itens de serviço e/ou peças. Cada linha de peça incrementa `quantidade_reservada` ' +
       'no cadastro mesmo quando o físico momentâneo é insuficiente; nesse caso a OS recebe aviso padrão na `observacao` ' +
-      'para o cliente (compra pendente). Após entrada de estoque no SKU, OSs em AGUARDANDO_PECAS_INSUMOS podem ir para AGUARDANDO_SERVICO.',
+      'para o cliente (compra pendente). Após entrada de estoque, OSs em AGUARDANDO_PECAS_INSUMOS podem ir para AGUARDANDO_SERVICO.',
   })
   @ApiBody({ type: CriarOrdemServicoDto })
   @ApiResponse({

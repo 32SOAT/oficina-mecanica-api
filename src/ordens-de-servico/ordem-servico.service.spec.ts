@@ -837,7 +837,7 @@ describe('OrdemServicoService', () => {
       expect(dataSource.queryRunner.rollbackTransaction).toHaveBeenCalled();
     });
 
-    it('estorna reserva ignora SKU removido ao varrer itens antigos', async () => {
+    it('estorna reserva ignora peça/insumo removido ao varrer itens antigos', async () => {
       const pecaNova = estoque(8, 20, 0, 9);
       const oldItem = Object.assign(new ItemOsEstoqueEntity(), {
         quantidade: 4,
@@ -937,7 +937,7 @@ describe('OrdemServicoService', () => {
       expect(os.status).toBe(S.AguardandoPecasInsumos);
     });
 
-    it('com item pendente e estoque já reposto no SKU → ... → AguardandoServico', async () => {
+    it('com item pendente e estoque já reposto → ... → AguardandoServico', async () => {
       const aviso =
         'Será necessário aguardar a compra de uma ou mais peças/insumos para atender esta ordem de serviço.';
       const os = buildOs(false);
@@ -1143,7 +1143,7 @@ describe('OrdemServicoService', () => {
       expect(osRepo.find).not.toHaveBeenCalled();
     });
 
-    it('deduplica SKUs e IDs de OS vindos do raw query', async () => {
+    it('deduplica peças/insumos e IDs de OS vindos do raw query', async () => {
       const qb = qbReposicaoImpacto();
       qb.getRawMany.mockResolvedValue([
         { id: 'os-a' },
@@ -1180,7 +1180,7 @@ describe('OrdemServicoService', () => {
       expect(emitter.emit).not.toHaveBeenCalled();
     });
 
-    it('marca linhas cobertas e avança para AguardandoServico quando físico honra reservas do SKU', async () => {
+    it('marca linhas cobertas e avança para AguardandoServico quando físico honra reservas do estoque', async () => {
       const aviso =
         'Será necessário aguardar a compra de uma ou mais peças/insumos para atender esta ordem de serviço.';
       const peca = estoque(7, 20, 3, 15);
@@ -1335,7 +1335,7 @@ describe('OrdemServicoService', () => {
       expect(os.status).toBe(S.AguardandoServico);
     });
 
-    it('não marca linha quando o SKU foi excluído do cadastro', async () => {
+    it('não marca linha quando peça/insumo foi excluído do cadastro', async () => {
       const itemPeca = Object.assign(new ItemOsEstoqueEntity(), {
         quantidade: 4,
         disponivelNoDiagnostico: false,
@@ -1343,15 +1343,15 @@ describe('OrdemServicoService', () => {
       });
       const os = new OrdemServicoEntity();
       Object.assign(os, {
-        id: 'os-sem-sku',
+        id: 'os-sem-estoque',
         status: S.AguardandoPecasInsumos,
         itensPeca: [itemPeca],
         itensServico: [],
       });
       const qb = qbReposicaoImpacto();
-      qb.getRawMany.mockResolvedValue([{ id: 'os-sem-sku' }]);
+      qb.getRawMany.mockResolvedValue([{ id: 'os-sem-estoque' }]);
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
-      (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-sem-sku' }]);
+      (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-sem-estoque' }]);
       em.findOne.mockImplementation(
         (
           E: unknown,
@@ -1360,7 +1360,7 @@ describe('OrdemServicoService', () => {
           if (E === OrdemServicoEntity) {
             const w = opts?.where ?? {};
             if (
-              w.id === 'os-sem-sku' &&
+              w.id === 'os-sem-estoque' &&
               w.status === S.AguardandoPecasInsumos
             ) {
               return Promise.resolve(os);
