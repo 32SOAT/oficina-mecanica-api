@@ -10,9 +10,6 @@ export const E2E_AUTH_USER_STUB = Object.freeze({
   username: 'e2e',
 });
 
-/**
- * Bypassa JWT e injeta usuário fictício nas requisições (para e2e com APP_GUARD igual à app).
- */
 @Injectable()
 export class FakeJwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {

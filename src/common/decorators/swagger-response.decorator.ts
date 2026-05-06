@@ -63,11 +63,6 @@ export function ApiPaginatedResponse(
   );
 }
 
-/**
- * Documenta respostas no formato `{ success, message, data? }` retornadas por
- * alguns controllers. O interceptor global envolve o corpo em `{ data: ... }`,
- * portanto o schema OpenAPI descreve o objeto HTTP final.
- */
 export function ApiWrappedResponse(
   type?: Type<unknown>,
   status = 200,

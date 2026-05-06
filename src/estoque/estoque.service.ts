@@ -68,10 +68,6 @@ export class EstoqueService {
     return { data, meta };
   }
 
-  /**
-   * Incrementa quantidade física por reposição (compra/recebimento) e dispara a
-   * tentativa de reservas e liberação de OS em falta daquele SKU.
-   */
   async registrarReposicaoEstoque(
     id: number,
     dto: EntradaReposicaoEstoqueDto,

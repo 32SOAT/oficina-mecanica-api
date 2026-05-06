@@ -6,7 +6,6 @@ import {
   ItemServicoInputDto,
 } from './criar-ordem-servico.dto';
 
-/** Substitui completamente os itens de serviço e peças da OS (somente em diagnóstico). */
 export class EditarItensOsDto {
   @ApiProperty({
     type: [ItemServicoInputDto],

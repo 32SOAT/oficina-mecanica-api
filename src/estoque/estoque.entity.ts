@@ -72,9 +72,6 @@ export class EstoqueEntity {
     return this.quantidadeFisica - this.quantidadeReservada;
   }
 
-  /**
-   * Operação manual / transferência entre estoques: não ultrapassa o disponível atual.
-   */
   reservar(quantidade: number): void {
     if (quantidade <= 0) {
       throw new BadRequestException('Quantidade deve ser maior que zero.');
@@ -87,10 +84,6 @@ export class EstoqueEntity {
     this.quantidadeReservada += quantidade;
   }
 
-  /**
-   * Compromete unidades para linhas de OS mesmo que o momento não tenha físico suficiente
-   * (reservada pode exceder física até a compra/reposição).
-   */
   reservarComprometidoParaOrdemServico(quantidade: number): void {
     if (quantidade <= 0) {
       throw new BadRequestException('Quantidade deve ser maior que zero.');

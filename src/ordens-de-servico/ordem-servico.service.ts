@@ -83,10 +83,6 @@ export class OrdemServicoService {
     return `${semAviso}\n\n${AVISO_AGUARDAR_COMPRA_PECA}`;
   }
 
-  /**
-   * Sempre compromete `quantidadeSolicitada` em estoque (`reservarComprometidoParaOrdemServico`).
-   * `disponivelNoDiagnostico` indica se o físico cobria todo o pedido no momento da reserva.
-   */
   private aplicarReservaItemPeca(
     est: EstoqueEntity,
     quantidadeSolicitada: number,
@@ -106,12 +102,10 @@ export class OrdemServicoService {
     };
   }
 
-  /** Compromisso em `quantidade_reservada` revertido em reprovação / substituição de itens. */
   private quantidadeComprometidaParaEstorno(item: ItemOsEstoqueEntity): number {
     return item.quantidade;
   }
 
-  /** Só consome físico em execução para linhas marcadas como cobertas no diagnóstico. */
   private quantidadeParaBaixaEmExecucao(item: ItemOsEstoqueEntity): number {
     return item.disponivelNoDiagnostico ? item.quantidade : 0;
   }
@@ -678,13 +672,6 @@ export class OrdemServicoService {
     });
   }
 
-  /**
-   * Após aumento de `quantidade_fisica` (reposição, PUT com mais físico, item novo),
-   * para cada OS em AGUARDANDO_PECAS_INSUMOS com linhas ainda não “cobertas” no diagnóstico:
-   * se o físico do SKU passa a honrar o total já comprometido em `quantidade_reservada`
-   * (`físico >= reservado`), marca as linhas como disponíveis e, se todas as peças da OS
-   * estiverem ok, avança para AGUARDANDO_SERVICO (não incrementa reserva de novo aqui).
-   */
   async tentarLiberarOsAposReposicaoEstoque(
     estoqueIdsAfetados: number[],
     usuarioId?: string | null,

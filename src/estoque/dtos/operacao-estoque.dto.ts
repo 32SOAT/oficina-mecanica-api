@@ -6,11 +6,6 @@ export enum TipoOperacaoEstoque {
   RESERVAR = 'reservar',
 }
 
-/**
- * Payload unificado para `PATCH /estoque/:id/operacao`.
- * - `reposicao`: soma à quantidade física; exige `id` e `quantidade`; usa o usuário do JWT.
- * - `reservar`: exige `id` e `quantidade`.
- */
 export class OperacaoEstoqueDto {
   @ApiProperty({
     description: 'Tipo de operação no estoque',
