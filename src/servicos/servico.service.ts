@@ -22,7 +22,6 @@ export class ServicoService {
   ) {}
 
   async create(createServicoDto: CreateServicoDto): Promise<ServicoEntity> {
-    // Verificar duplicata de nome de serviço (soft delete aware)
     const duplicate = await this.servicoRepository
       .createQueryBuilder('servico')
       .where('servico.servico = :nome', { nome: createServicoDto.servico })
@@ -33,7 +32,6 @@ export class ServicoService {
       throw new ConflictException('Serviço com este nome já existe.');
     }
 
-    // Validar preço
     if (createServicoDto.precoMaoDeObra < 0) {
       throw new BadRequestException('Preço não pode ser negativo.');
     }
@@ -73,7 +71,6 @@ export class ServicoService {
   ): Promise<ServicoEntity> {
     const existingServico = await this.findOne(id);
 
-    // Se alterar nome, verificar duplicata
     if (updateServicoDto.servico) {
       const duplicate = await this.servicoRepository
         .createQueryBuilder('servico')
@@ -87,7 +84,6 @@ export class ServicoService {
       }
     }
 
-    // Validar preço se informado
     if (
       updateServicoDto.precoMaoDeObra !== undefined &&
       updateServicoDto.precoMaoDeObra < 0

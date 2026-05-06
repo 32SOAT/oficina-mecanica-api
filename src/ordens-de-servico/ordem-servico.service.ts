@@ -171,7 +171,6 @@ export class OrdemServicoService {
       const itensPeca: ItemOsEstoqueEntity[] = [];
       let pecaPrecisaObservacaoCompra = false;
       for (const i of dto.itensPeca ?? []) {
-        // pessimistic lock: prevents oversell under concurrent OS creation for same item
         const est = await qr.manager.findOne(EstoqueEntity, {
           where: { id: i.estoqueId },
           lock: { mode: 'pessimistic_write' },
@@ -230,7 +229,6 @@ export class OrdemServicoService {
     }
   }
 
-  // Helper compartilhado: carrega OS, executa transição, persiste, emite evento.
   private async transicionar(
     osId: string,
     para: StatusOrdemServico,
@@ -470,7 +468,6 @@ export class OrdemServicoService {
         if (!est) {
           continue;
         }
-        // Reserva da OS já está comprometida; se físico cobre o reservado, item pode seguir.
         if (est.quantidadeFisica < est.quantidadeReservada) {
           continue;
         }
@@ -522,7 +519,6 @@ export class OrdemServicoService {
       const { anterior, novo } = os.avancarStatus(
         StatusOrdemServico.Reprovada,
       );
-      // Estorno inline com lock pessimista
       for (const item of os.itensPeca ?? []) {
         const est = await qr.manager.findOne(EstoqueEntity, {
           where: { id: item.estoque_id },
@@ -571,7 +567,6 @@ export class OrdemServicoService {
       const { anterior, novo } = os.avancarStatus(
         StatusOrdemServico.EmExecucao,
       );
-      // Baixa inline com lock pessimista
       for (const item of os.itensPeca ?? []) {
         const qBaixa = this.quantidadeParaBaixaEmExecucao(item);
         if (qBaixa <= 0) {
@@ -665,7 +660,7 @@ export class OrdemServicoService {
   }
 
   async findHistorico(id: string): Promise<HistoricoStatusOsEntity[]> {
-    await this.findOne(id); // garante 404 se OS não existe
+    await this.findOne(id);
     return this.dataSource.getRepository(HistoricoStatusOsEntity).find({
       where: { os_id: id },
       order: { createdAt: 'ASC' },
