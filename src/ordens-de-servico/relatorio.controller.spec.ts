@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { RelatorioController } from './relatorio.controller';
 import { RelatorioService } from './relatorio.service';
 

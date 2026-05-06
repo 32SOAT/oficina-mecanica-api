@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { OrdemServicoController } from './ordem-servico.controller';
 import { OrdemServicoService } from './ordem-servico.service';
 import { StatusOrdemServico as S } from './state-machine/status-ordem-servico.enum';
