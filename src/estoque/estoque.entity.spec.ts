@@ -83,6 +83,18 @@ describe('EstoqueEntity', () => {
     });
   });
 
+  describe('reservarComprometidoParaOrdemServico', () => {
+    it('compromete mesmo ultrapassando o disponível naquele momento', () => {
+      const item = createItem({
+        quantidadeFisica: 10,
+        quantidadeReservada: 8,
+      });
+      item.reservarComprometidoParaOrdemServico(5);
+      expect(item.quantidadeReservada).toBe(13);
+      expect(item.quantidadeDisponivel).toBe(-3);
+    });
+  });
+
   describe('darBaixa', () => {
     it('decreases physical and reserved quantity', () => {
       const item = createItem({

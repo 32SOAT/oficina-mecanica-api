@@ -22,6 +22,7 @@ describe('OrdemServicoController', () => {
       gerarOrcamento: jest.fn(),
       aprovarOrcamento: jest.fn(),
       reprovarOrcamento: jest.fn(),
+      substituirItensEmDiagnostico: jest.fn(),
       iniciarExecucao: jest.fn(),
       finalizar: jest.fn(),
       entregar: jest.fn(),
@@ -29,6 +30,22 @@ describe('OrdemServicoController', () => {
       avancarStatus: jest.fn(),
     } as unknown as jest.Mocked<OrdemServicoService>;
     controller = new OrdemServicoController(service);
+  });
+
+  it('PATCH /ordens/:id/itens delega ao service.substituirItensEmDiagnostico', async () => {
+    service.substituirItensEmDiagnostico.mockResolvedValue({ id: 'os-1' } as never);
+    const dto = { itensServico: [{ servicoId: 1 }], itensPeca: [] };
+    const result = await controller.substituirItensEmDiagnostico(
+      mockReq,
+      'os-1',
+      dto,
+    );
+    expect(service.substituirItensEmDiagnostico).toHaveBeenCalledWith(
+      'os-1',
+      dto,
+      'usuario-1',
+    );
+    expect(result).toEqual({ id: 'os-1' });
   });
 
   it('POST /ordens delega ao service.criar', async () => {

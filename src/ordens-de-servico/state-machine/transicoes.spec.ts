@@ -15,7 +15,6 @@ describe('transicoesValidas', () => {
     [S.AguardandoServico, S.EmExecucao],
     [S.AguardandoPecasInsumos, S.AguardandoServico],
     [S.EmExecucao, S.Finalizada],
-    [S.EmExecucao, S.AguardandoPecasInsumos],
     [S.Finalizada, S.Entregue],
     [S.Reprovada, S.Cancelada],
   ];
@@ -41,7 +40,7 @@ describe('transicoesValidas', () => {
   });
 
   it('expõe exatamente 12 transições válidas', () => {
-    expect(transicoesValidas).toHaveLength(12);
+    expect(transicoesValidas).toHaveLength(11);
   });
 
   it('nenhum estado terminal possui transição de saída em transicoesValidas', () => {

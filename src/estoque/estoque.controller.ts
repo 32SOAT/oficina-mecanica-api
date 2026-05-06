@@ -3,13 +3,17 @@ import {
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
   Post,
   Put,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -19,11 +23,15 @@ import {
   ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { type AuthenticatedRequest } from '../auth/authenticated-request.interface';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { EstoqueService } from './estoque.service';
 import { CreateEstoqueDto } from './dtos/create-estoque.dto';
+import {
+  OperacaoEstoqueDto,
+  TipoOperacaoEstoque,
+} from './dtos/operacao-estoque.dto';
 import { UpdateEstoqueDto } from './dtos/update-estoque.dto';
-import { OperacaoEstoqueDto } from './dtos/operacao-estoque.dto';
 
 @ApiBearerAuth('JWT-auth')
 @ApiTags('Estoque')
@@ -34,7 +42,8 @@ export class EstoqueController {
   @Post()
   @ApiOperation({
     summary: 'Criar novo item de estoque',
-    description: 'Cria um novo item (peça ou insumo) no estoque.',
+    description:
+      'Cria um novo item (peça ou insumo) no estoque. Em seguida reavalia OS em AGUARDANDO_PECAS_INSUMOS que dependiam desse SKU e pode avançá-las para AGUARDANDO_SERVICO se o estoque passar a cobrir todas as linhas.',
   })
   @ApiBody({ type: CreateEstoqueDto })
   @ApiResponse({ status: 201, description: 'Item criado com sucesso.' })
@@ -95,7 +104,8 @@ export class EstoqueController {
   @Put(':id')
   @ApiOperation({
     summary: 'Atualizar item de estoque',
-    description: 'Atualiza os dados de um item de estoque existente.',
+    description:
+      'Atualiza um item existente. Se quantidadeFisica aumentar em relação ao valor anterior, as OS em AGUARDANDO_PECAS_INSUMOS que dependiam desse item são reavaliadas e podem ir para AGUARDANDO_SERVICO.',
   })
   @ApiBody({ type: UpdateEstoqueDto })
   @ApiParam({
@@ -121,26 +131,70 @@ export class EstoqueController {
   @Patch(':id/operacao')
   @ApiOperation({
     summary: 'Executar operação de estoque',
-    description: 'Realiza operações de reserva ou baixa em um item de estoque.',
+    description:
+      'Inclui `adicionar` (`:id` ignorado; use placeholder, ex.: 0), `reposicao` (entrada no SKU com `:id`), ' +
+      '`reservar` e `dar_baixa`. `adicionar` e `reposicao` reavaliam OS em AGUARDANDO_PECAS_INSUMOS quando aplicável.',
   })
   @ApiBody({ type: OperacaoEstoqueDto })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'ID do item de estoque',
+    description:
+      'ID do item (obrigatório para reposição, reservar e dar baixa). Ignorado quando operação é adicionar.',
     example: 1,
   })
   @ApiResponse({ status: 200, description: 'Operação executada com sucesso.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Item cadastrado (adicionar) ou atualizado após reposição.',
+  })
   @ApiResponse({ status: 404, description: 'Item de estoque não encontrado.' })
   @ApiResponse({
     status: 400,
     description: 'Estoque insuficiente ou dados inválidos.',
   })
+  @ApiResponse({
+    status: 409,
+    description: 'Código já em uso (operação adicionar).',
+  })
   async executarOperacao(
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() operacaoDto: OperacaoEstoqueDto,
+    @Body() dto: OperacaoEstoqueDto,
   ) {
-    const item = await this.estoqueService.executarOperacao(id, operacaoDto);
+    if (dto.operacao === TipoOperacaoEstoque.ADICIONAR) {
+      void id;
+      const createDto: CreateEstoqueDto = {
+        codigo: dto.codigo!,
+        pecasInsumos: dto.pecasInsumos!,
+        quantidadeFisica: dto.quantidadeFisica!,
+        precoUnitario: dto.precoUnitario!,
+      };
+      const created = await this.estoqueService.create(createDto);
+      res.status(HttpStatus.CREATED);
+      return {
+        success: true,
+        message: 'Item de estoque cadastrado com sucesso.',
+        data: created,
+      };
+    }
+
+    if (dto.operacao === TipoOperacaoEstoque.REPOSICAO) {
+      const atualizado = await this.estoqueService.registrarReposicaoEstoque(
+        id,
+        { quantidade: dto.quantidade! },
+        req.user.sub,
+      );
+      res.status(HttpStatus.CREATED);
+      return {
+        success: true,
+        message: `Reposição de ${dto.quantidade}.`,
+        data: atualizado,
+      };
+    }
+
+    const item = await this.estoqueService.executarOperacao(id, dto);
     return {
       success: true,
       message: 'Operação executada com sucesso.',

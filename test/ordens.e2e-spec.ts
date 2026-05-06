@@ -1,10 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import {
-  CanActivate,
-  ExecutionContext,
-  INestApplication,
-  ValidationPipe,
-} from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -12,16 +7,9 @@ import { OrdemServicoController } from '../src/ordens-de-servico/ordem-servico.c
 import { ConsultaOrdemServicoController } from '../src/ordens-de-servico/consulta-ordem-servico.controller';
 import { OrdemServicoService } from '../src/ordens-de-servico/ordem-servico.service';
 import { StatusOrdemServico as S } from '../src/ordens-de-servico/state-machine/status-ordem-servico.enum';
+import { E2E_AUTH_USER_STUB, FakeJwtAuthGuard } from './helpers/fake-jwt-auth.guard';
 
-class FakeJwtAuthGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
-    const req = context
-      .switchToHttp()
-      .getRequest<{ user: { sub: string; email: string; username: string } }>();
-    req.user = { sub: 'e2e-user', email: 'e2e@test', username: 'e2e' };
-    return true;
-  }
-}
+const OS_ID = 'aaaa1111-1111-1111-1111-111111111111';
 
 describe('Ordens de Serviço (e2e)', () => {
   let app: INestApplication;
@@ -31,6 +19,7 @@ describe('Ordens de Serviço (e2e)', () => {
     findOne: jest.fn(),
     findHistorico: jest.fn(),
     iniciarDiagnostico: jest.fn(),
+    substituirItensEmDiagnostico: jest.fn(),
     gerarOrcamento: jest.fn(),
     aprovarOrcamento: jest.fn(),
     reprovarOrcamento: jest.fn(),
@@ -78,7 +67,7 @@ describe('Ordens de Serviço (e2e)', () => {
     expect(res.status).toBe(201);
     expect(serviceMock.criar).toHaveBeenCalledWith(
       expect.objectContaining({ documentoCliente: '12345678901' }),
-      'e2e-user',
+      E2E_AUTH_USER_STUB.sub,
     );
   });
 
@@ -100,9 +89,33 @@ describe('Ordens de Serviço (e2e)', () => {
     expect(serviceMock.findAll).toHaveBeenCalled();
   });
 
+  it('GET /ordens/:id delega ao service', async () => {
+    const os = { id: OS_ID, status: S.EmDiagnostico, valorTotal: 100 };
+    serviceMock.findOne.mockResolvedValueOnce(os);
+
+    const res = await request(app.getHttpServer()).get(`/ordens/${OS_ID}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(os);
+    expect(serviceMock.findOne).toHaveBeenCalledWith(OS_ID);
+  });
+
+  it('GET /ordens/:id/historico delega ao service', async () => {
+    const linha = { id: 1, statusAnterior: S.Recebida, statusNovo: S.EmDiagnostico };
+    serviceMock.findHistorico.mockResolvedValueOnce([linha]);
+
+    const res = await request(app.getHttpServer()).get(
+      `/ordens/${OS_ID}/historico`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([linha]);
+    expect(serviceMock.findHistorico).toHaveBeenCalledWith(OS_ID);
+  });
+
   it('GET /ordens/:id/status retorna apenas campos seguros (sem CPF/email)', async () => {
     serviceMock.findOne.mockResolvedValueOnce({
-      id: 'aaaa1111-1111-1111-1111-111111111111',
+      id: OS_ID,
       status: S.EmExecucao,
       valorTotal: 10,
       updatedAt: new Date('2026-05-01'),
@@ -111,7 +124,7 @@ describe('Ordens de Serviço (e2e)', () => {
     });
     serviceMock.findHistorico.mockResolvedValueOnce([]);
     const res = await request(app.getHttpServer()).get(
-      '/ordens/aaaa1111-1111-1111-1111-111111111111/status',
+      `/ordens/${OS_ID}/status`,
     );
     expect(res.status).toBe(200);
     const body = JSON.stringify(res.body);
@@ -119,21 +132,61 @@ describe('Ordens de Serviço (e2e)', () => {
     expect(body).not.toContain('leak@example.com');
   });
 
+  it('PATCH /ordens/:id/itens delega DTO e sub do JWT', async () => {
+    const atualizada = { id: OS_ID, status: S.EmDiagnostico };
+    serviceMock.substituirItensEmDiagnostico.mockResolvedValueOnce(atualizada);
+    const body = {
+      itensServico: [{ servicoId: 2 }],
+      itensPeca: [{ estoqueId: 5, quantidade: 1 }],
+    };
+
+    const res = await request(app.getHttpServer())
+      .patch(`/ordens/${OS_ID}/itens`)
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(atualizada);
+    expect(serviceMock.substituirItensEmDiagnostico).toHaveBeenCalledWith(
+      OS_ID,
+      body,
+      E2E_AUTH_USER_STUB.sub,
+    );
+  });
+
+  it('PATCH /ordens/:id/itens responde 400 quando itensServico não é array', async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/ordens/${OS_ID}/itens`)
+      .send({
+        itensServico: { servicoId: 1 },
+        itensPeca: [],
+      });
+
+    expect(res.status).toBe(400);
+    expect(serviceMock.substituirItensEmDiagnostico).not.toHaveBeenCalled();
+  });
+
+  it('GET /ordens/:id com id inválido retorna 400 (ParseUUIDPipe)', async () => {
+    const res = await request(app.getHttpServer()).get('/ordens/nao-uuid');
+
+    expect(res.status).toBe(400);
+    expect(serviceMock.findOne).not.toHaveBeenCalled();
+  });
+
   it('POST /ordens/:id/aprovar-orcamento delega ao service', async () => {
     serviceMock.aprovarOrcamento.mockResolvedValueOnce({});
     const res = await request(app.getHttpServer()).post(
-      '/ordens/aaaa1111-1111-1111-1111-111111111111/aprovar-orcamento',
+      `/ordens/${OS_ID}/aprovar-orcamento`,
     );
     expect(res.status).toBe(201);
     expect(serviceMock.aprovarOrcamento).toHaveBeenCalledWith(
-      'aaaa1111-1111-1111-1111-111111111111',
-      'e2e-user',
+      OS_ID,
+      E2E_AUTH_USER_STUB.sub,
     );
   });
 
   it('POST /ordens/:id/avancar-status valida o body', async () => {
     const res = await request(app.getHttpServer())
-      .post('/ordens/aaaa1111-1111-1111-1111-111111111111/avancar-status')
+      .post(`/ordens/${OS_ID}/avancar-status`)
       .send({ novoStatus: 'INVALIDO' });
     expect(res.status).toBe(400);
     expect(serviceMock.avancarStatus).not.toHaveBeenCalled();

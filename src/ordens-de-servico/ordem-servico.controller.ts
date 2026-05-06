@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -18,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { OrdemServicoService } from './ordem-servico.service';
 import { CriarOrdemServicoDto } from './dtos/criar-ordem-servico.dto';
+import { EditarItensOsDto } from './dtos/editar-itens-os.dto';
 import { FiltrosOrdemServicoDto } from './dtos/filtros-ordem-servico.dto';
 import { AvancarStatusDto } from './dtos/avancar-status.dto';
 import { type AuthenticatedRequest } from '../auth/authenticated-request.interface';
@@ -32,7 +34,9 @@ export class OrdemServicoController {
   @ApiOperation({
     summary: 'Cria uma nova OS',
     description:
-      'Abre OS em RECEBIDA com itens de serviço e/ou peças (reserva de estoque quando houver peças).',
+      'Abre OS em RECEBIDA com itens de serviço e/ou peças. Cada linha de peça incrementa `quantidade_reservada` ' +
+      'no cadastro mesmo quando o físico momentâneo é insuficiente; nesse caso a OS recebe aviso padrão na `observacao` ' +
+      'para o cliente (compra pendente). Após entrada de estoque no SKU, OSs em AGUARDANDO_PECAS_INSUMOS podem ir para AGUARDANDO_SERVICO.',
   })
   @ApiBody({ type: CriarOrdemServicoDto })
   @ApiResponse({ status: 400, description: 'Payload inválido ou regras de negócio (documento, placa, itens).' })
@@ -78,6 +82,29 @@ export class OrdemServicoController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.service.iniciarDiagnostico(id, req.user.sub);
+  }
+
+  @Patch(':id/itens')
+  @ApiOperation({
+    summary: 'Substitui todos os itens da OS durante o diagnóstico',
+    description:
+      'Só permitido em EM_DIAGNOSTICO. Estorna o compromisso de reserva das linhas antigas e reserva integralmente as novas quantidades mesmo se o físico for insuficiente no momento. ' +
+      'Recalcula valor total e mescla/remove o aviso padrão na `observacao` quando há falta de peça física.',
+  })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
+  @ApiBody({ type: EditarItensOsDto })
+  @ApiResponse({
+    status: 400,
+    description:
+      'OS não está em diagnóstico, sem itens válidos ou regra de negócio (estoque).',
+  })
+  @ApiResponse({ status: 404, description: 'OS, serviço ou peça não encontrada.' })
+  substituirItensEmDiagnostico(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: EditarItensOsDto,
+  ) {
+    return this.service.substituirItensEmDiagnostico(id, dto, req.user.sub);
   }
 
   @Post(':id/gerar-orcamento')

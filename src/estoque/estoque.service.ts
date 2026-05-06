@@ -1,11 +1,18 @@
-import { ConflictException, HttpException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { OrdemServicoService } from '../ordens-de-servico/ordem-servico.service';
 import { DefaultPageSize } from '../querying/constants';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { PaginationService } from '../querying/pagination.service';
 import { EstoqueEntity } from './estoque.entity';
 import { CreateEstoqueDto } from './dtos/create-estoque.dto';
+import { EntradaReposicaoEstoqueDto } from './dtos/entrada-reposicao-estoque.dto';
 import { UpdateEstoqueDto } from './dtos/update-estoque.dto';
 import {
   TipoOperacaoEstoque,
@@ -18,6 +25,7 @@ export class EstoqueService {
     @InjectRepository(EstoqueEntity)
     private readonly estoqueRepository: Repository<EstoqueEntity>,
     private readonly paginationService: PaginationService,
+    private readonly ordemServicoService: OrdemServicoService,
   ) {}
 
   async create(createEstoqueDto: CreateEstoqueDto): Promise<EstoqueEntity> {
@@ -30,7 +38,12 @@ export class EstoqueService {
       );
     }
     const item = this.estoqueRepository.create(createEstoqueDto);
-    return this.estoqueRepository.save(item);
+    const saved = await this.estoqueRepository.save(item);
+    await this.ordemServicoService.tentarLiberarOsAposReposicaoEstoque(
+      [saved.id],
+      null,
+    );
+    return saved;
   }
 
   async findAll(paginationDto: PaginationDto, estoqueBaixo?: boolean) {
@@ -53,6 +66,25 @@ export class EstoqueService {
     const [data, count] = await queryBuilder.getManyAndCount();
     const meta = this.paginationService.createMeta(take, page, count);
     return { data, meta };
+  }
+
+  /**
+   * Incrementa quantidade física por reposição (compra/recebimento) e dispara a
+   * tentativa de reservas e liberação de OS em falta daquele SKU.
+   */
+  async registrarReposicaoEstoque(
+    id: number,
+    dto: EntradaReposicaoEstoqueDto,
+    usuarioId?: string | null,
+  ): Promise<EstoqueEntity> {
+    const item = await this.findOne(id);
+    item.quantidadeFisica += dto.quantidade;
+    const saved = await this.estoqueRepository.save(item);
+    await this.ordemServicoService.tentarLiberarOsAposReposicaoEstoque(
+      [saved.id],
+      usuarioId ?? null,
+    );
+    return saved;
   }
 
   async findOne(id: number): Promise<EstoqueEntity> {
@@ -91,20 +123,40 @@ export class EstoqueService {
       }
     }
 
+    const oldFisica = existing.quantidadeFisica;
     const merged = this.estoqueRepository.merge(existing, updateEstoqueDto);
-    return this.estoqueRepository.save(merged);
+    const saved = await this.estoqueRepository.save(merged);
+    if (saved.quantidadeFisica > oldFisica) {
+      await this.ordemServicoService.tentarLiberarOsAposReposicaoEstoque(
+        [saved.id],
+        null,
+      );
+    }
+    return saved;
   }
 
   async executarOperacao(
     id: number,
     operacaoDto: OperacaoEstoqueDto,
   ): Promise<EstoqueEntity> {
+    if (operacaoDto.operacao === TipoOperacaoEstoque.ADICIONAR) {
+      throw new BadRequestException(
+        'Operação "adicionar" é tratada no controller (cadastro).',
+      );
+    }
+    if (operacaoDto.operacao === TipoOperacaoEstoque.REPOSICAO) {
+      throw new BadRequestException(
+        'Operação "reposicao" é tratada no controller.',
+      );
+    }
     const item = await this.findOne(id);
 
     if (operacaoDto.operacao === TipoOperacaoEstoque.RESERVAR) {
-      item.reservar(operacaoDto.quantidade);
+      item.reservar(operacaoDto.quantidade!);
+    } else if (operacaoDto.operacao === TipoOperacaoEstoque.DAR_BAIXA) {
+      item.darBaixa(operacaoDto.quantidade!);
     } else {
-      item.darBaixa(operacaoDto.quantidade);
+      throw new BadRequestException('Operação de estoque inválida.');
     }
 
     return this.estoqueRepository.save(item);

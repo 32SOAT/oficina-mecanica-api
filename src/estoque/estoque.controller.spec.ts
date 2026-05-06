@@ -1,15 +1,32 @@
 import { HttpException } from '@nestjs/common';
+import type { Response } from 'express';
+import { type AuthenticatedRequest } from '../auth/authenticated-request.interface';
 import { EstoqueController } from './estoque.controller';
-import { EstoqueService } from './estoque.service';
 import { EstoqueEntity } from './estoque.entity';
+import { EstoqueService } from './estoque.service';
 import { TipoOperacaoEstoque } from './dtos/operacao-estoque.dto';
 
 type EstoqueServiceMock = jest.Mocked<
   Pick<
     EstoqueService,
-    'create' | 'findAll' | 'findOne' | 'update' | 'executarOperacao' | 'remove'
+    | 'create'
+    | 'findAll'
+    | 'findOne'
+    | 'update'
+    | 'executarOperacao'
+    | 'remove'
+    | 'registrarReposicaoEstoque'
   >
 >;
+
+const mockReq = {
+  user: { sub: 'usuario-teste', email: 't@t.c', username: 't' },
+} as unknown as AuthenticatedRequest;
+
+const mockPassthroughRes = (): Response =>
+  ({
+    status: jest.fn().mockReturnThis(),
+  }) as unknown as Response;
 
 describe('EstoqueController', () => {
   let controller: EstoqueController;
@@ -35,6 +52,7 @@ describe('EstoqueController', () => {
       update: jest.fn(),
       executarOperacao: jest.fn(),
       remove: jest.fn(),
+      registrarReposicaoEstoque: jest.fn(),
     };
 
     controller = new EstoqueController(
@@ -42,7 +60,7 @@ describe('EstoqueController', () => {
     );
   });
 
-  it('creates an item', async () => {
+  it('POST /estoque delega ao service.create e retorna a entidade', async () => {
     const createEstoqueDto = {
       codigo: 'PCA-001',
       pecasInsumos: 'Pastilha de freio',
@@ -55,7 +73,7 @@ describe('EstoqueController', () => {
     expect(estoqueService.create).toHaveBeenCalledWith(createEstoqueDto);
   });
 
-  it('lets create service exceptions propagate to Nest', async () => {
+  it('POST /estoque propaga erros do service', async () => {
     const error = new HttpException('Invalid data', 400);
     estoqueService.create.mockRejectedValue(error);
 
@@ -67,6 +85,75 @@ describe('EstoqueController', () => {
         precoUnitario: 89.9,
       }),
     ).rejects.toBe(error);
+  });
+
+  it('adiciona item via PATCH :id/operacao com operação adicionar (ignora id)', async () => {
+    const res = mockPassthroughRes();
+    const body = {
+      operacao: TipoOperacaoEstoque.ADICIONAR as const,
+      codigo: 'PCA-001',
+      pecasInsumos: 'Pastilha de freio',
+      quantidadeFisica: 50,
+      precoUnitario: 89.9,
+    };
+    estoqueService.create.mockResolvedValue(item);
+
+    await expect(
+      controller.executarOperacao(res, mockReq, 999, body),
+    ).resolves.toEqual({
+      success: true,
+      message: 'Item de estoque cadastrado com sucesso.',
+      data: item,
+    });
+    expect(estoqueService.create).toHaveBeenCalledWith({
+      codigo: body.codigo,
+      pecasInsumos: body.pecasInsumos,
+      quantidadeFisica: body.quantidadeFisica,
+      precoUnitario: body.precoUnitario,
+    });
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(estoqueService.executarOperacao).not.toHaveBeenCalled();
+    expect(estoqueService.registrarReposicaoEstoque).not.toHaveBeenCalled();
+  });
+
+  it('propaga erros do create ao usar operação adicionar na mesma rota', async () => {
+    const error = new HttpException('Invalid data', 400);
+    estoqueService.create.mockRejectedValue(error);
+
+    await expect(
+      controller.executarOperacao(mockPassthroughRes(), mockReq, 0, {
+        operacao: TipoOperacaoEstoque.ADICIONAR,
+        codigo: 'PCA-001',
+        pecasInsumos: 'Pastilha de freio',
+        quantidadeFisica: 50,
+        precoUnitario: 89.9,
+      }),
+    ).rejects.toBe(error);
+  });
+
+  it('reposição via PATCH :id/operacao delega ao service e associa usuário JWT', async () => {
+    const res = mockPassthroughRes();
+    const atualizado = Object.assign(new EstoqueEntity(), {
+      ...item,
+      quantidadeFisica: 60,
+    });
+    estoqueService.registrarReposicaoEstoque.mockResolvedValue(atualizado);
+
+    const result = await controller.executarOperacao(res, mockReq, 1, {
+      operacao: TipoOperacaoEstoque.REPOSICAO,
+      quantidade: 10,
+    });
+
+    expect(
+      estoqueService.registrarReposicaoEstoque,
+    ).toHaveBeenCalledWith(1, { quantidade: 10 }, 'usuario-teste');
+    expect(estoqueService.executarOperacao).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(result).toEqual({
+      success: true,
+      message: 'Reposição de 10.',
+      data: atualizado,
+    });
   });
 
   it('lists items with pagination', async () => {
@@ -94,6 +181,19 @@ describe('EstoqueController', () => {
 
     await expect(controller.findAll({}, 'true')).resolves.toBe(result);
     expect(estoqueService.findAll).toHaveBeenCalledWith({}, true);
+  });
+
+  it('omite filtro estoque baixo quando query não é a string true', async () => {
+    const result = { data: [], meta: {} };
+    estoqueService.findAll.mockResolvedValue(result);
+
+    await expect(controller.findAll({ page: 1, take: 10 }, 'false')).resolves.toBe(
+      result,
+    );
+    expect(estoqueService.findAll).toHaveBeenCalledWith(
+      { page: 1, take: 10 },
+      false,
+    );
   });
 
   it('finds one item by id', async () => {
@@ -128,7 +228,31 @@ describe('EstoqueController', () => {
     await expect(controller.update(999, {})).rejects.toBe(error);
   });
 
+  it('executes a write-off operation (dar baixa)', async () => {
+    const res = mockPassthroughRes();
+    const operacaoDto = {
+      operacao: TipoOperacaoEstoque.DAR_BAIXA,
+      quantidade: 3,
+    };
+    const updated = Object.assign(new EstoqueEntity(), {
+      ...item,
+      quantidadeFisica: 47,
+      quantidadeReservada: 2,
+    });
+    estoqueService.executarOperacao.mockResolvedValue(updated);
+
+    const result = await controller.executarOperacao(res, mockReq, 1, operacaoDto);
+
+    expect(result.data).toBe(updated);
+    expect(estoqueService.executarOperacao).toHaveBeenCalledWith(
+      1,
+      operacaoDto,
+    );
+    expect(estoqueService.registrarReposicaoEstoque).not.toHaveBeenCalled();
+  });
+
   it('executes a reserve operation', async () => {
+    const res = mockPassthroughRes();
     const operacaoDto = {
       operacao: TipoOperacaoEstoque.RESERVAR,
       quantidade: 5,
@@ -139,7 +263,7 @@ describe('EstoqueController', () => {
     });
     estoqueService.executarOperacao.mockResolvedValue(updated);
 
-    const result = await controller.executarOperacao(1, operacaoDto);
+    const result = await controller.executarOperacao(res, mockReq, 1, operacaoDto);
 
     expect(result).toEqual({
       success: true,
@@ -150,6 +274,7 @@ describe('EstoqueController', () => {
       1,
       operacaoDto,
     );
+    expect(estoqueService.registrarReposicaoEstoque).not.toHaveBeenCalled();
   });
 
   it('lets executarOperacao service exceptions propagate to Nest', async () => {
@@ -157,7 +282,7 @@ describe('EstoqueController', () => {
     estoqueService.executarOperacao.mockRejectedValue(error);
 
     await expect(
-      controller.executarOperacao(1, {
+      controller.executarOperacao(mockPassthroughRes(), mockReq, 1, {
         operacao: TipoOperacaoEstoque.RESERVAR,
         quantidade: 100,
       }),
