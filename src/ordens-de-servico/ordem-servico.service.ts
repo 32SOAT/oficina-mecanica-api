@@ -58,7 +58,7 @@ export class OrdemServicoService {
   ) {}
 
   private static escapeRegExp(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return s.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private mergeObservacaoAvisoCompra(
@@ -67,14 +67,14 @@ export class OrdemServicoService {
   ): string | null {
     const atualNorm = atual?.trim() ?? '';
     const semAviso = atualNorm
-      .replace(
+      .replaceAll(
         new RegExp(
           `(\\n|^)${OrdemServicoService.escapeRegExp(AVISO_AGUARDAR_COMPRA_PECA)}(\\n|$)`,
           'g',
         ),
         '\n',
       )
-      .replace(/\n{3,}/g, '\n\n')
+      .replaceAll(/\n{3,}/g, '\n\n')
       .trim();
     if (!precisaAviso) {
       return semAviso.length > 0 ? semAviso : null;
