@@ -1,5 +1,11 @@
 import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiTags,
+  ApiParam,
+  ApiOkResponse,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { OrdemServicoService } from './ordem-servico.service';
 import { StatusPublicoResponse } from './dtos/status-publico.response';
 import { Public } from '../auth/public.decorator';
@@ -12,8 +18,16 @@ export class ConsultaOrdemServicoController {
   @Public()
   @Get(':id/status')
   @ApiOperation({
-    summary: 'Consulta pública do status da OS (sem autenticação)',
+    summary: 'Consulta pública do status da OS',
+    description:
+      'Não exige JWT. Não expõe dados sensíveis do cliente (ex.: CPF, e-mail).',
   })
+  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
+  @ApiOkResponse({
+    description: 'Status atual, valor, veículo (placa/modelo) e linha do tempo',
+    type: StatusPublicoResponse,
+  })
+  @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   async consultarStatus(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<StatusPublicoResponse> {

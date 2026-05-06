@@ -1,10 +1,13 @@
 import { applyDecorators, Type } from '@nestjs/common';
 import { ApiExtraModels, ApiResponse, getSchemaPath } from '@nestjs/swagger';
 
+const envelopeDescription =
+  'Resposta HTTP após o interceptor global: o valor retornado pelo handler fica na propriedade `data`.';
+
 export function ApiDataResponse(
   type: Type<unknown>,
   status = 200,
-  description = 'Successful response',
+  description = 'Resposta com sucesso',
 ) {
   return applyDecorators(
     ApiExtraModels(type),
@@ -13,9 +16,11 @@ export function ApiDataResponse(
       description,
       schema: {
         type: 'object',
+        description: envelopeDescription,
         properties: {
           data: { $ref: getSchemaPath(type) },
         },
+        required: ['data'],
       },
     }),
   );
@@ -24,7 +29,7 @@ export function ApiDataResponse(
 export function ApiPaginatedResponse(
   type: Type<unknown>,
   status = 200,
-  description = 'Paginated response',
+  description = 'Lista paginada',
 ) {
   return applyDecorators(
     ApiExtraModels(type),
@@ -33,6 +38,8 @@ export function ApiPaginatedResponse(
       description,
       schema: {
         type: 'object',
+        description:
+          'Lista e metadados de paginação. O interceptor repassa este formato sem envolver em outro `data`.',
         properties: {
           data: {
             type: 'array',
@@ -50,39 +57,62 @@ export function ApiPaginatedResponse(
             },
           },
         },
+        required: ['data', 'meta'],
       },
     }),
   );
 }
 
+/**
+ * Documenta respostas no formato `{ success, message, data? }` retornadas por
+ * alguns controllers. O interceptor global envolve o corpo em `{ data: ... }`,
+ * portanto o schema OpenAPI descreve o objeto HTTP final.
+ */
 export function ApiWrappedResponse(
   type?: Type<unknown>,
   status = 200,
-  description = 'Successful response',
+  description = 'Resposta com sucesso',
 ) {
-  const decorators = type ? [ApiExtraModels(type)] : [];
-  const properties: Record<string, any> = {
-    success: { type: 'boolean' },
-    message: { type: 'string' },
+  const payloadProps: Record<string, object> = {
+    success: {
+      type: 'boolean',
+      example: true,
+      description: 'Indica sucesso da operação.',
+    },
+    message: {
+      type: 'string',
+      example: 'Operação concluída.',
+      description: 'Mensagem para o cliente.',
+    },
   };
+  const payloadRequired: string[] = ['success', 'message'];
 
   if (type) {
-    properties.data = { $ref: getSchemaPath(type) };
+    payloadProps.data = {
+      $ref: getSchemaPath(type),
+      description: 'Conteúdo principal da resposta.',
+    };
+    payloadRequired.push('data');
   }
 
   return applyDecorators(
-    ...decorators,
+    ...(type ? [ApiExtraModels(type)] : []),
     ApiResponse({
       status,
       description,
       schema: {
         type: 'object',
+        description: `${envelopeDescription} O campo "data" (raiz) contém o objeto do controller com success, message e, quando aplicável, o recurso no campo homônimo "data".`,
         properties: {
           data: {
             type: 'object',
-            properties,
+            description:
+              'Objeto retornado pelo controller (`success`, `message` e, se houver, `data` com o recurso).',
+            properties: payloadProps,
+            required: payloadRequired,
           },
         },
+        required: ['data'],
       },
     }),
   );

@@ -12,10 +12,12 @@ import {
   ApiBody,
   ApiResponse,
   ApiBearerAuth,
+  ApiOkResponse,
 } from '@nestjs/swagger';
 import type { AuthenticatedRequest } from './authenticated-request.interface';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dtos/login.dto';
+import { LoginResponseDto } from './dtos/login-response.dto';
 import { ChangePasswordDto } from './dtos/change-password.dto';
 import { Public } from './public.decorator';
 
@@ -31,7 +33,10 @@ export class AuthController {
     description: 'Autentica administrador com email e senha, retorna token JWT',
   })
   @ApiBody({ type: LoginDto })
-  @ApiResponse({ status: 200, description: 'Login realizado com sucesso.' })
+  @ApiOkResponse({
+    description: 'Usuário autenticado e token JWT.',
+    type: LoginResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas.' })
   async login(@Body() loginDto: LoginDto) {
     const user = await this.authService.validateUser(
@@ -46,7 +51,7 @@ export class AuthController {
     return this.authService.login(user);
   }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @Patch('password')
   @ApiOperation({
     summary: 'Alterar senha do administrador',
@@ -57,9 +62,9 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Senha alterada com sucesso.' })
   @ApiResponse({
     status: 401,
-    description: 'Não autenticado ou senha atual incorreta.',
+    description:
+      'Não autenticado (token ausente, inválido ou expirado) ou senha atual incorreta.',
   })
-  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
   async changePassword(
     @Req() req: AuthenticatedRequest,
     @Body() changePasswordDto: ChangePasswordDto,

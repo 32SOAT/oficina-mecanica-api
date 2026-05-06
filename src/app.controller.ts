@@ -17,15 +17,21 @@ export class AppController {
   })
   @ApiResponse({
     status: 200,
-    description: 'API está funcionando corretamente.',
+    description:
+      'API online. O payload real é envolvido por `{ data: { status, timestamp } }` pelo interceptor global.',
     schema: {
       type: 'object',
       properties: {
-        status: { type: 'string', example: 'ok' },
-        timestamp: {
-          type: 'string',
-          format: 'date-time',
-          example: '2023-10-01T12:00:00.000Z',
+        data: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', example: 'ok' },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+              example: '2023-10-01T12:00:00.000Z',
+            },
+          },
         },
       },
     },

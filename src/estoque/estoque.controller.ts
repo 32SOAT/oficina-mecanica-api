@@ -17,6 +17,7 @@ import {
   ApiBody,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { EstoqueService } from './estoque.service';
@@ -24,6 +25,7 @@ import { CreateEstoqueDto } from './dtos/create-estoque.dto';
 import { UpdateEstoqueDto } from './dtos/update-estoque.dto';
 import { OperacaoEstoqueDto } from './dtos/operacao-estoque.dto';
 
+@ApiBearerAuth('JWT-auth')
 @ApiTags('Estoque')
 @Controller('estoque')
 export class EstoqueController {
@@ -53,20 +55,6 @@ export class EstoqueController {
     summary: 'Listar itens de estoque com paginação',
     description:
       'Retorna uma lista paginada de itens do estoque. Use estoque_baixo=true para filtrar itens com estoque baixo.',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Número da página (inicia em 1).',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Limite de itens por página.',
-    example: 10,
   })
   @ApiQuery({
     name: 'estoque_baixo',

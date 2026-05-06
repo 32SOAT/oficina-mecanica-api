@@ -143,14 +143,14 @@ describe('UserController (e2e)', () => {
     expect(response.body).toEqual({
       success: true,
       data: user,
-      message: 'User Fetched Successfully',
+      message: 'Usuário obtido com sucesso.',
     });
     expect(userService.findOne).toHaveBeenCalledWith(user.id);
   });
 
   it('GET /users/:id returns 404 when a user is not found', async () => {
     userService.findOne.mockRejectedValue(
-      new HttpException('User Not Found', 404),
+      new HttpException('Usuário não encontrado.', 404),
     );
 
     const response = await request(app.getHttpServer())
@@ -160,7 +160,7 @@ describe('UserController (e2e)', () => {
     expect(response.body).toEqual(
       expect.objectContaining({
         statusCode: 404,
-        message: 'User Not Found',
+        message: 'Usuário não encontrado.',
       }),
     );
   });
@@ -181,7 +181,7 @@ describe('UserController (e2e)', () => {
 
     expect(response.body).toEqual({
       success: true,
-      message: 'User Updated Successfully',
+      message: 'Usuário atualizado com sucesso.',
     });
     expect(userService.update).toHaveBeenCalledWith(user.id, updateUserDto);
   });
@@ -209,7 +209,7 @@ describe('UserController (e2e)', () => {
 
     expect(response.body).toEqual({
       success: true,
-      message: 'User Deleted Successfully',
+      message: 'Usuário removido com sucesso.',
     });
     expect(userService.remove).toHaveBeenCalledWith(user.id);
   });
