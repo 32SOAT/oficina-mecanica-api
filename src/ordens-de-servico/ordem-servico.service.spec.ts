@@ -491,6 +491,34 @@ describe('OrdemServicoService', () => {
       expect(os.status).toBe(S.EmExecucao);
     });
 
+    it('avancarStatus para Reprovada estorna reservas de estoque', async () => {
+      const peca = estoque(7, 10, 3, 30);
+      const itemPeca = Object.assign(new ItemOsEstoqueEntity(), {
+        quantidade: 3,
+        disponivelNoDiagnostico: true,
+        peca,
+        estoque_id: 7,
+      });
+      const os = new OrdemServicoEntity();
+      Object.assign(os, {
+        id: 'os-1',
+        status: S.AguardandoAprovacao,
+        itensServico: [],
+        itensPeca: [itemPeca],
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) => {
+        if (E === OrdemServicoEntity) return Promise.resolve(os);
+        if (E === EstoqueEntity) return Promise.resolve(peca);
+        return Promise.resolve(null);
+      });
+
+      await service.avancarStatus('os-1', S.Reprovada);
+
+      expect(os.status).toBe(S.Reprovada);
+      expect(peca.quantidadeReservada).toBe(0);
+    });
+
     it('avancarStatus rejeita transição inválida', async () => {
       setupOs(S.Recebida);
       await expect(service.avancarStatus('os-1', S.Entregue)).rejects.toThrow(

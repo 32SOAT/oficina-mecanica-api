@@ -291,6 +291,12 @@ export class OrdemServicoService {
     novo: StatusOrdemServico,
     usuarioId?: string | null,
   ): Promise<OrdemServicoEntity> {
+    if (novo === StatusOrdemServico.Reprovada) {
+      return this.reprovarOrcamento(id, usuarioId);
+    }
+    if (novo === StatusOrdemServico.EmExecucao) {
+      return this.iniciarExecucao(id, usuarioId);
+    }
     return this.transicionar(id, novo, usuarioId);
   }
 

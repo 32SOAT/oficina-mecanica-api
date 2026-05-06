@@ -34,6 +34,9 @@ export class NotificarListener {
       case StatusOrdemServico.Finalizada:
         await this.notificarClienteServicoFinalizado(event.osId);
         break;
+      case StatusOrdemServico.Reprovada:
+        await this.notificarClienteServicoReprovado(event.osId);
+        break;
       default:
         break;
     }
@@ -110,6 +113,24 @@ export class NotificarListener {
     }
     this.logger.log(
       `[MOCK NOTIFICAÇÃO CLIENTE] Serviço da OS ${os.id} finalizado ` +
+        `(veículo ${os.veiculo.placa}). Informar ${os.cliente.nome} ` +
+        `<${os.cliente.email}> que o veículo pode ser retirado.`,
+    );
+  }
+
+  private async notificarClienteServicoReprovado(osId: string): Promise<void> {
+    const os = await this.osRepository.findOne({
+      where: { id: osId },
+      relations: ['cliente', 'veiculo'],
+    });
+    if (!os) {
+      this.logger.warn(
+        `OS ${osId} não encontrada ao notificar cliente (serviço reprovado).`,
+      );
+      return;
+    }
+    this.logger.log(
+      `[MOCK NOTIFICAÇÃO CLIENTE] Orçamento da OS ${os.id} recusado ` +
         `(veículo ${os.veiculo.placa}). Informar ${os.cliente.nome} ` +
         `<${os.cliente.email}> que o veículo pode ser retirado.`,
     );

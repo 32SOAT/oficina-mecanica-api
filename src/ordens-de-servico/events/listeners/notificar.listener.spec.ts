@@ -130,6 +130,29 @@ describe('NotificarListener', () => {
     expect(message).toContain('Maria');
   });
 
+  it('REPROVADA: loga ao cliente sobre retirada do veículo', async () => {
+    osRepo.findOne.mockResolvedValue({
+      id: 'os-1',
+      cliente: { nome: 'Carlos', email: 'carlos@example.com' },
+      veiculo: { placa: 'QRS1T23' },
+    } as OrdemServicoEntity);
+
+    await listener.handle(
+      new StatusAlteradoEvent(
+        'os-1',
+        StatusOrdemServico.AguardandoAprovacao,
+        StatusOrdemServico.Reprovada,
+        null,
+      ),
+    );
+
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const message = logSpy.mock.calls[0][0] as string;
+    expect(message).toContain('recusado');
+    expect(message).toContain('retirado');
+    expect(message).toContain('Carlos');
+  });
+
   it('status sem notificação dedicada não loga', async () => {
     await listener.handle(
       new StatusAlteradoEvent(
