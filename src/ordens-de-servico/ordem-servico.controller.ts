@@ -39,9 +39,19 @@ export class OrdemServicoController {
       'para o cliente (compra pendente). Após entrada de estoque no SKU, OSs em AGUARDANDO_PECAS_INSUMOS podem ir para AGUARDANDO_SERVICO.',
   })
   @ApiBody({ type: CriarOrdemServicoDto })
-  @ApiResponse({ status: 400, description: 'Payload inválido ou regras de negócio (documento, placa, itens).' })
-  @ApiResponse({ status: 404, description: 'Cliente, veículo ou item referenciado não encontrado.' })
-  @ApiResponse({ status: 409, description: 'Conflito (ex.: veículo não pertence ao cliente).' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Payload inválido ou regras de negócio (documento, placa, itens).',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Cliente, veículo ou item referenciado não encontrado.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflito (ex.: veículo não pertence ao cliente).',
+  })
   criar(@Req() req: AuthenticatedRequest, @Body() dto: CriarOrdemServicoDto) {
     return this.service.criar(dto, req.user.sub);
   }
@@ -58,7 +68,11 @@ export class OrdemServicoController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Detalha uma OS (com cliente, veículo e itens)' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   detalhar(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findOne(id);
@@ -66,7 +80,11 @@ export class OrdemServicoController {
 
   @Get(':id/historico')
   @ApiOperation({ summary: 'Histórico de transições de status da OS' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   historico(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.findHistorico(id);
@@ -74,8 +92,15 @@ export class OrdemServicoController {
 
   @Post(':id/iniciar-diagnostico')
   @ApiOperation({ summary: 'Inicia o diagnóstico (Recebida → EmDiagnostico)' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 400, description: 'Transição de status inválida para o estado atual.' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição de status inválida para o estado atual.',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   iniciarDiagnostico(
     @Req() req: AuthenticatedRequest,
@@ -91,14 +116,21 @@ export class OrdemServicoController {
       'Só permitido em EM_DIAGNOSTICO. Estorna o compromisso de reserva das linhas antigas e reserva integralmente as novas quantidades mesmo se o físico for insuficiente no momento. ' +
       'Recalcula valor total e mescla/remove o aviso padrão na `observacao` quando há falta de peça física.',
   })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
   @ApiBody({ type: EditarItensOsDto })
   @ApiResponse({
     status: 400,
     description:
       'OS não está em diagnóstico, sem itens válidos ou regra de negócio (estoque).',
   })
-  @ApiResponse({ status: 404, description: 'OS, serviço ou peça não encontrada.' })
+  @ApiResponse({
+    status: 404,
+    description: 'OS, serviço ou peça não encontrada.',
+  })
   substituirItensEmDiagnostico(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
@@ -111,8 +143,15 @@ export class OrdemServicoController {
   @ApiOperation({
     summary: 'Gera/atualiza o orçamento e move para AguardandoAprovacao',
   })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 400, description: 'Transição inválida ou OS não está em diagnóstico.' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição inválida ou OS não está em diagnóstico.',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   gerarOrcamento(
     @Req() req: AuthenticatedRequest,
@@ -126,8 +165,15 @@ export class OrdemServicoController {
     summary:
       'Aprova o orçamento; OS avança para AguardandoServico ou AguardandoPecasInsumos',
   })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 400, description: 'Transição inválida (ex.: não está aguardando aprovação).' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição inválida (ex.: não está aguardando aprovação).',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   aprovarOrcamento(
     @Req() req: AuthenticatedRequest,
@@ -138,10 +184,18 @@ export class OrdemServicoController {
 
   @Post(':id/reprovar-orcamento')
   @ApiOperation({
-    summary: 'Reprova o orçamento; reservas de estoque são estornadas (status Reprovada)',
+    summary:
+      'Reprova o orçamento; reservas de estoque são estornadas (status Reprovada)',
   })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 400, description: 'Transição inválida para o estado atual.' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição inválida para o estado atual.',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   reprovarOrcamento(
     @Req() req: AuthenticatedRequest,
@@ -154,8 +208,15 @@ export class OrdemServicoController {
   @ApiOperation({
     summary: 'Inicia a execução; baixa de estoque das peças reservadas',
   })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 400, description: 'Transição inválida ou estoque insuficiente.' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição inválida ou estoque insuficiente.',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   iniciarExecucao(
     @Req() req: AuthenticatedRequest,
@@ -166,8 +227,15 @@ export class OrdemServicoController {
 
   @Post(':id/finalizar')
   @ApiOperation({ summary: 'Conclui a execução (EmExecucao → Finalizada)' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 400, description: 'Transição inválida para o estado atual.' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição inválida para o estado atual.',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   finalizar(
     @Req() req: AuthenticatedRequest,
@@ -177,9 +245,18 @@ export class OrdemServicoController {
   }
 
   @Post(':id/entregar')
-  @ApiOperation({ summary: 'Registra retirada do veículo (Finalizada → Entregue)' })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 400, description: 'Transição inválida para o estado atual.' })
+  @ApiOperation({
+    summary: 'Registra retirada do veículo (Finalizada → Entregue)',
+  })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição inválida para o estado atual.',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   entregar(
     @Req() req: AuthenticatedRequest,
@@ -192,8 +269,15 @@ export class OrdemServicoController {
   @ApiOperation({
     summary: 'Cancela a OS a partir de Reprovada (Reprovada → Cancelada)',
   })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
-  @ApiResponse({ status: 400, description: 'Transição inválida para o estado atual.' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição inválida para o estado atual.',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   cancelar(
     @Req() req: AuthenticatedRequest,
@@ -208,9 +292,16 @@ export class OrdemServicoController {
     description:
       'Avança para um status permitido pela máquina de estados; falha com 400 se a transição não for válida.',
   })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
   @ApiBody({ type: AvancarStatusDto })
-  @ApiResponse({ status: 400, description: 'Transição inválida ou corpo inválido.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Transição inválida ou corpo inválido.',
+  })
   @ApiResponse({ status: 404, description: 'OS não encontrada.' })
   avancar(
     @Req() req: AuthenticatedRequest,

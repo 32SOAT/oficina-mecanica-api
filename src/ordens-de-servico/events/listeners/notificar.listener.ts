@@ -42,7 +42,9 @@ export class NotificarListener {
     }
   }
 
-  private async notificarClienteAguardandoAprovacao(osId: string): Promise<void> {
+  private async notificarClienteAguardandoAprovacao(
+    osId: string,
+  ): Promise<void> {
     const os = await this.osRepository.findOne({
       where: { id: osId },
       relations: ['cliente', 'veiculo'],
@@ -82,7 +84,9 @@ export class NotificarListener {
     );
   }
 
-  private async notificarAdministradorPecasEmFalta(osId: string): Promise<void> {
+  private async notificarAdministradorPecasEmFalta(
+    osId: string,
+  ): Promise<void> {
     const os = await this.osRepository.findOne({
       where: { id: osId },
       relations: ['veiculo'],

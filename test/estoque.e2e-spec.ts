@@ -6,7 +6,10 @@ import request from 'supertest';
 import { EstoqueController } from '../src/estoque/estoque.controller';
 import { EstoqueService } from '../src/estoque/estoque.service';
 import { EstoqueEntity } from '../src/estoque/estoque.entity';
-import { E2E_AUTH_USER_STUB, FakeJwtAuthGuard } from './helpers/fake-jwt-auth.guard';
+import {
+  E2E_AUTH_USER_STUB,
+  FakeJwtAuthGuard,
+} from './helpers/fake-jwt-auth.guard';
 
 describe('Estoque (e2e)', () => {
   let app: INestApplication;
@@ -99,7 +102,6 @@ describe('Estoque (e2e)', () => {
     expect(serviceMock.create).not.toHaveBeenCalled();
   });
 
-
   it('GET /estoque lista paginada (estoque_baixo=false por padrão)', async () => {
     serviceMock.findAll.mockResolvedValueOnce({
       data: [],
@@ -131,16 +133,22 @@ describe('Estoque (e2e)', () => {
   });
 
   it('GET /estoque/:id retorna o item quando existe', async () => {
-    serviceMock.findOne.mockResolvedValueOnce(itemSample({ id: 42, codigo: 'PCA-42' }));
+    serviceMock.findOne.mockResolvedValueOnce(
+      itemSample({ id: 42, codigo: 'PCA-42' }),
+    );
 
-    const res = await request(app.getHttpServer()).get('/estoque/42').expect(200);
+    const res = await request(app.getHttpServer())
+      .get('/estoque/42')
+      .expect(200);
 
     expect(res.body).toMatchObject({ id: 42, codigo: 'PCA-42' });
     expect(serviceMock.findOne).toHaveBeenCalledWith(42);
   });
 
   it('PATCH /estoque/:id retorna envelope de sucesso', async () => {
-    serviceMock.update.mockResolvedValueOnce(itemSample({ pecasInsumos: 'Novo nome' }));
+    serviceMock.update.mockResolvedValueOnce(
+      itemSample({ pecasInsumos: 'Novo nome' }),
+    );
 
     const res = await request(app.getHttpServer())
       .patch('/estoque/1')
@@ -151,7 +159,9 @@ describe('Estoque (e2e)', () => {
       success: true,
       message: 'Item de estoque atualizado com sucesso.',
     });
-    expect(serviceMock.update).toHaveBeenCalledWith(1, { pecasInsumos: 'Novo nome' });
+    expect(serviceMock.update).toHaveBeenCalledWith(1, {
+      pecasInsumos: 'Novo nome',
+    });
   });
 
   it('PATCH /estoque/:id/operacao retorna data', async () => {
@@ -207,7 +217,9 @@ describe('Estoque (e2e)', () => {
   it('DELETE /estoque/:id retorna envelope', async () => {
     serviceMock.remove.mockResolvedValueOnce(itemSample());
 
-    const res = await request(app.getHttpServer()).delete('/estoque/99').expect(200);
+    const res = await request(app.getHttpServer())
+      .delete('/estoque/99')
+      .expect(200);
 
     expect(res.body.success).toBe(true);
     expect(serviceMock.remove).toHaveBeenCalledWith(99);

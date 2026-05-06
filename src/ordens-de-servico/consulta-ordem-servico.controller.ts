@@ -22,7 +22,11 @@ export class ConsultaOrdemServicoController {
     description:
       'Não exige JWT. Não expõe dados sensíveis do cliente (ex.: CPF, e-mail).',
   })
-  @ApiParam({ name: 'id', format: 'uuid', description: 'ID da ordem de serviço' })
+  @ApiParam({
+    name: 'id',
+    format: 'uuid',
+    description: 'ID da ordem de serviço',
+  })
   @ApiOkResponse({
     description: 'Status atual, valor, veículo (placa/modelo) e linha do tempo',
     type: StatusPublicoResponse,

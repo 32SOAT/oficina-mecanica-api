@@ -33,7 +33,9 @@ describe('OrdemServicoController', () => {
   });
 
   it('PATCH /ordens/:id/itens delega ao service.substituirItensEmDiagnostico', async () => {
-    service.substituirItensEmDiagnostico.mockResolvedValue({ id: 'os-1' } as never);
+    service.substituirItensEmDiagnostico.mockResolvedValue({
+      id: 'os-1',
+    } as never);
     const dto = { itensServico: [{ servicoId: 1 }], itensPeca: [] };
     const result = await controller.substituirItensEmDiagnostico(
       mockReq,

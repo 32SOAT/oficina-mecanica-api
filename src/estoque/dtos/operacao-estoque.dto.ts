@@ -1,9 +1,4 @@
-import {
-  IsDefined,
-  IsIn,
-  IsInt,
-  IsPositive,
-} from 'class-validator';
+import { IsDefined, IsIn, IsInt, IsPositive } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum TipoOperacaoEstoque {
@@ -22,12 +17,9 @@ export class OperacaoEstoqueDto {
     enum: TipoOperacaoEstoque,
     example: TipoOperacaoEstoque.RESERVAR,
   })
-  @IsIn(
-    [TipoOperacaoEstoque.REPOSICAO, TipoOperacaoEstoque.RESERVAR],
-    {
-      message: 'Operação deve ser "reposicao" ou "reservar".',
-    },
-  )
+  @IsIn([TipoOperacaoEstoque.REPOSICAO, TipoOperacaoEstoque.RESERVAR], {
+    message: 'Operação deve ser "reposicao" ou "reservar".',
+  })
   operacao: TipoOperacaoEstoque;
 
   @ApiProperty({

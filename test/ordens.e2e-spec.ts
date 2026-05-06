@@ -7,7 +7,10 @@ import { OrdemServicoController } from '../src/ordens-de-servico/ordem-servico.c
 import { ConsultaOrdemServicoController } from '../src/ordens-de-servico/consulta-ordem-servico.controller';
 import { OrdemServicoService } from '../src/ordens-de-servico/ordem-servico.service';
 import { StatusOrdemServico as S } from '../src/ordens-de-servico/state-machine/status-ordem-servico.enum';
-import { E2E_AUTH_USER_STUB, FakeJwtAuthGuard } from './helpers/fake-jwt-auth.guard';
+import {
+  E2E_AUTH_USER_STUB,
+  FakeJwtAuthGuard,
+} from './helpers/fake-jwt-auth.guard';
 
 const OS_ID = 'aaaa1111-1111-1111-1111-111111111111';
 
@@ -101,7 +104,11 @@ describe('Ordens de Serviço (e2e)', () => {
   });
 
   it('GET /ordens/:id/historico delega ao service', async () => {
-    const linha = { id: 1, statusAnterior: S.Recebida, statusNovo: S.EmDiagnostico };
+    const linha = {
+      id: 1,
+      statusAnterior: S.Recebida,
+      statusNovo: S.EmDiagnostico,
+    };
     serviceMock.findHistorico.mockResolvedValueOnce([linha]);
 
     const res = await request(app.getHttpServer()).get(

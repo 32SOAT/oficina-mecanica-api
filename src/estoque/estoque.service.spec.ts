@@ -66,7 +66,9 @@ describe('EstoqueService', () => {
     };
 
     ordemServicoService = {
-      tentarLiberarOsAposReposicaoEstoque: jest.fn().mockResolvedValue(undefined),
+      tentarLiberarOsAposReposicaoEstoque: jest
+        .fn()
+        .mockResolvedValue(undefined),
     };
 
     service = new EstoqueService(
@@ -198,7 +200,10 @@ describe('EstoqueService', () => {
 
   it('update não dispara tentativa de liberar OS', async () => {
     const existing = item({ quantidadeFisica: 10 });
-    const updated = item({ quantidadeFisica: 10, pecasInsumos: 'Só mudou nome' });
+    const updated = item({
+      quantidadeFisica: 10,
+      pecasInsumos: 'Só mudou nome',
+    });
     estoqueRepository.findOneBy.mockResolvedValue(existing);
     estoqueRepository.merge.mockReturnValue(updated);
     estoqueRepository.save.mockResolvedValue(updated);
@@ -224,16 +229,19 @@ describe('EstoqueService', () => {
 
   it('allows codigo update when no other item holds the new code', async () => {
     const existing = item({ codigo: 'PCA-OLD' });
-    const updated = item({ codigo: 'PCA-RARE', pecasInsumos: existing.pecasInsumos });
+    const updated = item({
+      codigo: 'PCA-RARE',
+      pecasInsumos: existing.pecasInsumos,
+    });
 
     estoqueRepository.findOneBy.mockResolvedValue(existing);
     estoqueRepository.findOne.mockResolvedValueOnce(null);
     estoqueRepository.merge.mockReturnValue(updated);
     estoqueRepository.save.mockResolvedValue(updated);
 
-    await expect(
-      service.update(1, { codigo: 'PCA-RARE' }),
-    ).resolves.toBe(updated);
+    await expect(service.update(1, { codigo: 'PCA-RARE' })).resolves.toBe(
+      updated,
+    );
   });
 
   it('skip duplicate check when codigo in update equals current codigo', async () => {
@@ -286,7 +294,6 @@ describe('EstoqueService', () => {
       }),
     ).rejects.toThrow('Estoque insuficiente');
   });
-
 
   it('soft removes an item', async () => {
     const existing = item();

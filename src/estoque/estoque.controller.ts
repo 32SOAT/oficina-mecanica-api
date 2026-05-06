@@ -151,15 +151,13 @@ export class EstoqueController {
   @Patch(':id/operacao')
   @ApiOperation({
     summary: 'Executar operação de estoque',
-    description:
-      'Inclui `reposicao` (entrada no SKU com `:id`) e `reservar`.',
+    description: 'Inclui `reposicao` (entrada no SKU com `:id`) e `reservar`.',
   })
   @ApiBody({ type: OperacaoEstoqueDto })
   @ApiParam({
     name: 'id',
     type: Number,
-    description:
-      'ID do item (obrigatório para reposição e reservar).',
+    description: 'ID do item (obrigatório para reposição e reservar).',
     example: 1,
   })
   @ApiResponse({ status: 200, description: 'Operação executada com sucesso.' })
@@ -185,7 +183,7 @@ export class EstoqueController {
     if (dto.operacao === TipoOperacaoEstoque.REPOSICAO) {
       const atualizado = await this.estoqueService.registrarReposicaoEstoque(
         id,
-        { quantidade: dto.quantidade! },
+        { quantidade: dto.quantidade },
         req.user.sub,
       );
       res.status(HttpStatus.CREATED);

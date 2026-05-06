@@ -1,4 +1,8 @@
-import { ApiDataResponse, ApiPaginatedResponse, ApiWrappedResponse } from './swagger-response.decorator';
+import {
+  ApiDataResponse,
+  ApiPaginatedResponse,
+  ApiWrappedResponse,
+} from './swagger-response.decorator';
 
 class StubDto {}
 

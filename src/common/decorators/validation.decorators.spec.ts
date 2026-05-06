@@ -18,8 +18,6 @@ describe('IsImmutable', () => {
     const dto = Object.assign(new DtoComImutavel(), { id: 'fixo' });
     const errors = validateSync(dto);
     expect(errors).toHaveLength(1);
-    expect(errors[0].constraints?.isImmutable).toBe(
-      'id não pode ser alterado',
-    );
+    expect(errors[0].constraints?.isImmutable).toBe('id não pode ser alterado');
   });
 });

@@ -87,7 +87,6 @@ describe('EstoqueController', () => {
     ).rejects.toBe(error);
   });
 
-
   it('reposição via PATCH :id/operacao delega ao service e associa usuário JWT', async () => {
     const res = mockPassthroughRes();
     const atualizado = Object.assign(new EstoqueEntity(), {
@@ -101,9 +100,11 @@ describe('EstoqueController', () => {
       quantidade: 10,
     });
 
-    expect(
-      estoqueService.registrarReposicaoEstoque,
-    ).toHaveBeenCalledWith(1, { quantidade: 10 }, 'usuario-teste');
+    expect(estoqueService.registrarReposicaoEstoque).toHaveBeenCalledWith(
+      1,
+      { quantidade: 10 },
+      'usuario-teste',
+    );
     expect(estoqueService.executarOperacao).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
     expect(result).toEqual({
@@ -144,9 +145,9 @@ describe('EstoqueController', () => {
     const result = { data: [], meta: undefined };
     estoqueService.findAll.mockResolvedValue(result);
 
-    await expect(controller.findAll({ page: 1, take: 10 }, 'false')).resolves.toBe(
-      result,
-    );
+    await expect(
+      controller.findAll({ page: 1, take: 10 }, 'false'),
+    ).resolves.toBe(result);
     expect(estoqueService.findAll).toHaveBeenCalledWith(
       { page: 1, take: 10 },
       false,
@@ -205,7 +206,6 @@ describe('EstoqueController', () => {
     expect(estoqueService.update).not.toHaveBeenCalled();
   });
 
-
   it('executes a reserve operation', async () => {
     const res = mockPassthroughRes();
     const operacaoDto = {
@@ -218,7 +218,12 @@ describe('EstoqueController', () => {
     });
     estoqueService.executarOperacao.mockResolvedValue(updated);
 
-    const result = await controller.executarOperacao(res, mockReq, 1, operacaoDto);
+    const result = await controller.executarOperacao(
+      res,
+      mockReq,
+      1,
+      operacaoDto,
+    );
 
     expect(result).toEqual({
       success: true,

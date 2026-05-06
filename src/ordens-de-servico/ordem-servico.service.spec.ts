@@ -781,7 +781,7 @@ describe('OrdemServicoService', () => {
       });
 
       expect(peca.quantidadeReservada).toBe(2);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+
       expect(em.softRemove).toHaveBeenCalledTimes(2);
       expect(Number(os.valorTotal)).toBeCloseTo(150, 2);
       expect(os.itensServico).toHaveLength(1);
@@ -824,7 +824,8 @@ describe('OrdemServicoService', () => {
     });
 
     it('remove aviso na observação se todos os novos itens têm estoque', async () => {
-      const aviso = 'Será necessário aguardar a compra de uma ou mais peças/insumos para atender esta ordem de serviço.';
+      const aviso =
+        'Será necessário aguardar a compra de uma ou mais peças/insumos para atender esta ordem de serviço.';
       const pecaCheia = estoque(7, 100, 0, 10);
       const os = new OrdemServicoEntity();
       Object.assign(os, {
@@ -857,7 +858,9 @@ describe('OrdemServicoService', () => {
     it('lança 404 quando OS não existe', async () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
-        E === OrdemServicoEntity ? Promise.resolve(null) : Promise.resolve(null),
+        E === OrdemServicoEntity
+          ? Promise.resolve(null)
+          : Promise.resolve(null),
       );
       await expect(
         service.substituirItensEmDiagnostico('os-x', {
@@ -884,17 +887,19 @@ describe('OrdemServicoService', () => {
       });
       const srv = servico(1, 80);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      em.findOne.mockImplementation((E: unknown, opts?: { where?: { id?: number } }) => {
-        if (E === OrdemServicoEntity) return Promise.resolve(os);
-        if (E === EstoqueEntity && opts?.where?.id === 777) {
+      em.findOne.mockImplementation(
+        (E: unknown, opts?: { where?: { id?: number } }) => {
+          if (E === OrdemServicoEntity) return Promise.resolve(os);
+          if (E === EstoqueEntity && opts?.where?.id === 777) {
+            return Promise.resolve(null);
+          }
+          if (E === EstoqueEntity && opts?.where?.id === 8) {
+            return Promise.resolve(pecaNova);
+          }
+          if (E === ServicoEntity) return Promise.resolve(srv);
           return Promise.resolve(null);
-        }
-        if (E === EstoqueEntity && opts?.where?.id === 8) {
-          return Promise.resolve(pecaNova);
-        }
-        if (E === ServicoEntity) return Promise.resolve(srv);
-        return Promise.resolve(null);
-      });
+        },
+      );
       (osRepo.findOne as jest.Mock).mockResolvedValue(os);
 
       await service.substituirItensEmDiagnostico('os-1', {
@@ -978,11 +983,14 @@ describe('OrdemServicoService', () => {
       os.observacao = `${aviso}\n\nCliente ciente`;
       const peca = estoque(7, 20, 3, 10); // físico >= reservado
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      em.findOne.mockImplementation((E: unknown, opts?: { where?: { id?: number } }) => {
-        if (E === OrdemServicoEntity) return Promise.resolve(os);
-        if (E === EstoqueEntity && opts?.where?.id === 7) return Promise.resolve(peca);
-        return Promise.resolve(null);
-      });
+      em.findOne.mockImplementation(
+        (E: unknown, opts?: { where?: { id?: number } }) => {
+          if (E === OrdemServicoEntity) return Promise.resolve(os);
+          if (E === EstoqueEntity && opts?.where?.id === 7)
+            return Promise.resolve(peca);
+          return Promise.resolve(null);
+        },
+      );
 
       await service.aprovarOrcamento('os-1');
 
@@ -1213,7 +1221,9 @@ describe('OrdemServicoService', () => {
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'sumiu' }]);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
-        E === OrdemServicoEntity ? Promise.resolve(null) : Promise.resolve(null),
+        E === OrdemServicoEntity
+          ? Promise.resolve(null)
+          : Promise.resolve(null),
       );
 
       await service.tentarLiberarOsAposReposicaoEstoque([1], null);
@@ -1263,7 +1273,9 @@ describe('OrdemServicoService', () => {
 
       expect(itemPeca.disponivelNoDiagnostico).toBe(true);
       expect(peca.quantidadeReservada).toBe(3);
-      expect(peca.quantidadeFisica).toBeGreaterThanOrEqual(peca.quantidadeReservada);
+      expect(peca.quantidadeFisica).toBeGreaterThanOrEqual(
+        peca.quantidadeReservada,
+      );
       expect(os.status).toBe(S.AguardandoServico);
       expect(os.observacao).toContain('Cliente ok');
       expect(os.observacao).not.toContain(aviso);
@@ -1305,10 +1317,16 @@ describe('OrdemServicoService', () => {
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-partial' }]);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
-        (E: unknown, opts?: { where?: { id?: string | number; status?: S } }) => {
+        (
+          E: unknown,
+          opts?: { where?: { id?: string | number; status?: S } },
+        ) => {
           if (E === OrdemServicoEntity) {
             const w = opts?.where ?? {};
-            if (w.id === 'os-partial' && w.status === S.AguardandoPecasInsumos) {
+            if (
+              w.id === 'os-partial' &&
+              w.status === S.AguardandoPecasInsumos
+            ) {
               return Promise.resolve(os);
             }
           }
@@ -1356,7 +1374,10 @@ describe('OrdemServicoService', () => {
         (E: unknown, opts?: { where?: { id?: string; status?: S } }) => {
           if (E === OrdemServicoEntity) {
             const w = opts?.where ?? {};
-            if (w.id === 'os-skip-item' && w.status === S.AguardandoPecasInsumos) {
+            if (
+              w.id === 'os-skip-item' &&
+              w.status === S.AguardandoPecasInsumos
+            ) {
               return Promise.resolve(os);
             }
           }
@@ -1389,10 +1410,16 @@ describe('OrdemServicoService', () => {
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-sem-sku' }]);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
-        (E: unknown, opts?: { where?: { id?: string | number; status?: S } }) => {
+        (
+          E: unknown,
+          opts?: { where?: { id?: string | number; status?: S } },
+        ) => {
           if (E === OrdemServicoEntity) {
             const w = opts?.where ?? {};
-            if (w.id === 'os-sem-sku' && w.status === S.AguardandoPecasInsumos) {
+            if (
+              w.id === 'os-sem-sku' &&
+              w.status === S.AguardandoPecasInsumos
+            ) {
               return Promise.resolve(os);
             }
           }

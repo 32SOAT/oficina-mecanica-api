@@ -139,7 +139,7 @@ export class EstoqueService {
     const item = await this.findOne(id);
 
     if (operacaoDto.operacao === TipoOperacaoEstoque.RESERVAR) {
-      item.reservar(operacaoDto.quantidade!);
+      item.reservar(operacaoDto.quantidade);
     } else {
       throw new BadRequestException('Operação de estoque inválida.');
     }

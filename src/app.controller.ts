@@ -17,8 +17,7 @@ export class AppController {
   })
   @ApiResponse({
     status: 200,
-    description:
-      'API online.',
+    description: 'API online.',
     schema: {
       type: 'object',
       properties: {
