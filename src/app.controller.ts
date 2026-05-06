@@ -18,7 +18,7 @@ export class AppController {
   @ApiResponse({
     status: 200,
     description:
-      'API online. O payload real é envolvido por `{ data: { status, timestamp } }` pelo interceptor global.',
+      'API online.',
     schema: {
       type: 'object',
       properties: {

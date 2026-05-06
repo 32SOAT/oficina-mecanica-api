@@ -29,15 +29,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('oficina-mecanica-api')
     .setDescription(
-      [
-        'API para gerenciamento de oficina mecânica (clientes, veículos, OS, estoque, serviços).',
-        '',
-        '**Base URL:** `/api/v1` (prefixo global `api` + versionamento por URI `v1`).',
-        '',
-        '**Respostas:** a maioria dos endpoints é envolvida pelo interceptor global no formato `{ data: ... }` e, quando há paginação, `{ data, meta }`.',
-        '',
-        '**Autenticação:** rotas protegidas exigem `Authorization: Bearer &lt;token&gt;`. Obtenha o token em `POST /api/v1/auth/login` (campo `token`) e use **Authorize** no Swagger UI.',
-      ].join('\n'),
+      'API para gerenciamento de oficina mecânica (clientes, veículos, OS, estoque, serviços).',
     )
     .setVersion('1.0')
     .addBearerAuth(
