@@ -44,7 +44,8 @@ import {
   StatusAlteradoEventName,
 } from './events/ordem-servico.events';
 
-const AVISO_AGUARDAR_COMPRA_PECA = 'Será necessário aguardar a compra de uma ou mais peças/insumos para atender esta ordem de serviço.';
+const AVISO_AGUARDAR_COMPRA_PECA =
+  'Será necessário aguardar a compra de uma ou mais peças/insumos para atender esta ordem de serviço.';
 
 @Injectable()
 export class OrdemServicoService {
@@ -208,15 +209,17 @@ export class OrdemServicoService {
       Object.assign(calc, os);
       os.valorTotal = calc.calcularValorTotal();
 
-      const saved = (await qr.manager.save(
-        OrdemServicoEntity,
-        os,
-      ));
+      const saved = await qr.manager.save(OrdemServicoEntity, os);
       await qr.commitTransaction();
 
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(saved.id, null, StatusOrdemServico.Recebida, usuarioId ?? null),
+        new StatusAlteradoEvent(
+          saved.id,
+          null,
+          StatusOrdemServico.Recebida,
+          usuarioId ?? null,
+        ),
       );
       this.eventEmitter.emit(OsCriadaEventName, new OsCriadaEvent(saved.id));
 
@@ -261,11 +264,17 @@ export class OrdemServicoService {
     }
   }
 
-  iniciarDiagnostico(id: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+  iniciarDiagnostico(
+    id: string,
+    usuarioId?: string | null,
+  ): Promise<OrdemServicoEntity> {
     return this.transicionar(id, StatusOrdemServico.EmDiagnostico, usuarioId);
   }
 
-  finalizar(id: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+  finalizar(
+    id: string,
+    usuarioId?: string | null,
+  ): Promise<OrdemServicoEntity> {
     return this.transicionar(id, StatusOrdemServico.Finalizada, usuarioId);
   }
 
@@ -299,6 +308,7 @@ export class OrdemServicoService {
     dto: EditarItensOsDto,
     _usuarioId?: string | null,
   ): Promise<OrdemServicoEntity> {
+    void _usuarioId;
     const totalItens =
       (dto.itensServico?.length ?? 0) + (dto.itensPeca?.length ?? 0);
     if (totalItens === 0) {
@@ -334,10 +344,7 @@ export class OrdemServicoService {
         });
         if (est) {
           const qRev = this.quantidadeComprometidaParaEstorno(item);
-          est.quantidadeReservada = Math.max(
-            0,
-            est.quantidadeReservada - qRev,
-          );
+          est.quantidadeReservada = Math.max(0, est.quantidadeReservada - qRev);
           await qr.manager.save(EstoqueEntity, est);
         }
       }
@@ -409,7 +416,10 @@ export class OrdemServicoService {
     }
   }
 
-  async gerarOrcamento(osId: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+  async gerarOrcamento(
+    osId: string,
+    usuarioId?: string | null,
+  ): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
     await qr.startTransaction();
@@ -444,7 +454,10 @@ export class OrdemServicoService {
     }
   }
 
-  async aprovarOrcamento(osId: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+  async aprovarOrcamento(
+    osId: string,
+    usuarioId?: string | null,
+  ): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
     await qr.startTransaction();
@@ -504,7 +517,10 @@ export class OrdemServicoService {
     }
   }
 
-  async reprovarOrcamento(osId: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+  async reprovarOrcamento(
+    osId: string,
+    usuarioId?: string | null,
+  ): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
     await qr.startTransaction();
@@ -516,9 +532,7 @@ export class OrdemServicoService {
       if (!os) {
         throw new NotFoundException('Ordem de serviço não encontrada.');
       }
-      const { anterior, novo } = os.avancarStatus(
-        StatusOrdemServico.Reprovada,
-      );
+      const { anterior, novo } = os.avancarStatus(StatusOrdemServico.Reprovada);
       for (const item of os.itensPeca ?? []) {
         const est = await qr.manager.findOne(EstoqueEntity, {
           where: { id: item.estoque_id },
@@ -526,10 +540,7 @@ export class OrdemServicoService {
         });
         if (est) {
           const qRev = this.quantidadeComprometidaParaEstorno(item);
-          est.quantidadeReservada = Math.max(
-            0,
-            est.quantidadeReservada - qRev,
-          );
+          est.quantidadeReservada = Math.max(0, est.quantidadeReservada - qRev);
           await qr.manager.save(EstoqueEntity, est);
         }
       }
@@ -552,7 +563,10 @@ export class OrdemServicoService {
     }
   }
 
-  async iniciarExecucao(osId: string, usuarioId?: string | null): Promise<OrdemServicoEntity> {
+  async iniciarExecucao(
+    osId: string,
+    usuarioId?: string | null,
+  ): Promise<OrdemServicoEntity> {
     const qr = this.dataSource.createQueryRunner();
     await qr.connect();
     await qr.startTransaction();
@@ -755,12 +769,7 @@ export class OrdemServicoService {
       await qr.commitTransaction();
       this.eventEmitter.emit(
         StatusAlteradoEventName,
-        new StatusAlteradoEvent(
-          os.id,
-          anterior,
-          novo,
-          usuarioId ?? null,
-        ),
+        new StatusAlteradoEvent(os.id, anterior, novo, usuarioId ?? null),
       );
     } catch (err) {
       await qr.rollbackTransaction();

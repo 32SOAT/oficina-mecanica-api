@@ -65,7 +65,7 @@ describe('Config files', () => {
   });
 
   it('validates env with joi schema', () => {
-    const { error, value } = appConfigSchema.validate({
+    const validated = appConfigSchema.validate({
       NODE_ENV: 'development',
       POSTGRES_USER: 'postgres',
       POSTGRES_PASSWORD: 'postgres',
@@ -73,6 +73,11 @@ describe('Config files', () => {
       POSTGRES_SYNC: 1,
       JWT_SECRET: 'test-jwt-secret-for-validation',
     });
+    const error = validated.error;
+    const value = validated.value as {
+      APP_PORT: number;
+      POSTGRES_HOST: string;
+    };
 
     expect(error).toBeUndefined();
     expect(value.APP_PORT).toBe(3000);

@@ -106,7 +106,10 @@ describe('EstoqueController', () => {
       'usuario-teste',
     );
     expect(estoqueService.executarOperacao).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(201);
+    const statusCalls = (
+      res as unknown as { status: { mock: { calls: unknown[][] } } }
+    ).status.mock.calls;
+    expect(statusCalls[0][0]).toBe(201);
     expect(result).toEqual({
       success: true,
       message: 'Reposição de 10.',

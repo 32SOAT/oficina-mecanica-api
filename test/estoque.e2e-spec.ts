@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import type { Response as SupertestResponse } from 'supertest';
 import { EstoqueController } from '../src/estoque/estoque.controller';
 import { EstoqueService } from '../src/estoque/estoque.service';
 import { EstoqueEntity } from '../src/estoque/estoque.entity';
@@ -72,18 +73,22 @@ describe('Estoque (e2e)', () => {
       precoUnitario: 45.5,
     };
 
-    const res = await request(app.getHttpServer())
+    const res: SupertestResponse = await request(app.getHttpServer())
       .post('/estoque')
       .send(body)
       .expect(201);
-
-    expect(res.body).toMatchObject({
-      id: 1,
-      codigo: body.codigo,
-      pecasInsumos: body.pecasInsumos,
-      quantidadeFisica: body.quantidadeFisica,
-      precoUnitario: expect.any(Number),
-    });
+    const responseBody = res.body as {
+      id: number;
+      codigo: string;
+      pecasInsumos: string;
+      quantidadeFisica: number;
+      precoUnitario: number;
+    };
+    expect(responseBody.id).toBe(1);
+    expect(responseBody.codigo).toBe(body.codigo);
+    expect(responseBody.pecasInsumos).toBe(body.pecasInsumos);
+    expect(responseBody.quantidadeFisica).toBe(body.quantidadeFisica);
+    expect(typeof responseBody.precoUnitario).toBe('number');
     expect(serviceMock.create).toHaveBeenCalledWith(body);
   });
 
@@ -107,11 +112,11 @@ describe('Estoque (e2e)', () => {
       meta: { itemsPerPage: 10, totalItems: 0, currentPage: 1 },
     });
 
-    const res = await request(app.getHttpServer())
+    const res: SupertestResponse = await request(app.getHttpServer())
       .get('/estoque?page=1&take=10')
       .expect(200);
-
-    expect(res.body.data).toEqual([]);
+    const responseBody = res.body as { data: unknown[] };
+    expect(responseBody.data).toEqual([]);
     expect(serviceMock.findAll).toHaveBeenCalledWith(
       expect.objectContaining({ page: 1, take: 10 }),
       false,
@@ -136,11 +141,11 @@ describe('Estoque (e2e)', () => {
       itemSample({ id: 42, codigo: 'PCA-42' }),
     );
 
-    const res = await request(app.getHttpServer())
+    const res: SupertestResponse = await request(app.getHttpServer())
       .get('/estoque/42')
       .expect(200);
-
-    expect(res.body).toMatchObject({ id: 42, codigo: 'PCA-42' });
+    const responseBody = res.body as { id: number; codigo: string };
+    expect(responseBody).toMatchObject({ id: 42, codigo: 'PCA-42' });
     expect(serviceMock.findOne).toHaveBeenCalledWith(42);
   });
 
@@ -149,12 +154,12 @@ describe('Estoque (e2e)', () => {
       itemSample({ pecasInsumos: 'Novo nome' }),
     );
 
-    const res = await request(app.getHttpServer())
+    const res: SupertestResponse = await request(app.getHttpServer())
       .patch('/estoque/1')
       .send({ pecasInsumos: 'Novo nome' })
       .expect(200);
-
-    expect(res.body).toEqual({
+    const responseBody = res.body as { success: boolean; message: string };
+    expect(responseBody).toEqual({
       success: true,
       message: 'Item de estoque atualizado com sucesso.',
     });
@@ -167,15 +172,13 @@ describe('Estoque (e2e)', () => {
     const atualizado = itemSample({ quantidadeReservada: 3 });
     serviceMock.executarOperacao.mockResolvedValueOnce(atualizado);
 
-    const res = await request(app.getHttpServer())
+    const res: SupertestResponse = await request(app.getHttpServer())
       .patch('/estoque/1/operacao')
       .send({ operacao: 'reservar', quantidade: 2 })
       .expect(200);
-
-    expect(res.body).toMatchObject({
-      success: true,
-      data: expect.objectContaining({ id: 1 }),
-    });
+    const responseBody = res.body as { success: boolean; data: { id: number } };
+    expect(responseBody.success).toBe(true);
+    expect(responseBody.data.id).toBe(1);
     expect(serviceMock.executarOperacao).toHaveBeenCalledWith(1, {
       operacao: 'reservar',
       quantidade: 2,
@@ -186,7 +189,7 @@ describe('Estoque (e2e)', () => {
     const atualizado = itemSample({ quantidadeFisica: 35 });
     serviceMock.registrarReposicaoEstoque.mockResolvedValueOnce(atualizado);
 
-    const res = await request(app.getHttpServer())
+    const res: SupertestResponse = await request(app.getHttpServer())
       .patch('/estoque/1/operacao')
       .send({ operacao: 'reposicao', quantidade: 8 })
       .expect(201);
@@ -197,11 +200,14 @@ describe('Estoque (e2e)', () => {
       E2E_AUTH_USER_STUB.sub,
     );
     expect(serviceMock.executarOperacao).not.toHaveBeenCalled();
-    expect(res.body).toMatchObject({
-      success: true,
-      message: expect.stringContaining('8'),
-      data: expect.objectContaining({ quantidadeFisica: 35 }),
-    });
+    const responseBody = res.body as {
+      success: boolean;
+      message: string;
+      data: { quantidadeFisica: number };
+    };
+    expect(responseBody.success).toBe(true);
+    expect(responseBody.message).toContain('8');
+    expect(responseBody.data.quantidadeFisica).toBe(35);
   });
 
   it('PATCH /estoque/:id/operacao com reposicao responde 400 quantidade inválida', async () => {
@@ -216,11 +222,11 @@ describe('Estoque (e2e)', () => {
   it('DELETE /estoque/:id retorna envelope', async () => {
     serviceMock.remove.mockResolvedValueOnce(itemSample());
 
-    const res = await request(app.getHttpServer())
+    const res: SupertestResponse = await request(app.getHttpServer())
       .delete('/estoque/99')
       .expect(200);
-
-    expect(res.body.success).toBe(true);
+    const responseBody = res.body as { success: boolean };
+    expect(responseBody.success).toBe(true);
     expect(serviceMock.remove).toHaveBeenCalledWith(99);
   });
 });

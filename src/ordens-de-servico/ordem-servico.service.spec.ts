@@ -153,8 +153,8 @@ describe('OrdemServicoService', () => {
       const vei = veiculo({ cliente_id: cli.id });
       const srv = servico(1, 150);
       const est = estoque(7, 5, 0, 30);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unused-vars
-      em.findOne.mockImplementation((E: unknown, _opts: unknown) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
         if (E === ServicoEntity) return Promise.resolve(srv);
@@ -187,11 +187,12 @@ describe('OrdemServicoService', () => {
           statusNovo: S.Recebida,
         }),
       );
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(emitter.emit).toHaveBeenCalledWith(
-        'os.criada',
-        expect.objectContaining({ osId: expect.anything() }),
-      );
+      const emitCalls = (emitter.emit as jest.Mock).mock.calls as unknown[][];
+      const osCriadaCall = emitCalls.find((call) => call[0] === 'os.criada');
+      const payload = (
+        osCriadaCall && osCriadaCall.length > 1 ? osCriadaCall[1] : {}
+      ) as { osId?: string };
+      expect(typeof payload.osId).toBe('string');
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledTimes(2);
     });
@@ -303,7 +304,7 @@ describe('OrdemServicoService', () => {
       const srv = servico(1, 80);
       const est = estoque(7, 10, 8, 12); // 2 disponíveis, pedindo 5
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      em.findOne.mockImplementation((E: unknown, _opts: unknown) => {
+      em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
         if (E === ServicoEntity) return Promise.resolve(srv);
@@ -624,8 +625,7 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança 404 quando a OS não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      em.findOne.mockResolvedValue(null);
+      (em.findOne as jest.Mock).mockImplementation(() => Promise.resolve(null));
       await expect(service.iniciarDiagnostico('inexistente')).rejects.toThrow(
         NotFoundException,
       );
@@ -1200,7 +1200,7 @@ describe('OrdemServicoService', () => {
       ]);
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-a' }]);
-      em.findOne.mockResolvedValue(null);
+      (em.findOne as jest.Mock).mockImplementation(() => Promise.resolve(null));
 
       await service.tentarLiberarOsAposReposicaoEstoque([9, 9, -1], null);
 
@@ -1530,19 +1530,24 @@ describe('OrdemServicoService', () => {
 
       const result = await service.findOne('os-1');
       expect(result).toBe(os);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(osRepo.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'os-1' },
-          relations: expect.arrayContaining([
-            'cliente',
-            'veiculo',
-            'itensServico',
-            'itensServico.servico',
-            'itensPeca',
-            'itensPeca.peca',
-          ]),
-        }),
+      const repoFindOneCalls = (osRepo.findOne as jest.Mock).mock
+        .calls as unknown[][];
+      expect(repoFindOneCalls.length).toBeGreaterThan(0);
+      const firstCall = repoFindOneCalls[0];
+      const firstArg = firstCall[0] as {
+        where?: { id?: string };
+        relations?: string[];
+      };
+      expect(firstArg.where?.id).toBe('os-1');
+      expect(firstArg.relations).toEqual(
+        expect.arrayContaining([
+          'cliente',
+          'veiculo',
+          'itensServico',
+          'itensServico.servico',
+          'itensPeca',
+          'itensPeca.peca',
+        ]),
       );
     });
 

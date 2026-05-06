@@ -25,6 +25,9 @@ describe('NotificarListener', () => {
     warnSpy.mockRestore();
   });
 
+  const firstLogMessage = (): string =>
+    (logSpy.mock.calls as unknown as [string, ...unknown[]][])[0]?.[0] ?? '';
+
   it('AGUARDANDO_APROVACAO: loga notificação ao cliente com nome, email, placa e valor', async () => {
     osRepo.findOne.mockResolvedValue({
       id: 'os-1',
@@ -43,7 +46,7 @@ describe('NotificarListener', () => {
     );
 
     expect(logSpy).toHaveBeenCalledTimes(1);
-    const message = logSpy.mock.calls[0][0] as string;
+    const message = firstLogMessage();
     expect(message).toContain('CLIENTE');
     expect(message).toContain('os-1');
     expect(message).toContain('ABC1D23');
@@ -63,8 +66,8 @@ describe('NotificarListener', () => {
     );
 
     expect(logSpy).toHaveBeenCalledTimes(1);
-    expect(logSpy.mock.calls[0][0] as string).toContain('MECÂNICOS');
-    expect(logSpy.mock.calls[0][0] as string).toContain('RECEBIDA');
+    expect(firstLogMessage()).toContain('MECÂNICOS');
+    expect(firstLogMessage()).toContain('RECEBIDA');
   });
 
   it('AGUARDANDO_SERVICO: loga notificação aos mecânicos', async () => {
@@ -83,7 +86,7 @@ describe('NotificarListener', () => {
     );
 
     expect(logSpy).toHaveBeenCalledTimes(1);
-    expect(logSpy.mock.calls[0][0] as string).toContain('AGUARDANDO_SERVICO');
+    expect(firstLogMessage()).toContain('AGUARDANDO_SERVICO');
   });
 
   it('AGUARDANDO_PECAS_INSUMOS: loga notificação ao administrador', async () => {
@@ -102,7 +105,7 @@ describe('NotificarListener', () => {
     );
 
     expect(logSpy).toHaveBeenCalledTimes(1);
-    const message = logSpy.mock.calls[0][0] as string;
+    const message = firstLogMessage();
     expect(message).toContain('ADMINISTRADOR');
     expect(message).toContain('encomenda');
   });
@@ -124,7 +127,7 @@ describe('NotificarListener', () => {
     );
 
     expect(logSpy).toHaveBeenCalledTimes(1);
-    const message = logSpy.mock.calls[0][0] as string;
+    const message = firstLogMessage();
     expect(message).toContain('finalizado');
     expect(message).toContain('retirado');
     expect(message).toContain('Maria');
@@ -147,7 +150,7 @@ describe('NotificarListener', () => {
     );
 
     expect(logSpy).toHaveBeenCalledTimes(1);
-    const message = logSpy.mock.calls[0][0] as string;
+    const message = firstLogMessage();
     expect(message).toContain('recusado');
     expect(message).toContain('retirado');
     expect(message).toContain('Carlos');

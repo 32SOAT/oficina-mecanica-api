@@ -57,7 +57,7 @@ describe('main bootstrap', () => {
     });
 
     jest.isolateModules(() => {
-      require('./main');
+      jest.requireActual('./main');
     });
     await new Promise((resolve) => setImmediate(resolve));
 
@@ -91,7 +91,7 @@ describe('main bootstrap', () => {
     }));
 
     jest.isolateModules(() => {
-      require('./main');
+      jest.requireActual('./main');
     });
     await new Promise((resolve) => setImmediate(resolve));
 

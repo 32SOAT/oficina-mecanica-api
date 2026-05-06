@@ -17,10 +17,12 @@ describe('RelatorioController', () => {
       dataInicio: '2026-01-01',
       dataFim: '2026-05-01',
     });
-    expect(service.tempoMedioServicos).toHaveBeenCalledWith({
-      dataInicio: '2026-01-01',
-      dataFim: '2026-05-01',
-    });
+    expect((service.tempoMedioServicos as jest.Mock).mock.calls[0]).toEqual([
+      {
+        dataInicio: '2026-01-01',
+        dataFim: '2026-05-01',
+      },
+    ]);
     expect(r.tempoMedioMs).toBe(100);
   });
 });
