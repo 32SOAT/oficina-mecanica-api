@@ -99,60 +99,6 @@ describe('Estoque (e2e)', () => {
     expect(serviceMock.create).not.toHaveBeenCalled();
   });
 
-  it('PATCH /estoque/:id/operacao com adicionar responde 201 (id na URL ignorado)', async () => {
-    const criado = itemSample();
-    serviceMock.create.mockResolvedValueOnce(criado);
-
-    const body = {
-      operacao: 'adicionar' as const,
-      codigo: 'PCA-E2E-001',
-      pecasInsumos: 'Filtro de óleo',
-      quantidadeFisica: 10,
-      precoUnitario: 45.5,
-    };
-
-    const res = await request(app.getHttpServer())
-      .patch('/estoque/0/operacao')
-      .send(body)
-      .expect(201);
-
-    expect(res.body).toMatchObject({
-      success: true,
-      message: 'Item de estoque cadastrado com sucesso.',
-      data: {
-        id: 1,
-        codigo: body.codigo,
-        pecasInsumos: body.pecasInsumos,
-        quantidadeFisica: body.quantidadeFisica,
-        precoUnitario: expect.any(Number),
-      },
-    });
-    expect(serviceMock.executarOperacao).not.toHaveBeenCalled();
-    expect(serviceMock.create).toHaveBeenCalledWith({
-      codigo: body.codigo,
-      pecasInsumos: body.pecasInsumos,
-      quantidadeFisica: body.quantidadeFisica,
-      precoUnitario: body.precoUnitario,
-    });
-  });
-
-  it('PATCH /estoque/:id/operacao com adicionar responde 400 quando o body falha na validação', async () => {
-    const res = await request(app.getHttpServer())
-      .patch('/estoque/0/operacao')
-      .send({
-        operacao: 'adicionar',
-        codigo: '',
-        pecasInsumos: 'x',
-        quantidadeFisica: -1,
-        precoUnitario: 0,
-      })
-      .expect(400);
-
-    expect(Array.isArray((res.body as { message?: unknown }).message)).toBe(
-      true,
-    );
-    expect(serviceMock.create).not.toHaveBeenCalled();
-  });
 
   it('GET /estoque lista paginada (estoque_baixo=false por padrão)', async () => {
     serviceMock.findAll.mockResolvedValueOnce({
@@ -193,11 +139,11 @@ describe('Estoque (e2e)', () => {
     expect(serviceMock.findOne).toHaveBeenCalledWith(42);
   });
 
-  it('PUT /estoque/:id retorna envelope de sucesso', async () => {
+  it('PATCH /estoque/:id retorna envelope de sucesso', async () => {
     serviceMock.update.mockResolvedValueOnce(itemSample({ pecasInsumos: 'Novo nome' }));
 
     const res = await request(app.getHttpServer())
-      .put('/estoque/1')
+      .patch('/estoque/1')
       .send({ pecasInsumos: 'Novo nome' })
       .expect(200);
 

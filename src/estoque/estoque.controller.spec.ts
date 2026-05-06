@@ -87,49 +87,6 @@ describe('EstoqueController', () => {
     ).rejects.toBe(error);
   });
 
-  it('adiciona item via PATCH :id/operacao com operação adicionar (ignora id)', async () => {
-    const res = mockPassthroughRes();
-    const body = {
-      operacao: TipoOperacaoEstoque.ADICIONAR as const,
-      codigo: 'PCA-001',
-      pecasInsumos: 'Pastilha de freio',
-      quantidadeFisica: 50,
-      precoUnitario: 89.9,
-    };
-    estoqueService.create.mockResolvedValue(item);
-
-    await expect(
-      controller.executarOperacao(res, mockReq, 999, body),
-    ).resolves.toEqual({
-      success: true,
-      message: 'Item de estoque cadastrado com sucesso.',
-      data: item,
-    });
-    expect(estoqueService.create).toHaveBeenCalledWith({
-      codigo: body.codigo,
-      pecasInsumos: body.pecasInsumos,
-      quantidadeFisica: body.quantidadeFisica,
-      precoUnitario: body.precoUnitario,
-    });
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(estoqueService.executarOperacao).not.toHaveBeenCalled();
-    expect(estoqueService.registrarReposicaoEstoque).not.toHaveBeenCalled();
-  });
-
-  it('propaga erros do create ao usar operação adicionar na mesma rota', async () => {
-    const error = new HttpException('Invalid data', 400);
-    estoqueService.create.mockRejectedValue(error);
-
-    await expect(
-      controller.executarOperacao(mockPassthroughRes(), mockReq, 0, {
-        operacao: TipoOperacaoEstoque.ADICIONAR,
-        codigo: 'PCA-001',
-        pecasInsumos: 'Pastilha de freio',
-        quantidadeFisica: 50,
-        precoUnitario: 89.9,
-      }),
-    ).rejects.toBe(error);
-  });
 
   it('reposição via PATCH :id/operacao delega ao service e associa usuário JWT', async () => {
     const res = mockPassthroughRes();
@@ -184,7 +141,7 @@ describe('EstoqueController', () => {
   });
 
   it('omite filtro estoque baixo quando query não é a string true', async () => {
-    const result = { data: [], meta: {} };
+    const result = { data: [], meta: undefined };
     estoqueService.findAll.mockResolvedValue(result);
 
     await expect(controller.findAll({ page: 1, take: 10 }, 'false')).resolves.toBe(
@@ -212,7 +169,9 @@ describe('EstoqueController', () => {
 
   it('updates an item', async () => {
     const updateEstoqueDto = { pecasInsumos: 'Pastilha cerâmica' };
-    estoqueService.update.mockResolvedValue({ ...item, ...updateEstoqueDto });
+    estoqueService.update.mockResolvedValue(
+      Object.assign(new EstoqueEntity(), { ...item, ...updateEstoqueDto }),
+    );
 
     await expect(controller.update(1, updateEstoqueDto)).resolves.toEqual({
       success: true,
@@ -228,28 +187,24 @@ describe('EstoqueController', () => {
     await expect(controller.update(999, {})).rejects.toBe(error);
   });
 
-  it('executes a write-off operation (dar baixa)', async () => {
-    const res = mockPassthroughRes();
-    const operacaoDto = {
-      operacao: TipoOperacaoEstoque.DAR_BAIXA,
-      quantidade: 3,
-    };
-    const updated = Object.assign(new EstoqueEntity(), {
-      ...item,
-      quantidadeFisica: 47,
-      quantidadeReservada: 2,
-    });
-    estoqueService.executarOperacao.mockResolvedValue(updated);
-
-    const result = await controller.executarOperacao(res, mockReq, 1, operacaoDto);
-
-    expect(result.data).toBe(updated);
-    expect(estoqueService.executarOperacao).toHaveBeenCalledWith(
-      1,
-      operacaoDto,
+  it('rejeita quantidadeFisica no PATCH e orienta usar rota de operação', async () => {
+    await expect(
+      controller.update(1, { quantidadeFisica: 29 }),
+    ).rejects.toThrow(
+      'quantidadeFisica/quantidadeReservada não podem ser alteradas neste endpoint. Use PATCH /estoque/:id/operacao.',
     );
-    expect(estoqueService.registrarReposicaoEstoque).not.toHaveBeenCalled();
+    expect(estoqueService.update).not.toHaveBeenCalled();
   });
+
+  it('rejeita quantidadeReservada no PATCH', async () => {
+    await expect(
+      controller.update(1, { quantidadeReservada: 10 }),
+    ).rejects.toThrow(
+      'quantidadeFisica/quantidadeReservada não podem ser alteradas neste endpoint. Use PATCH /estoque/:id/operacao.',
+    );
+    expect(estoqueService.update).not.toHaveBeenCalled();
+  });
+
 
   it('executes a reserve operation', async () => {
     const res = mockPassthroughRes();

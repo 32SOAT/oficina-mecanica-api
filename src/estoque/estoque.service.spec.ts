@@ -196,34 +196,18 @@ describe('EstoqueService', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('when quantidade física não aumenta não dispara tentativa de liberar OS', async () => {
+  it('update não dispara tentativa de liberar OS', async () => {
     const existing = item({ quantidadeFisica: 10 });
     const updated = item({ quantidadeFisica: 10, pecasInsumos: 'Só mudou nome' });
     estoqueRepository.findOneBy.mockResolvedValue(existing);
     estoqueRepository.merge.mockReturnValue(updated);
     estoqueRepository.save.mockResolvedValue(updated);
 
-    await service.update(1, { quantidadeFisica: 10, pecasInsumos: 'Só mudou nome' });
+    await service.update(1, { pecasInsumos: 'Só mudou nome' });
 
     expect(
       ordemServicoService.tentarLiberarOsAposReposicaoEstoque,
     ).not.toHaveBeenCalled();
-  });
-
-  it('when quantidade física aumenta dispara tentativa de liberar OS', async () => {
-    const existing = item({ quantidadeFisica: 10 });
-    const updated = item({ quantidadeFisica: 25 });
-
-    estoqueRepository.findOneBy.mockResolvedValue(existing);
-    estoqueRepository.merge.mockReturnValue(updated);
-    estoqueRepository.save.mockResolvedValue(updated);
-
-    await expect(
-      service.update(1, { quantidadeFisica: 25 }),
-    ).resolves.toBe(updated);
-    expect(
-      ordemServicoService.tentarLiberarOsAposReposicaoEstoque,
-    ).toHaveBeenCalledWith([1], null);
   });
 
   it('rejects duplicate codigo on update', async () => {
@@ -265,18 +249,6 @@ describe('EstoqueService', () => {
     expect(estoqueRepository.findOne).not.toHaveBeenCalled();
   });
 
-  it('rejeita executarOperacao quando operação é adicionar (reservado ao controller)', async () => {
-    await expect(
-      service.executarOperacao(1, {
-        operacao: TipoOperacaoEstoque.ADICIONAR,
-        codigo: 'X',
-        pecasInsumos: 'y',
-        quantidadeFisica: 1,
-        precoUnitario: 1,
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
   it('rejeita executarOperacao quando operação é reposicao (reservado ao controller)', async () => {
     await expect(
       service.executarOperacao(1, {
@@ -315,38 +287,6 @@ describe('EstoqueService', () => {
     ).rejects.toThrow('Estoque insuficiente');
   });
 
-  it('gives stock write-off successfully', async () => {
-    const existing = item({
-      quantidadeFisica: 50,
-      quantidadeReservada: 10,
-    });
-
-    estoqueRepository.findOneBy.mockResolvedValue(existing);
-    estoqueRepository.save.mockImplementation((entity) =>
-      Promise.resolve(entity as EstoqueEntity),
-    );
-
-    const result = await service.executarOperacao(1, {
-      operacao: TipoOperacaoEstoque.DAR_BAIXA,
-      quantidade: 10,
-    });
-
-    expect(result.quantidadeFisica).toBe(40);
-    expect(result.quantidadeReservada).toBe(0);
-  });
-
-  it('rejects write-off when quantity exceeds physical stock', async () => {
-    const existing = item({ quantidadeFisica: 5, quantidadeReservada: 0 });
-
-    estoqueRepository.findOneBy.mockResolvedValue(existing);
-
-    await expect(
-      service.executarOperacao(1, {
-        operacao: TipoOperacaoEstoque.DAR_BAIXA,
-        quantidade: 10,
-      }),
-    ).rejects.toThrow('Quantidade para baixa excede o estoque físico');
-  });
 
   it('soft removes an item', async () => {
     const existing = item();

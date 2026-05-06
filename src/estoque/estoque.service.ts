@@ -123,27 +123,14 @@ export class EstoqueService {
       }
     }
 
-    const oldFisica = existing.quantidadeFisica;
     const merged = this.estoqueRepository.merge(existing, updateEstoqueDto);
-    const saved = await this.estoqueRepository.save(merged);
-    if (saved.quantidadeFisica > oldFisica) {
-      await this.ordemServicoService.tentarLiberarOsAposReposicaoEstoque(
-        [saved.id],
-        null,
-      );
-    }
-    return saved;
+    return this.estoqueRepository.save(merged);
   }
 
   async executarOperacao(
     id: number,
     operacaoDto: OperacaoEstoqueDto,
   ): Promise<EstoqueEntity> {
-    if (operacaoDto.operacao === TipoOperacaoEstoque.ADICIONAR) {
-      throw new BadRequestException(
-        'Operação "adicionar" é tratada no controller (cadastro).',
-      );
-    }
     if (operacaoDto.operacao === TipoOperacaoEstoque.REPOSICAO) {
       throw new BadRequestException(
         'Operação "reposicao" é tratada no controller.',
@@ -153,8 +140,6 @@ export class EstoqueService {
 
     if (operacaoDto.operacao === TipoOperacaoEstoque.RESERVAR) {
       item.reservar(operacaoDto.quantidade!);
-    } else if (operacaoDto.operacao === TipoOperacaoEstoque.DAR_BAIXA) {
-      item.darBaixa(operacaoDto.quantidade!);
     } else {
       throw new BadRequestException('Operação de estoque inválida.');
     }

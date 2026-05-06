@@ -491,6 +491,104 @@ describe('OrdemServicoService', () => {
       expect(os.status).toBe(S.EmExecucao);
     });
 
+    it('avancarStatus para Aprovada segue fluxo completo de aprovação', async () => {
+      const os = new OrdemServicoEntity();
+      Object.assign(os, {
+        id: 'os-1',
+        status: S.AguardandoAprovacao,
+        itensServico: [],
+        valorTotal: 100,
+        itensPeca: [
+          Object.assign(new ItemOsEstoqueEntity(), {
+            disponivelNoDiagnostico: true,
+            quantidade: 1,
+            precoAplicado: 10,
+          }),
+          Object.assign(new ItemOsEstoqueEntity(), {
+            disponivelNoDiagnostico: true,
+            quantidade: 1,
+            precoAplicado: 10,
+          }),
+        ],
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) =>
+        E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
+      );
+
+      await service.avancarStatus('os-1', S.Aprovada);
+
+      expect(os.status).toBe(S.AguardandoServico);
+      const statusEvents = (emitter.emit as jest.Mock).mock.calls.filter(
+        (call: unknown[]) => call[0] === 'os.status.alterado',
+      );
+      expect(statusEvents).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(statusEvents[0][1]).toMatchObject({
+        statusAnterior: S.AguardandoAprovacao,
+        statusNovo: S.Aprovada,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(statusEvents[1][1]).toMatchObject({
+        statusAnterior: S.Aprovada,
+        statusNovo: S.AguardandoServico,
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(emitter.emit).toHaveBeenCalledWith(
+        'os.orcamento.aprovado',
+        expect.objectContaining({ osId: 'os-1' }),
+      );
+    });
+
+    it('avancarStatus para Aprovada vai para AguardandoPecasInsumos quando faltar peça', async () => {
+      const os = new OrdemServicoEntity();
+      Object.assign(os, {
+        id: 'os-1',
+        status: S.AguardandoAprovacao,
+        itensServico: [],
+        valorTotal: 100,
+        itensPeca: [
+          Object.assign(new ItemOsEstoqueEntity(), {
+            disponivelNoDiagnostico: true,
+            quantidade: 1,
+            precoAplicado: 10,
+          }),
+          Object.assign(new ItemOsEstoqueEntity(), {
+            disponivelNoDiagnostico: false,
+            quantidade: 1,
+            precoAplicado: 10,
+          }),
+        ],
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown) =>
+        E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
+      );
+
+      await service.avancarStatus('os-1', S.Aprovada);
+
+      expect(os.status).toBe(S.AguardandoPecasInsumos);
+      const statusEvents = (emitter.emit as jest.Mock).mock.calls.filter(
+        (call: unknown[]) => call[0] === 'os.status.alterado',
+      );
+      expect(statusEvents).toHaveLength(2);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(statusEvents[0][1]).toMatchObject({
+        statusAnterior: S.AguardandoAprovacao,
+        statusNovo: S.Aprovada,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(statusEvents[1][1]).toMatchObject({
+        statusAnterior: S.Aprovada,
+        statusNovo: S.AguardandoPecasInsumos,
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(emitter.emit).toHaveBeenCalledWith(
+        'os.orcamento.aprovado',
+        expect.objectContaining({ osId: 'os-1' }),
+      );
+    });
+
     it('avancarStatus para Reprovada estorna reservas de estoque', async () => {
       const peca = estoque(7, 10, 3, 30);
       const itemPeca = Object.assign(new ItemOsEstoqueEntity(), {
@@ -870,6 +968,28 @@ describe('OrdemServicoService', () => {
       );
       await service.aprovarOrcamento('os-1');
       expect(os.status).toBe(S.AguardandoPecasInsumos);
+    });
+
+    it('com item pendente e estoque já reposto no SKU → ... → AguardandoServico', async () => {
+      const aviso =
+        'Será necessário aguardar a compra de uma ou mais peças/insumos para atender esta ordem de serviço.';
+      const os = buildOs(false);
+      os.itensPeca[1].estoque_id = 7;
+      os.observacao = `${aviso}\n\nCliente ciente`;
+      const peca = estoque(7, 20, 3, 10); // físico >= reservado
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      em.findOne.mockImplementation((E: unknown, opts?: { where?: { id?: number } }) => {
+        if (E === OrdemServicoEntity) return Promise.resolve(os);
+        if (E === EstoqueEntity && opts?.where?.id === 7) return Promise.resolve(peca);
+        return Promise.resolve(null);
+      });
+
+      await service.aprovarOrcamento('os-1');
+
+      expect(os.itensPeca[1].disponivelNoDiagnostico).toBe(true);
+      expect(os.status).toBe(S.AguardandoServico);
+      expect(os.observacao).toContain('Cliente ciente');
+      expect(os.observacao).not.toContain(aviso);
     });
 
     it('rejeita se status não for AguardandoAprovacao', async () => {

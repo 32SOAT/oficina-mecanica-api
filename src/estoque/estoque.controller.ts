@@ -1,14 +1,15 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
+  ValidationPipe,
   Get,
   HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
   Post,
-  Put,
   Query,
   Req,
   Res,
@@ -101,11 +102,11 @@ export class EstoqueController {
     return this.estoqueService.findOne(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiOperation({
-    summary: 'Atualizar item de estoque',
+    summary: 'Atualizar parcialmente item de estoque',
     description:
-      'Atualiza um item existente. Se quantidadeFisica aumentar em relação ao valor anterior, as OS em AGUARDANDO_PECAS_INSUMOS que dependiam desse item são reavaliadas e podem ir para AGUARDANDO_SERVICO.',
+      'Atualiza apenas os campos cadastrais do item: código, peça/insumo e preço unitário. Alterações de quantidade devem ser feitas na rota PATCH de operações.',
   })
   @ApiBody({ type: UpdateEstoqueDto })
   @ApiParam({
@@ -119,8 +120,27 @@ export class EstoqueController {
   @ApiResponse({ status: 400, description: 'Dados inválidos.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateEstoqueDto: UpdateEstoqueDto,
+    @Body() body: Record<string, unknown>,
   ) {
+    if (
+      'quantidadeFisica' in body ||
+      'quantidadeReservada' in body ||
+      'quantidadeResrvada' in body
+    ) {
+      throw new BadRequestException(
+        'quantidadeFisica/quantidadeReservada não podem ser alteradas neste endpoint. Use PATCH /estoque/:id/operacao.',
+      );
+    }
+
+    const updateEstoqueDto = (await new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }).transform(body, {
+      type: 'body',
+      metatype: UpdateEstoqueDto,
+    })) as UpdateEstoqueDto;
+
     await this.estoqueService.update(id, updateEstoqueDto);
     return {
       success: true,
@@ -132,21 +152,20 @@ export class EstoqueController {
   @ApiOperation({
     summary: 'Executar operação de estoque',
     description:
-      'Inclui `adicionar` (`:id` ignorado; use placeholder, ex.: 0), `reposicao` (entrada no SKU com `:id`), ' +
-      '`reservar` e `dar_baixa`. `adicionar` e `reposicao` reavaliam OS em AGUARDANDO_PECAS_INSUMOS quando aplicável.',
+      'Inclui `reposicao` (entrada no SKU com `:id`) e `reservar`.',
   })
   @ApiBody({ type: OperacaoEstoqueDto })
   @ApiParam({
     name: 'id',
     type: Number,
     description:
-      'ID do item (obrigatório para reposição, reservar e dar baixa). Ignorado quando operação é adicionar.',
+      'ID do item (obrigatório para reposição e reservar).',
     example: 1,
   })
   @ApiResponse({ status: 200, description: 'Operação executada com sucesso.' })
   @ApiResponse({
     status: 201,
-    description: 'Item cadastrado (adicionar) ou atualizado após reposição.',
+    description: 'Item atualizado após reposição.',
   })
   @ApiResponse({ status: 404, description: 'Item de estoque não encontrado.' })
   @ApiResponse({
@@ -155,7 +174,7 @@ export class EstoqueController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Código já em uso (operação adicionar).',
+    description: 'Conflito de operação.',
   })
   async executarOperacao(
     @Res({ passthrough: true }) res: Response,
@@ -163,23 +182,6 @@ export class EstoqueController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: OperacaoEstoqueDto,
   ) {
-    if (dto.operacao === TipoOperacaoEstoque.ADICIONAR) {
-      void id;
-      const createDto: CreateEstoqueDto = {
-        codigo: dto.codigo!,
-        pecasInsumos: dto.pecasInsumos!,
-        quantidadeFisica: dto.quantidadeFisica!,
-        precoUnitario: dto.precoUnitario!,
-      };
-      const created = await this.estoqueService.create(createDto);
-      res.status(HttpStatus.CREATED);
-      return {
-        success: true,
-        message: 'Item de estoque cadastrado com sucesso.',
-        data: created,
-      };
-    }
-
     if (dto.operacao === TipoOperacaoEstoque.REPOSICAO) {
       const atualizado = await this.estoqueService.registrarReposicaoEstoque(
         id,

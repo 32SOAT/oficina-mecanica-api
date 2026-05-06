@@ -291,6 +291,9 @@ export class OrdemServicoService {
     novo: StatusOrdemServico,
     usuarioId?: string | null,
   ): Promise<OrdemServicoEntity> {
+    if (novo === StatusOrdemServico.Aprovada) {
+      return this.aprovarOrcamento(id, usuarioId);
+    }
     if (novo === StatusOrdemServico.Reprovada) {
       return this.reprovarOrcamento(id, usuarioId);
     }
@@ -463,10 +466,31 @@ export class OrdemServicoService {
         throw new NotFoundException('Ordem de serviço não encontrada.');
       }
       const t1 = os.avancarStatus(StatusOrdemServico.Aprovada);
+      for (const item of os.itensPeca ?? []) {
+        if (item.disponivelNoDiagnostico) {
+          continue;
+        }
+        const est = await qr.manager.findOne(EstoqueEntity, {
+          where: { id: item.estoque_id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!est) {
+          continue;
+        }
+        // Reserva da OS já está comprometida; se físico cobre o reservado, item pode seguir.
+        if (est.quantidadeFisica < est.quantidadeReservada) {
+          continue;
+        }
+        item.disponivelNoDiagnostico = true;
+        await qr.manager.save(ItemOsEstoqueEntity, item);
+      }
       const proximo = os.todasPecasDisponiveis()
         ? StatusOrdemServico.AguardandoServico
         : StatusOrdemServico.AguardandoPecasInsumos;
       const t2 = os.avancarStatus(proximo);
+      if (proximo === StatusOrdemServico.AguardandoServico) {
+        os.observacao = this.mergeObservacaoAvisoCompra(os.observacao, false);
+      }
       await qr.manager.save(OrdemServicoEntity, os);
       await qr.commitTransaction();
       this.eventEmitter.emit(
