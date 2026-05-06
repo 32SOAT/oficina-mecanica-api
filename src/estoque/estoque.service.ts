@@ -12,9 +12,9 @@ import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { PaginationService } from '../querying/pagination.service';
 import { EstoqueEntity } from './estoque.entity';
 import { CreateEstoqueDto } from './dtos/create-estoque.dto';
-import { EntradaReposicaoEstoqueDto } from './dtos/entrada-reposicao-estoque.dto';
 import { UpdateEstoqueDto } from './dtos/update-estoque.dto';
 import {
+  EntradaReposicaoEstoqueDto,
   TipoOperacaoEstoque,
   OperacaoEstoqueDto,
 } from './dtos/operacao-estoque.dto';

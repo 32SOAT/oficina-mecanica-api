@@ -1,5 +1,5 @@
 import { IsDefined, IsIn, IsInt, IsPositive } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 
 export enum TipoOperacaoEstoque {
   REPOSICAO = 'reposicao',
@@ -28,3 +28,7 @@ export class OperacaoEstoqueDto {
   @IsPositive({ message: 'Quantidade deve ser positiva.' })
   quantidade: number;
 }
+
+export class EntradaReposicaoEstoqueDto extends PickType(OperacaoEstoqueDto, [
+  'quantidade',
+]) {}
