@@ -153,7 +153,6 @@ describe('OrdemServicoService', () => {
       const vei = veiculo({ cliente_id: cli.id });
       const srv = servico(1, 150);
       const est = estoque(7, 5, 0, 30);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
@@ -161,7 +160,6 @@ describe('OrdemServicoService', () => {
         if (E === EstoqueEntity) return Promise.resolve(est);
         return Promise.resolve(null);
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-return
       em.save.mockImplementation((E: unknown, data: unknown) => ({
         ...data,
         id: 'os-123',
@@ -179,7 +177,6 @@ describe('OrdemServicoService', () => {
       expect(Number(result.valorTotal)).toBeCloseTo(150 + 2 * 30, 2);
       expect(est.quantidadeReservada).toBe(2);
       expect(dataSource.queryRunner.commitTransaction).toHaveBeenCalled();
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.status.alterado',
         expect.objectContaining({
@@ -193,21 +190,18 @@ describe('OrdemServicoService', () => {
         osCriadaCall && osCriadaCall.length > 1 ? osCriadaCall[1] : {}
       ) as { osId?: string };
       expect(typeof payload.osId).toBe('string');
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledTimes(2);
     });
 
     it('propaga usuarioId para o StatusAlteradoEvent', async () => {
       const cli = cliente();
       const vei = veiculo({ cliente_id: cli.id });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
         if (E === ServicoEntity) return Promise.resolve(servico());
         return Promise.resolve(null);
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.save.mockImplementation((_E: unknown, x: unknown) =>
         Promise.resolve({ ...(x as object), id: 'os-saved-id' }),
       );
@@ -222,7 +216,6 @@ describe('OrdemServicoService', () => {
         'usuario-x',
       );
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.status.alterado',
         expect.objectContaining({ usuarioId: 'usuario-x' }),
@@ -230,7 +223,6 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança 404 quando cliente não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === ClienteEntity ? Promise.resolve(null) : Promise.resolve({}),
       );
@@ -248,7 +240,6 @@ describe('OrdemServicoService', () => {
     it('lança 409 quando o veículo é de outro cliente', async () => {
       const cli = cliente({ id: 'cli-1' });
       const vei = veiculo({ cliente_id: 'outro-cli' });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
@@ -269,7 +260,6 @@ describe('OrdemServicoService', () => {
       const cli = cliente();
       const vei = veiculo({ cliente_id: cli.id });
       const est = estoque(7, 1, 1, 30); // 0 disponível
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
@@ -303,7 +293,6 @@ describe('OrdemServicoService', () => {
       const vei = veiculo({ cliente_id: cli.id });
       const srv = servico(1, 80);
       const est = estoque(7, 10, 8, 12); // 2 disponíveis, pedindo 5
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
@@ -311,7 +300,6 @@ describe('OrdemServicoService', () => {
         if (E === EstoqueEntity) return Promise.resolve(est);
         return Promise.resolve(null);
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-return
       em.save.mockImplementation((E: unknown, data: unknown) => ({
         ...data,
         id: 'os-parcial',
@@ -358,7 +346,6 @@ describe('OrdemServicoService', () => {
 
     it('lança 400 quando placa é inválida', async () => {
       const cli = cliente();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === ClienteEntity ? Promise.resolve(cli) : Promise.resolve(null),
       );
@@ -374,7 +361,6 @@ describe('OrdemServicoService', () => {
 
     it('lança 404 quando veículo não existe', async () => {
       const cli = cliente();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(null);
@@ -394,7 +380,6 @@ describe('OrdemServicoService', () => {
     it('lança 404 quando serviço não existe', async () => {
       const cli = cliente();
       const vei = veiculo({ cliente_id: cli.id });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
@@ -415,7 +400,6 @@ describe('OrdemServicoService', () => {
     it('lança 404 quando peça não existe no estoque', async () => {
       const cli = cliente();
       const vei = veiculo({ cliente_id: cli.id });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === ClienteEntity) return Promise.resolve(cli);
         if (E === VeiculoEntity) return Promise.resolve(vei);
@@ -446,7 +430,6 @@ describe('OrdemServicoService', () => {
         itensServico: [],
         itensPeca: [],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -457,7 +440,6 @@ describe('OrdemServicoService', () => {
       const os = setupOs(S.Recebida);
       await service.iniciarDiagnostico('os-1');
       expect(os.status).toBe(S.EmDiagnostico);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.status.alterado',
         expect.objectContaining({
@@ -511,7 +493,6 @@ describe('OrdemServicoService', () => {
           }),
         ],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -533,7 +514,6 @@ describe('OrdemServicoService', () => {
         statusAnterior: S.Aprovada,
         statusNovo: S.AguardandoServico,
       });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.orcamento.aprovado',
         expect.objectContaining({ osId: 'os-1' }),
@@ -560,7 +540,6 @@ describe('OrdemServicoService', () => {
           }),
         ],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -582,7 +561,6 @@ describe('OrdemServicoService', () => {
         statusAnterior: S.Aprovada,
         statusNovo: S.AguardandoPecasInsumos,
       });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.orcamento.aprovado',
         expect.objectContaining({ osId: 'os-1' }),
@@ -604,7 +582,6 @@ describe('OrdemServicoService', () => {
         itensServico: [],
         itensPeca: [itemPeca],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === OrdemServicoEntity) return Promise.resolve(os);
         if (E === EstoqueEntity) return Promise.resolve(peca);
@@ -650,7 +627,6 @@ describe('OrdemServicoService', () => {
           }),
         ],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -667,7 +643,6 @@ describe('OrdemServicoService', () => {
         itensServico: [],
         itensPeca: [],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -677,7 +652,6 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança 404 quando OS não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity
           ? Promise.resolve(null)
@@ -698,12 +672,10 @@ describe('OrdemServicoService', () => {
         itensServico: [],
         itensPeca: [],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
-      await service.gerarOrcamento('os-1');
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+      await service.gerarOrcamento('os-1');  
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.orcamento.gerado',
         expect.objectContaining({ osId: 'os-1' }),
@@ -729,7 +701,6 @@ describe('OrdemServicoService', () => {
         itensServico: [],
         itensPeca: [],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -761,7 +732,6 @@ describe('OrdemServicoService', () => {
         itensPeca: [oldItem],
       });
       const srv = servico(1, 150);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === OrdemServicoEntity) return Promise.resolve(os);
         if (E === EstoqueEntity) return Promise.resolve(peca);
@@ -800,7 +770,6 @@ describe('OrdemServicoService', () => {
         itensPeca: [],
       });
       const srv = servico(1, 100);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === OrdemServicoEntity) return Promise.resolve(os);
         if (E === EstoqueEntity) return Promise.resolve(peca);
@@ -835,7 +804,6 @@ describe('OrdemServicoService', () => {
         itensPeca: [],
       });
       const srv = servico(1, 40);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === OrdemServicoEntity) return Promise.resolve(os);
         if (E === ServicoEntity) return Promise.resolve(srv);
@@ -855,7 +823,6 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança 404 quando OS não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity
           ? Promise.resolve(null)
@@ -885,7 +852,6 @@ describe('OrdemServicoService', () => {
         itensPeca: [oldItem],
       });
       const srv = servico(1, 80);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
         (E: unknown, opts?: { where?: { id?: number } }) => {
           if (E === OrdemServicoEntity) return Promise.resolve(os);
@@ -937,7 +903,6 @@ describe('OrdemServicoService', () => {
 
     it('todas peças disponíveis → AguardandoAprovacao → Aprovada → AguardandoServico', async () => {
       const os = buildOs(true);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -956,8 +921,7 @@ describe('OrdemServicoService', () => {
       expect(calls[1][1]).toMatchObject({
         statusAnterior: S.Aprovada,
         statusNovo: S.AguardandoServico,
-      });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+      }); 
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.orcamento.aprovado',
         expect.objectContaining({ osId: 'os-1' }),
@@ -966,7 +930,6 @@ describe('OrdemServicoService', () => {
 
     it('com peça em falta → ... → AguardandoPecasInsumos', async () => {
       const os = buildOs(false);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -981,7 +944,6 @@ describe('OrdemServicoService', () => {
       os.itensPeca[1].estoque_id = 7;
       os.observacao = `${aviso}\n\nCliente ciente`;
       const peca = estoque(7, 20, 3, 10); // físico >= reservado
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
         (E: unknown, opts?: { where?: { id?: number } }) => {
           if (E === OrdemServicoEntity) return Promise.resolve(os);
@@ -1002,7 +964,6 @@ describe('OrdemServicoService', () => {
     it('rejeita se status não for AguardandoAprovacao', async () => {
       const os = new OrdemServicoEntity();
       Object.assign(os, { id: 'os-1', status: S.Recebida, itensPeca: [] });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
@@ -1012,7 +973,6 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança 404 quando OS não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity
           ? Promise.resolve(null)
@@ -1041,7 +1001,6 @@ describe('OrdemServicoService', () => {
         itensServico: [],
         itensPeca: [itemPeca],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === OrdemServicoEntity) return Promise.resolve(os);
         if (E === EstoqueEntity) return Promise.resolve(peca);
@@ -1053,7 +1012,6 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança 404 quando OS não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity
           ? Promise.resolve(null)
@@ -1082,7 +1040,6 @@ describe('OrdemServicoService', () => {
         itensPeca: [item],
         itensServico: [],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === OrdemServicoEntity) return Promise.resolve(os);
         if (E === EstoqueEntity) return Promise.resolve(peca);
@@ -1107,7 +1064,6 @@ describe('OrdemServicoService', () => {
         itensPeca: [item],
         itensServico: [],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) => {
         if (E === OrdemServicoEntity) return Promise.resolve(os);
         if (E === EstoqueEntity) return Promise.resolve(peca);
@@ -1120,7 +1076,6 @@ describe('OrdemServicoService', () => {
     });
 
     it('lança 404 quando OS não existe', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity
           ? Promise.resolve(null)
@@ -1145,7 +1100,6 @@ describe('OrdemServicoService', () => {
         itensPeca: [itemPeca],
         itensServico: [],
       });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
         (E: unknown, opts?: { where?: { id?: number } }) => {
           if (E === OrdemServicoEntity) return Promise.resolve(os);
@@ -1176,7 +1130,6 @@ describe('OrdemServicoService', () => {
     it('retorna sem consultar quando não há ids de estoque válidos', async () => {
       await service.tentarLiberarOsAposReposicaoEstoque([], null);
       await service.tentarLiberarOsAposReposicaoEstoque([0, -3], undefined);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(osRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
 
@@ -1187,7 +1140,6 @@ describe('OrdemServicoService', () => {
 
       await service.tentarLiberarOsAposReposicaoEstoque([7], null);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(osRepo.find).not.toHaveBeenCalled();
     });
 
@@ -1204,7 +1156,6 @@ describe('OrdemServicoService', () => {
 
       await service.tentarLiberarOsAposReposicaoEstoque([9, 9, -1], null);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(osRepo.find).toHaveBeenCalledWith(
         expect.objectContaining({
           select: ['id'],
@@ -1218,7 +1169,6 @@ describe('OrdemServicoService', () => {
       qb.getRawMany.mockResolvedValue([{ id: 'sumiu' }]);
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'sumiu' }]);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity
           ? Promise.resolve(null)
@@ -1227,7 +1177,6 @@ describe('OrdemServicoService', () => {
 
       await service.tentarLiberarOsAposReposicaoEstoque([1], null);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).not.toHaveBeenCalled();
     });
 
@@ -1253,7 +1202,6 @@ describe('OrdemServicoService', () => {
       qb.getRawMany.mockResolvedValue([{ id: 'os-lib' }]);
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-lib' }]);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
         (E: unknown, opts?: { where?: { id?: string; status?: S } }) => {
           if (E === OrdemServicoEntity) {
@@ -1278,7 +1226,6 @@ describe('OrdemServicoService', () => {
       expect(os.status).toBe(S.AguardandoServico);
       expect(os.observacao).toContain('Cliente ok');
       expect(os.observacao).not.toContain(aviso);
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.status.alterado',
         expect.objectContaining({
@@ -1314,7 +1261,6 @@ describe('OrdemServicoService', () => {
       qb.getRawMany.mockResolvedValue([{ id: 'os-partial' }]);
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-partial' }]);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
         (
           E: unknown,
@@ -1368,7 +1314,6 @@ describe('OrdemServicoService', () => {
       qb.getRawMany.mockResolvedValue([{ id: 'os-skip-item' }]);
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-skip-item' }]);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
         (E: unknown, opts?: { where?: { id?: string; status?: S } }) => {
           if (E === OrdemServicoEntity) {
@@ -1407,7 +1352,6 @@ describe('OrdemServicoService', () => {
       qb.getRawMany.mockResolvedValue([{ id: 'os-sem-sku' }]);
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
       (osRepo.find as jest.Mock).mockResolvedValue([{ id: 'os-sem-sku' }]);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       em.findOne.mockImplementation(
         (
           E: unknown,
@@ -1458,11 +1402,9 @@ describe('OrdemServicoService', () => {
         clienteId: 'cli-1',
       });
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(qb.andWhere).toHaveBeenCalledWith('os.status = :status', {
         status: S.EmExecucao,
       });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(qb.andWhere).toHaveBeenCalledWith('os.cliente_id = :clienteId', {
         clienteId: 'cli-1',
       });
@@ -1491,11 +1433,9 @@ describe('OrdemServicoService', () => {
         dataFim: '2026-04-30',
       });
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(qb.andWhere).toHaveBeenCalledWith('os.createdAt >= :dataInicio', {
         dataInicio: '2026-04-01',
       });
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(qb.andWhere).toHaveBeenCalledWith('os.createdAt <= :dataFim', {
         dataFim: '2026-04-30',
       });
@@ -1516,7 +1456,7 @@ describe('OrdemServicoService', () => {
       (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
 
       const result = await service.findAll({});
-      expect(result.meta.itemsPerPage).toBe(10); // DefaultPageSize.ORDEM_SERVICO
+      expect(result.meta.itemsPerPage).toBe(10);
       expect(result.meta.currentPage).toBe(1);
     });
   });
