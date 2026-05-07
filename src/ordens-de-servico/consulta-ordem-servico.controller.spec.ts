@@ -56,7 +56,7 @@ describe('ConsultaOrdemServicoController', () => {
     Object.assign(os, {
       id: 'os-1',
       status: S.Recebida,
-      valorTotal: '850.00' as unknown as number, // simula retorno TypeORM
+      valorTotal: '850.00' as unknown as number,
       updatedAt: new Date(),
       veiculo: { placa: 'X', modelo: 'Y' },
       cliente: {},

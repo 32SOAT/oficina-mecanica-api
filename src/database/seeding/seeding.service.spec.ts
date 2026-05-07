@@ -105,8 +105,10 @@ describe('SeedingService', () => {
         if (entity === UserEntity) return userRepository;
         return undefined;
       }),
-      transaction: jest.fn(async (cb) => cb(manager as any)),
-    } as any;
+      transaction: jest.fn((cb: (m: unknown) => unknown) =>
+        Promise.resolve(cb(manager)),
+      ),
+    } as unknown as jest.Mocked<DataSource>;
 
     service = new SeedingService(dataSource);
   };

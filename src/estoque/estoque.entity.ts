@@ -84,6 +84,13 @@ export class EstoqueEntity {
     this.quantidadeReservada += quantidade;
   }
 
+  reservarComprometidoParaOrdemServico(quantidade: number): void {
+    if (quantidade <= 0) {
+      throw new BadRequestException('Quantidade deve ser maior que zero.');
+    }
+    this.quantidadeReservada += quantidade;
+  }
+
   darBaixa(quantidade: number): void {
     if (quantidade <= 0) {
       throw new BadRequestException('Quantidade deve ser maior que zero.');
@@ -97,5 +104,18 @@ export class EstoqueEntity {
     if (this.quantidadeReservada >= quantidade) {
       this.quantidadeReservada -= quantidade;
     }
+  }
+
+  darBaixaSomenteDisponivel(quantidade: number): void {
+    if (quantidade <= 0) {
+      throw new BadRequestException('Quantidade deve ser maior que zero.');
+    }
+    const disp = this.quantidadeDisponivel;
+    if (quantidade > disp) {
+      throw new BadRequestException(
+        `Baixa excede o estoque disponível. Disponível: ${disp}, solicitado: ${quantidade}.`,
+      );
+    }
+    this.quantidadeFisica -= quantidade;
   }
 }

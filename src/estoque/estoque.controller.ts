@@ -1,15 +1,20 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
+  ValidationPipe,
   Get,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
   Post,
-  Put,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -17,13 +22,19 @@ import {
   ApiBody,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
+import { type AuthenticatedRequest } from '../auth/authenticated-request.interface';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { EstoqueService } from './estoque.service';
 import { CreateEstoqueDto } from './dtos/create-estoque.dto';
+import {
+  OperacaoEstoqueDto,
+  TipoOperacaoEstoque,
+} from './dtos/operacao-estoque.dto';
 import { UpdateEstoqueDto } from './dtos/update-estoque.dto';
-import { OperacaoEstoqueDto } from './dtos/operacao-estoque.dto';
 
+@ApiBearerAuth('JWT-auth')
 @ApiTags('Estoque')
 @Controller('estoque')
 export class EstoqueController {
@@ -53,20 +64,6 @@ export class EstoqueController {
     summary: 'Listar itens de estoque com paginação',
     description:
       'Retorna uma lista paginada de itens do estoque. Use estoque_baixo=true para filtrar itens com estoque baixo.',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Número da página (inicia em 1).',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Limite de itens por página.',
-    example: 10,
   })
   @ApiQuery({
     name: 'estoque_baixo',
@@ -104,10 +101,11 @@ export class EstoqueController {
     return this.estoqueService.findOne(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiOperation({
-    summary: 'Atualizar item de estoque',
-    description: 'Atualiza os dados de um item de estoque existente.',
+    summary: 'Atualizar parcialmente item de estoque',
+    description:
+      'Atualiza apenas os campos cadastrais do item: código, peça/insumo e preço unitário. Alterações de quantidade devem ser feitas na rota PATCH de operações.',
   })
   @ApiBody({ type: UpdateEstoqueDto })
   @ApiParam({
@@ -121,8 +119,27 @@ export class EstoqueController {
   @ApiResponse({ status: 400, description: 'Dados inválidos.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateEstoqueDto: UpdateEstoqueDto,
+    @Body() body: Record<string, unknown>,
   ) {
+    if (
+      'quantidadeFisica' in body ||
+      'quantidadeReservada' in body ||
+      'quantidadeResrvada' in body
+    ) {
+      throw new BadRequestException(
+        'quantidadeFisica/quantidadeReservada não podem ser alteradas neste endpoint. Use PATCH /estoque/:id/operacao.',
+      );
+    }
+
+    const updateEstoqueDto = (await new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }).transform(body, {
+      type: 'body',
+      metatype: UpdateEstoqueDto,
+    })) as UpdateEstoqueDto;
+
     await this.estoqueService.update(id, updateEstoqueDto);
     return {
       success: true,
@@ -133,26 +150,50 @@ export class EstoqueController {
   @Patch(':id/operacao')
   @ApiOperation({
     summary: 'Executar operação de estoque',
-    description: 'Realiza operações de reserva ou baixa em um item de estoque.',
+    description: 'Inclui `reposicao`, `reservar` e `baixa`.',
   })
   @ApiBody({ type: OperacaoEstoqueDto })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'ID do item de estoque',
+    description: 'ID do item (obrigatório para todas as operações).',
     example: 1,
   })
   @ApiResponse({ status: 200, description: 'Operação executada com sucesso.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Item atualizado após reposição.',
+  })
   @ApiResponse({ status: 404, description: 'Item de estoque não encontrado.' })
   @ApiResponse({
     status: 400,
     description: 'Estoque insuficiente ou dados inválidos.',
   })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflito de operação.',
+  })
   async executarOperacao(
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
-    @Body() operacaoDto: OperacaoEstoqueDto,
+    @Body() dto: OperacaoEstoqueDto,
   ) {
-    const item = await this.estoqueService.executarOperacao(id, operacaoDto);
+    if (dto.operacao === TipoOperacaoEstoque.REPOSICAO) {
+      const atualizado = await this.estoqueService.registrarReposicaoEstoque(
+        id,
+        { quantidade: dto.quantidade },
+        req.user.sub,
+      );
+      res.status(HttpStatus.CREATED);
+      return {
+        success: true,
+        message: `Reposição de ${dto.quantidade}.`,
+        data: atualizado,
+      };
+    }
+
+    const item = await this.estoqueService.executarOperacao(id, dto);
     return {
       success: true,
       message: 'Operação executada com sucesso.',

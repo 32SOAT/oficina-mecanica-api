@@ -52,7 +52,7 @@ describe('RelatorioService.tempoMedioServicos', () => {
             [S.Aprovada, 3000],
             [S.AguardandoServico, 3500],
             [S.EmExecucao, 4000],
-            [S.Finalizada, 6000], // 2000ms em execução
+            [S.Finalizada, 6000],
           ]),
         );
       }
@@ -61,10 +61,10 @@ describe('RelatorioService.tempoMedioServicos', () => {
           buildHist('os-2', [
             [S.Recebida, 0],
             [S.EmExecucao, 1000],
-            [S.AguardandoPecasInsumos, 1500], // 500ms em execução
+            [S.AguardandoPecasInsumos, 1500],
             [S.AguardandoServico, 2000],
             [S.EmExecucao, 2500],
-            [S.Finalizada, 3500], // +1000ms em execução = 1500ms total
+            [S.Finalizada, 3500],
           ]),
         );
       }
@@ -73,7 +73,7 @@ describe('RelatorioService.tempoMedioServicos', () => {
 
     const r = await service.tempoMedioServicos();
     expect(r.totalOSConsideradas).toBe(2);
-    expect(r.tempoMedioMs).toBe((2000 + 1500) / 2); // 1750ms
+    expect(r.tempoMedioMs).toBe((2000 + 1500) / 2);
   });
 
   it('retorna 0 e 0 OSs quando não há OS finalizadas', async () => {

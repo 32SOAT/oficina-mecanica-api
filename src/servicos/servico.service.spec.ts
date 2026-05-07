@@ -242,7 +242,7 @@ describe('ServicoService', () => {
       servico: 'Serviço deletado',
     });
 
-    const queryBuilderMock = createQueryBuilderMock(null); // Deleted not found
+    const queryBuilderMock = createQueryBuilderMock(null);
 
     servicoRepository.createQueryBuilder.mockReturnValue(queryBuilderMock);
     servicoRepository.create.mockReturnValue(newServico);

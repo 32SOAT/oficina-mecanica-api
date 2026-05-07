@@ -2,6 +2,7 @@ import { AppDataSource } from './app-data-source';
 import { appConfig } from './app.config';
 import { appConfigSchema } from './config.types';
 import { getDatabaseOptions, typeOrmConfig } from './database.config';
+import { jwtConfig } from './jwt.config';
 import { TypedConfigService } from './typed-config.service';
 
 describe('Config files', () => {
@@ -18,6 +19,25 @@ describe('Config files', () => {
 
     expect(value.environment).toBe('development');
     expect(value.port).toBe(4000);
+  });
+
+  it('builds jwt config with default expiresIn', () => {
+    process.env.JWT_SECRET = 'test-secret';
+    delete process.env.JWT_EXPIRES_IN;
+    const value = (
+      jwtConfig as unknown as () => { secret: string; expiresIn: string }
+    )();
+    expect(value.secret).toBe('test-secret');
+    expect(value.expiresIn).toBe('1h');
+  });
+
+  it('builds jwt config with JWT_EXPIRES_IN from env', () => {
+    process.env.JWT_SECRET = 'test-secret';
+    process.env.JWT_EXPIRES_IN = '7d';
+    const value = (
+      jwtConfig as unknown as () => { secret: string; expiresIn: string }
+    )();
+    expect(value.expiresIn).toBe('7d');
   });
 
   it('builds database options and registerAs wrapper', () => {
@@ -38,14 +58,14 @@ describe('Config files', () => {
       synchronize: true,
     });
 
-    const dbOptions = (
-      typeOrmConfig as unknown as () => ReturnType<typeof getDatabaseOptions>
+    const fromRegisterAs = (
+      typeOrmConfig as unknown as typeof getDatabaseOptions
     )();
-    expect(dbOptions.host).toBe('db');
+    expect(fromRegisterAs).toEqual(options);
   });
 
   it('validates env with joi schema', () => {
-    const { error, value } = appConfigSchema.validate({
+    const validated = appConfigSchema.validate({
       NODE_ENV: 'development',
       POSTGRES_USER: 'postgres',
       POSTGRES_PASSWORD: 'postgres',
@@ -53,6 +73,11 @@ describe('Config files', () => {
       POSTGRES_SYNC: 1,
       JWT_SECRET: 'test-jwt-secret-for-validation',
     });
+    const error = validated.error;
+    const value = validated.value as {
+      APP_PORT: number;
+      POSTGRES_HOST: string;
+    };
 
     expect(error).toBeUndefined();
     expect(value.APP_PORT).toBe(3000);

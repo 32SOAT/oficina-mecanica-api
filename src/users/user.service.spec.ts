@@ -117,7 +117,7 @@ describe('UserService', () => {
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(HttpException);
       expect((error as HttpException).getStatus()).toBe(404);
-      expect((error as HttpException).message).toBe('User Not Found');
+      expect((error as HttpException).message).toBe('Usuário não encontrado.');
     }
   });
 

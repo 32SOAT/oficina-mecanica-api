@@ -15,7 +15,6 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
-  ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ServicoService } from './servico.service';
@@ -29,7 +28,7 @@ import {
   ApiWrappedResponse,
 } from '../common/decorators/swagger-response.decorator';
 
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiTags('Serviços')
 @Controller('servicos')
 export class ServicoController {
@@ -52,20 +51,6 @@ export class ServicoController {
   @ApiOperation({
     summary: 'Listar serviços com paginação',
     description: 'Retorna uma lista paginada de serviços ativos.',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Número da página (inicia em 1)',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'take',
-    required: false,
-    type: Number,
-    description: 'Limite de itens por página',
-    example: 10,
   })
   @ApiPaginatedResponse(ServicoEntity, 200, 'Lista de serviços retornada')
   async findAll(@Query() paginationDto: PaginationDto) {

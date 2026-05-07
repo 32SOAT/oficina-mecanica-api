@@ -66,13 +66,13 @@ describe('UserController', () => {
     await expect(controller.findOne(user.id)).resolves.toEqual({
       success: true,
       data: user,
-      message: 'User Fetched Successfully',
+      message: 'Usuário obtido com sucesso.',
     });
     expect(userService.findOne).toHaveBeenCalledWith(user.id);
   });
 
   it('lets findOne service exceptions propagate to Nest', async () => {
-    const error = new HttpException('User Not Found', 404);
+    const error = new HttpException('Usuário não encontrado.', 404);
     userService.findOne.mockRejectedValue(error);
 
     await expect(controller.findOne('missing-user-id')).rejects.toBe(error);
@@ -89,13 +89,13 @@ describe('UserController', () => {
 
     await expect(controller.update(user.id, updateUserDto)).resolves.toEqual({
       success: true,
-      message: 'User Updated Successfully',
+      message: 'Usuário atualizado com sucesso.',
     });
     expect(userService.update).toHaveBeenCalledWith(user.id, updateUserDto);
   });
 
   it('lets update service exceptions propagate to Nest', async () => {
-    const error = new HttpException('User Not Found', 404);
+    const error = new HttpException('Usuário não encontrado.', 404);
     userService.update.mockRejectedValue(error);
 
     await expect(controller.update('missing-user-id', {})).rejects.toBe(error);
@@ -106,13 +106,13 @@ describe('UserController', () => {
 
     await expect(controller.remove(user.id)).resolves.toEqual({
       success: true,
-      message: 'User Deleted Successfully',
+      message: 'Usuário removido com sucesso.',
     });
     expect(userService.remove).toHaveBeenCalledWith(user.id);
   });
 
   it('lets remove service exceptions propagate to Nest', async () => {
-    const error = new HttpException('User Not Found', 404);
+    const error = new HttpException('Usuário não encontrado.', 404);
     userService.remove.mockRejectedValue(error);
 
     await expect(controller.remove('missing-user-id')).rejects.toBe(error);
