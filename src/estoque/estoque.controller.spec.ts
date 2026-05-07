@@ -209,6 +209,31 @@ describe('EstoqueController', () => {
     expect(estoqueService.update).not.toHaveBeenCalled();
   });
 
+  it('executes baixa via service.executarOperacao', async () => {
+    const res = mockPassthroughRes();
+    const operacaoDto = {
+      operacao: TipoOperacaoEstoque.BAIXA,
+      quantidade: 3,
+    };
+    const updated = Object.assign(new EstoqueEntity(), {
+      ...item,
+      quantidadeFisica: 47,
+      quantidadeReservada: 5,
+    });
+    estoqueService.executarOperacao.mockResolvedValue(updated);
+
+    const result = await controller.executarOperacao(
+      res,
+      mockReq,
+      1,
+      operacaoDto,
+    );
+
+    expect(result.data.quantidadeFisica).toBe(47);
+    expect(estoqueService.executarOperacao).toHaveBeenCalledWith(1, operacaoDto);
+    expect(estoqueService.registrarReposicaoEstoque).not.toHaveBeenCalled();
+  });
+
   it('executes a reserve operation', async () => {
     const res = mockPassthroughRes();
     const operacaoDto = {

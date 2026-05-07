@@ -151,13 +151,14 @@ export class EstoqueController {
   @Patch(':id/operacao')
   @ApiOperation({
     summary: 'Executar operação de estoque',
-    description: 'Inclui `reposicao` e `reservar`.',
+    description:
+      'Inclui `reposicao`, `reservar` e `baixa`.',
   })
   @ApiBody({ type: OperacaoEstoqueDto })
   @ApiParam({
     name: 'id',
     type: Number,
-    description: 'ID do item (obrigatório para reposição e reservar).',
+    description: 'ID do item (obrigatório para todas as operações).',
     example: 1,
   })
   @ApiResponse({ status: 200, description: 'Operação executada com sucesso.' })

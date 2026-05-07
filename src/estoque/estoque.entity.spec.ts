@@ -133,4 +133,44 @@ describe('EstoqueEntity', () => {
       );
     });
   });
+
+  describe('darBaixaSomenteDisponivel', () => {
+    it('reduz só a quantidade física até o disponível e não altera reservado', () => {
+      const item = createItem({
+        quantidadeFisica: 50,
+        quantidadeReservada: 10,
+      });
+      item.darBaixaSomenteDisponivel(8);
+      expect(item.quantidadeFisica).toBe(42);
+      expect(item.quantidadeReservada).toBe(10);
+      expect(item.quantidadeDisponivel).toBe(32);
+    });
+
+    it('permite baixa igual ao disponível', () => {
+      const item = createItem({
+        quantidadeFisica: 20,
+        quantidadeReservada: 15,
+      });
+      item.darBaixaSomenteDisponivel(5);
+      expect(item.quantidadeFisica).toBe(15);
+      expect(item.quantidadeReservada).toBe(15);
+    });
+
+    it('rejeita quando a quantidade excede o disponível', () => {
+      const item = createItem({
+        quantidadeFisica: 20,
+        quantidadeReservada: 18,
+      });
+      expect(() => item.darBaixaSomenteDisponivel(3)).toThrow(
+        'Baixa excede o estoque disponível',
+      );
+    });
+
+    it('throws when quantity is zero', () => {
+      const item = createItem();
+      expect(() => item.darBaixaSomenteDisponivel(0)).toThrow(
+        BadRequestException,
+      );
+    });
+  });
 });

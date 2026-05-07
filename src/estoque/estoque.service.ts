@@ -136,6 +136,8 @@ export class EstoqueService {
 
     if (operacaoDto.operacao === TipoOperacaoEstoque.RESERVAR) {
       item.reservar(operacaoDto.quantidade);
+    } else if (operacaoDto.operacao === TipoOperacaoEstoque.BAIXA) {
+      item.darBaixaSomenteDisponivel(operacaoDto.quantidade);
     } else {
       throw new BadRequestException('Operação de estoque inválida.');
     }

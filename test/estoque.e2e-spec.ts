@@ -185,6 +185,30 @@ describe('Estoque (e2e)', () => {
     });
   });
 
+  it('PATCH /estoque/:id/operacao com baixa delega a executarOperacao', async () => {
+    const atualizado = itemSample({
+      quantidadeFisica: 7,
+      quantidadeReservada: 2,
+    });
+    serviceMock.executarOperacao.mockResolvedValueOnce(atualizado);
+
+    const res: SupertestResponse = await request(app.getHttpServer())
+      .patch('/estoque/1/operacao')
+      .send({ operacao: 'baixa', quantidade: 1 })
+      .expect(200);
+    const responseBody = res.body as {
+      success: boolean;
+      data: { quantidadeFisica: number };
+    };
+    expect(responseBody.success).toBe(true);
+    expect(responseBody.data.quantidadeFisica).toBe(7);
+    expect(serviceMock.executarOperacao).toHaveBeenCalledWith(1, {
+      operacao: 'baixa',
+      quantidade: 1,
+    });
+    expect(serviceMock.registrarReposicaoEstoque).not.toHaveBeenCalled();
+  });
+
   it('PATCH /estoque/:id/operacao com reposicao delega usuário JWT e responde 201', async () => {
     const atualizado = itemSample({ quantidadeFisica: 35 });
     serviceMock.registrarReposicaoEstoque.mockResolvedValueOnce(atualizado);

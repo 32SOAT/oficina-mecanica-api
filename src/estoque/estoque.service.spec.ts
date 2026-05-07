@@ -295,6 +295,34 @@ describe('EstoqueService', () => {
     ).rejects.toThrow('Estoque insuficiente');
   });
 
+  it('baixa reduz físico respeitando disponível', async () => {
+    const existing = item({ quantidadeFisica: 50, quantidadeReservada: 20 });
+    estoqueRepository.findOneBy.mockResolvedValue(existing);
+    estoqueRepository.save.mockImplementation((entity) =>
+      Promise.resolve(entity as EstoqueEntity),
+    );
+
+    const result = await service.executarOperacao(1, {
+      operacao: TipoOperacaoEstoque.BAIXA,
+      quantidade: 12,
+    });
+
+    expect(result.quantidadeFisica).toBe(38);
+    expect(result.quantidadeReservada).toBe(20);
+  });
+
+  it('rejeita baixa quando quantidade excede disponível', async () => {
+    const existing = item({ quantidadeFisica: 15, quantidadeReservada: 14 });
+    estoqueRepository.findOneBy.mockResolvedValue(existing);
+
+    await expect(
+      service.executarOperacao(1, {
+        operacao: TipoOperacaoEstoque.BAIXA,
+        quantidade: 2,
+      }),
+    ).rejects.toThrow('Baixa excede o estoque disponível');
+  });
+
   it('soft removes an item', async () => {
     const existing = item();
 
