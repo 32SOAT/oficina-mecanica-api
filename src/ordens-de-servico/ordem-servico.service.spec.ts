@@ -675,7 +675,7 @@ describe('OrdemServicoService', () => {
       em.findOne.mockImplementation((E: unknown) =>
         E === OrdemServicoEntity ? Promise.resolve(os) : Promise.resolve(null),
       );
-      await service.gerarOrcamento('os-1');  
+      await service.gerarOrcamento('os-1');
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.orcamento.gerado',
         expect.objectContaining({ osId: 'os-1' }),
@@ -921,7 +921,7 @@ describe('OrdemServicoService', () => {
       expect(calls[1][1]).toMatchObject({
         statusAnterior: S.Aprovada,
         statusNovo: S.AguardandoServico,
-      }); 
+      });
       expect(emitter.emit).toHaveBeenCalledWith(
         'os.orcamento.aprovado',
         expect.objectContaining({ osId: 'os-1' }),

@@ -230,7 +230,10 @@ describe('EstoqueController', () => {
     );
 
     expect(result.data.quantidadeFisica).toBe(47);
-    expect(estoqueService.executarOperacao).toHaveBeenCalledWith(1, operacaoDto);
+    expect(estoqueService.executarOperacao).toHaveBeenCalledWith(
+      1,
+      operacaoDto,
+    );
     expect(estoqueService.registrarReposicaoEstoque).not.toHaveBeenCalled();
   });
 

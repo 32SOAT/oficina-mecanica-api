@@ -20,8 +20,7 @@ export class OperacaoEstoqueDto {
       TipoOperacaoEstoque.BAIXA,
     ],
     {
-      message:
-        'Operação deve ser "reposicao", "reservar" ou "baixa".',
+      message: 'Operação deve ser "reposicao", "reservar" ou "baixa".',
     },
   )
   operacao: TipoOperacaoEstoque;
@@ -32,8 +31,7 @@ export class OperacaoEstoqueDto {
     example: 5,
   })
   @IsDefined({
-    message:
-      'Quantidade é obrigatória para reposição, reservar ou baixa.',
+    message: 'Quantidade é obrigatória para reposição, reservar ou baixa.',
   })
   @IsInt({ message: 'Quantidade deve ser um número inteiro.' })
   @IsPositive({ message: 'Quantidade deve ser positiva.' })
