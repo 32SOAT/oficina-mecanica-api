@@ -13,9 +13,7 @@ export class ClienteTypeormRepository implements ClienteRepository {
   ) {}
 
   async save(cliente: Cliente): Promise<Cliente> {
-    const entity = this.clienteRepository.create(
-      ClienteTypeormEntity.fromDomain(cliente),
-    );
+    const entity = ClienteTypeormEntity.fromDomain(cliente);
     const saved = await this.clienteRepository.save(entity);
     return saved.toDomain();
   }
@@ -59,9 +57,7 @@ export class ClienteTypeormRepository implements ClienteRepository {
   }
 
   async softRemove(cliente: Cliente): Promise<Cliente> {
-    const entity = this.clienteRepository.create(
-      ClienteTypeormEntity.fromDomain(cliente),
-    );
+    const entity = ClienteTypeormEntity.fromDomain(cliente);
     const removed = await this.clienteRepository.softRemove(entity);
     return removed.toDomain();
   }

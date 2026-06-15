@@ -1,11 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { DefaultPageSize } from '../../../querying/constants';
 import { PaginationDto } from '../../../querying/dtos/pagination.dto';
+import { CLIENTE_REPOSITORY } from '../cliente-repository.interface';
 import type { ClienteRepository } from '../cliente-repository.interface';
 
 @Injectable()
 export class FindAllClientesUseCase {
-  constructor(private readonly clienteRepository: ClienteRepository) {}
+  constructor(
+    @Inject(CLIENTE_REPOSITORY)
+    private readonly clienteRepository: ClienteRepository,
+  ) {}
 
   async execute(paginationDto: PaginationDto) {
     const page = Number(paginationDto.page ?? 1);

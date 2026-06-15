@@ -15,10 +15,9 @@ export class ClienteTypeormEntity {
   @ApiProperty({
     description: 'ID único do cliente',
     example: 'uuid-string',
-    nullable: true,
   })
   @PrimaryGeneratedColumn('uuid')
-  id: string | null;
+  id: string;
 
   @ApiProperty({
     description: 'Documento do cliente (CPF ou CNPJ)',
@@ -65,7 +64,11 @@ export class ClienteTypeormEntity {
 
   public static fromDomain(cliente: Cliente): ClienteTypeormEntity {
     const entity = new ClienteTypeormEntity();
-    entity.id = cliente.id;
+
+    if (cliente.id) {
+      entity.id = cliente.id;
+    }
+
     entity.documento = cliente.documento.toString();
     entity.nome = cliente.nome;
     entity.email = cliente.email;

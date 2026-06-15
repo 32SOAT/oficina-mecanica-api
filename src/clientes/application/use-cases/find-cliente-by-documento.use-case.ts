@@ -1,11 +1,23 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
-import { ClienteDocumento, InvalidClienteDocumentoError } from '../../domain/cliente-documento';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  Inject,
+} from '@nestjs/common';
+import {
+  ClienteDocumento,
+  InvalidClienteDocumentoError,
+} from '../../domain/cliente-documento';
 import { Cliente } from '../../domain/cliente';
+import { CLIENTE_REPOSITORY } from '../cliente-repository.interface';
 import type { ClienteRepository } from '../cliente-repository.interface';
 
 @Injectable()
 export class FindClienteByDocumentoUseCase {
-  constructor(private readonly clienteRepository: ClienteRepository) {}
+  constructor(
+    @Inject(CLIENTE_REPOSITORY)
+    private readonly clienteRepository: ClienteRepository,
+  ) {}
 
   async execute(documentoRaw: string): Promise<Cliente> {
     const documento = this.buildDocumento(documentoRaw);

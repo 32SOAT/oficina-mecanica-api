@@ -3,6 +3,7 @@ import {
   HttpException,
   Injectable,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { UpdateClienteDto } from '../../presentation/dtos/update-cliente.dto';
 import { Cliente } from '../../domain/cliente';
@@ -10,11 +11,15 @@ import {
   ClienteDocumento,
   InvalidClienteDocumentoError,
 } from '../../domain/cliente-documento';
+import { CLIENTE_REPOSITORY } from '../cliente-repository.interface';
 import type { ClienteRepository } from '../cliente-repository.interface';
 
 @Injectable()
 export class UpdateClienteUseCase {
-  constructor(private readonly clienteRepository: ClienteRepository) {}
+  constructor(
+    @Inject(CLIENTE_REPOSITORY)
+    private readonly clienteRepository: ClienteRepository,
+  ) {}
 
   async execute(
     id: string,
