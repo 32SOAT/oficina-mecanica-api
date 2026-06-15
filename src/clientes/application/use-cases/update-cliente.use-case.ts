@@ -1,7 +1,6 @@
 import {
   ConflictException,
   HttpException,
-  Injectable,
   BadRequestException,
   Inject,
 } from '@nestjs/common';
@@ -14,7 +13,6 @@ import {
 import { CLIENTE_REPOSITORY } from '../cliente-repository.interface';
 import type { ClienteRepository } from '../cliente-repository.interface';
 
-@Injectable()
 export class UpdateClienteUseCase {
   constructor(
     @Inject(CLIENTE_REPOSITORY)

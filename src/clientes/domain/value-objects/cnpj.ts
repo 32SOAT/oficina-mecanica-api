@@ -28,8 +28,12 @@ export class Cnpj {
     const firstDigit = firstVerifier % 11 < 2 ? 0 : 11 - (firstVerifier % 11);
 
     const secondFactors = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    const secondVerifier = Cnpj.calculateVerifier(base + String(firstDigit), secondFactors);
-    const secondDigit = secondVerifier % 11 < 2 ? 0 : 11 - (secondVerifier % 11);
+    const secondVerifier = Cnpj.calculateVerifier(
+      base + String(firstDigit),
+      secondFactors,
+    );
+    const secondDigit =
+      secondVerifier % 11 < 2 ? 0 : 11 - (secondVerifier % 11);
 
     return digits === `${firstDigit}${secondDigit}`;
   }

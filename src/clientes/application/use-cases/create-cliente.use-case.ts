@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  Inject,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject } from '@nestjs/common';
 import { CreateClienteDto } from '../../presentation/dtos/create-cliente.dto';
 import { Cliente } from '../../domain/cliente';
 import {
@@ -13,7 +8,6 @@ import {
 import { CLIENTE_REPOSITORY } from '../cliente-repository.interface';
 import type { ClienteRepository } from '../cliente-repository.interface';
 
-@Injectable()
 export class CreateClienteUseCase {
   constructor(
     @Inject(CLIENTE_REPOSITORY)

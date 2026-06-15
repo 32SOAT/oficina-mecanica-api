@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  HttpException,
-  Injectable,
-  Inject,
-} from '@nestjs/common';
+import { BadRequestException, HttpException, Inject } from '@nestjs/common';
 import {
   ClienteDocumento,
   InvalidClienteDocumentoError,
@@ -12,7 +7,6 @@ import { Cliente } from '../../domain/cliente';
 import { CLIENTE_REPOSITORY } from '../cliente-repository.interface';
 import type { ClienteRepository } from '../cliente-repository.interface';
 
-@Injectable()
 export class FindClienteByDocumentoUseCase {
   constructor(
     @Inject(CLIENTE_REPOSITORY)
