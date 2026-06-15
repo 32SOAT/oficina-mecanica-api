@@ -15,8 +15,8 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
-  ApiQuery,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { PaginationDto } from '../../../querying/dtos/pagination.dto';
 import { PaginationService } from '../../../querying/pagination.service';
@@ -35,7 +35,7 @@ import {
   ApiWrappedResponse,
 } from '../../../common/decorators/swagger-response.decorator';
 
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiTags('Clientes')
 @Controller('clientes')
 export class ClienteController {

@@ -1,6 +1,12 @@
-import { ConflictException, HttpException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { OrdemServicoService } from '../ordens-de-servico/ordem-servico.service';
 import { DefaultPageSize } from '../querying/constants';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { PaginationService } from '../querying/pagination.service';
@@ -8,6 +14,7 @@ import { EstoqueEntity } from './estoque.entity';
 import { CreateEstoqueDto } from './dtos/create-estoque.dto';
 import { UpdateEstoqueDto } from './dtos/update-estoque.dto';
 import {
+  EntradaReposicaoEstoqueDto,
   TipoOperacaoEstoque,
   OperacaoEstoqueDto,
 } from './dtos/operacao-estoque.dto';
@@ -18,6 +25,7 @@ export class EstoqueService {
     @InjectRepository(EstoqueEntity)
     private readonly estoqueRepository: Repository<EstoqueEntity>,
     private readonly paginationService: PaginationService,
+    private readonly ordemServicoService: OrdemServicoService,
   ) {}
 
   async create(createEstoqueDto: CreateEstoqueDto): Promise<EstoqueEntity> {
@@ -30,7 +38,12 @@ export class EstoqueService {
       );
     }
     const item = this.estoqueRepository.create(createEstoqueDto);
-    return this.estoqueRepository.save(item);
+    const saved = await this.estoqueRepository.save(item);
+    await this.ordemServicoService.tentarLiberarOsAposReposicaoEstoque(
+      [saved.id],
+      null,
+    );
+    return saved;
   }
 
   async findAll(paginationDto: PaginationDto, estoqueBaixo?: boolean) {
@@ -53,6 +66,21 @@ export class EstoqueService {
     const [data, count] = await queryBuilder.getManyAndCount();
     const meta = this.paginationService.createMeta(take, page, count);
     return { data, meta };
+  }
+
+  async registrarReposicaoEstoque(
+    id: number,
+    dto: EntradaReposicaoEstoqueDto,
+    usuarioId?: string | null,
+  ): Promise<EstoqueEntity> {
+    const item = await this.findOne(id);
+    item.quantidadeFisica += dto.quantidade;
+    const saved = await this.estoqueRepository.save(item);
+    await this.ordemServicoService.tentarLiberarOsAposReposicaoEstoque(
+      [saved.id],
+      usuarioId ?? null,
+    );
+    return saved;
   }
 
   async findOne(id: number): Promise<EstoqueEntity> {
@@ -99,12 +127,19 @@ export class EstoqueService {
     id: number,
     operacaoDto: OperacaoEstoqueDto,
   ): Promise<EstoqueEntity> {
+    if (operacaoDto.operacao === TipoOperacaoEstoque.REPOSICAO) {
+      throw new BadRequestException(
+        'Operação "reposicao" é tratada no controller.',
+      );
+    }
     const item = await this.findOne(id);
 
     if (operacaoDto.operacao === TipoOperacaoEstoque.RESERVAR) {
       item.reservar(operacaoDto.quantidade);
+    } else if (operacaoDto.operacao === TipoOperacaoEstoque.BAIXA) {
+      item.darBaixaSomenteDisponivel(operacaoDto.quantidade);
     } else {
-      item.darBaixa(operacaoDto.quantidade);
+      throw new BadRequestException('Operação de estoque inválida.');
     }
 
     return this.estoqueRepository.save(item);

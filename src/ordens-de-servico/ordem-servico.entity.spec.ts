@@ -50,11 +50,11 @@ describe('OrdemServicoEntity', () => {
         Object.assign(new ItemOsEstoqueEntity(), {
           quantidade: 2,
           precoAplicado: 30,
-        }), // 60
+        }),
         Object.assign(new ItemOsEstoqueEntity(), {
           quantidade: 1,
           precoAplicado: 89.9,
-        }), // 89.9
+        }),
       ];
       expect(os.calcularValorTotal()).toBeCloseTo(300.4, 2);
     });
@@ -68,7 +68,6 @@ describe('OrdemServicoEntity', () => {
 
     it('lida com listas undefined', () => {
       const os = novaOs();
-      // sem assignar itensServico/itensPeca
       expect(os.calcularValorTotal()).toBe(0);
     });
   });

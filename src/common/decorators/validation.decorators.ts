@@ -4,11 +4,6 @@ import {
   ValidationArguments,
 } from 'class-validator';
 
-/**
- * Decorator que impede a alteração de campos específicos
- * @param validationOptions Opções de validação
- * @returns Decorator function
- */
 export function IsImmutable(validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
     registerDecorator({

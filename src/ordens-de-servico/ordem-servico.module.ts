@@ -12,7 +12,7 @@ import { ItemOsEstoqueEntity } from './entities/item-os-estoque.entity';
 import { HistoricoStatusOsEntity } from './entities/historico-status-os.entity';
 import { OrdemServicoService } from './ordem-servico.service';
 import { PersistirHistoricoListener } from './events/listeners/persistir-historico.listener';
-import { NotificarClienteListener } from './events/listeners/notificar-cliente.listener';
+import { NotificarListener } from './events/listeners/notificar.listener';
 import { OrdemServicoController } from './ordem-servico.controller';
 import { ConsultaOrdemServicoController } from './consulta-ordem-servico.controller';
 import { RelatorioService } from './relatorio.service';
@@ -42,7 +42,7 @@ import { RelatorioController } from './relatorio.controller';
     OrdemServicoService,
     RelatorioService,
     PersistirHistoricoListener,
-    NotificarClienteListener,
+    NotificarListener,
   ],
   exports: [OrdemServicoService],
 })

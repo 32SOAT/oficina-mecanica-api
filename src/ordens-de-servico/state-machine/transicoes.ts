@@ -12,7 +12,6 @@ export const transicoesValidas: ReadonlyArray<Transicao> = [
   [S.AguardandoServico, S.EmExecucao],
   [S.AguardandoPecasInsumos, S.AguardandoServico],
   [S.EmExecucao, S.Finalizada],
-  [S.EmExecucao, S.AguardandoPecasInsumos],
   [S.Finalizada, S.Entregue],
   [S.Reprovada, S.Cancelada],
 ];

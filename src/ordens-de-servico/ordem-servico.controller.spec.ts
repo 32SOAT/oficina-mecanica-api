@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { OrdemServicoController } from './ordem-servico.controller';
 import { OrdemServicoService } from './ordem-servico.service';
 import { StatusOrdemServico as S } from './state-machine/status-ordem-servico.enum';
@@ -22,6 +21,7 @@ describe('OrdemServicoController', () => {
       gerarOrcamento: jest.fn(),
       aprovarOrcamento: jest.fn(),
       reprovarOrcamento: jest.fn(),
+      substituirItensEmDiagnostico: jest.fn(),
       iniciarExecucao: jest.fn(),
       finalizar: jest.fn(),
       entregar: jest.fn(),
@@ -31,35 +31,56 @@ describe('OrdemServicoController', () => {
     controller = new OrdemServicoController(service);
   });
 
+  it('PATCH /ordens/:id/itens delega ao service.substituirItensEmDiagnostico', async () => {
+    service.substituirItensEmDiagnostico.mockResolvedValue({
+      id: 'os-1',
+    } as never);
+    const dto = { itensServico: [{ servicoId: 1 }], itensPeca: [] };
+    const result = await controller.substituirItensEmDiagnostico(
+      mockReq,
+      'os-1',
+      dto,
+    );
+    expect(
+      (service.substituirItensEmDiagnostico as jest.Mock).mock.calls[0],
+    ).toEqual(['os-1', dto, 'usuario-1']);
+    expect(result).toEqual({ id: 'os-1' });
+  });
+
   it('POST /ordens delega ao service.criar', async () => {
     service.criar.mockResolvedValue({ id: 'os-1' } as never);
     const dto = {
       documentoCliente: '12345678901',
-      veiculoId: 'vei',
+      placa: 'ABC1D23',
       itensServico: [],
       itensPeca: [{ estoqueId: 1, quantidade: 1 }],
     };
     const result = await controller.criar(mockReq, dto);
-    expect(service.criar).toHaveBeenCalledWith(dto, 'usuario-1');
+    expect((service.criar as jest.Mock).mock.calls[0]).toEqual([
+      dto,
+      'usuario-1',
+    ]);
     expect(result).toEqual({ id: 'os-1' });
   });
 
   it('GET /ordens delega filtros para findAll', async () => {
     service.findAll.mockResolvedValue({ data: [], meta: {} as never });
     await controller.listar({ page: 1, take: 10 });
-    expect(service.findAll).toHaveBeenCalled();
+    expect((service.findAll as jest.Mock).mock.calls.length).toBeGreaterThan(0);
   });
 
   it('GET /ordens/:id delega para findOne', async () => {
     service.findOne.mockResolvedValue({ id: 'os-1' } as never);
     await controller.detalhar('os-1');
-    expect(service.findOne).toHaveBeenCalledWith('os-1');
+    expect((service.findOne as jest.Mock).mock.calls[0]).toEqual(['os-1']);
   });
 
   it('GET /ordens/:id/historico delega para findHistorico', async () => {
     service.findHistorico.mockResolvedValue([]);
     await controller.historico('os-1');
-    expect(service.findHistorico).toHaveBeenCalledWith('os-1');
+    expect((service.findHistorico as jest.Mock).mock.calls[0]).toEqual([
+      'os-1',
+    ]);
   });
 
   it.each([
@@ -79,16 +100,17 @@ describe('OrdemServicoController', () => {
         (req: AuthenticatedRequest, id: string) => Promise<unknown>
       >
     )[method](mockReq, 'os-1');
-    expect(service[method]).toHaveBeenCalledWith('os-1', 'usuario-1');
+    const selectedMethodCalls = (service[method] as jest.Mock).mock.calls;
+    expect(selectedMethodCalls[0]).toEqual(['os-1', 'usuario-1']);
   });
 
   it('POST avancar-status delega novoStatus com usuarioId', async () => {
     service.avancarStatus.mockResolvedValue({} as never);
     await controller.avancar(mockReq, 'os-1', { novoStatus: S.Entregue });
-    expect(service.avancarStatus).toHaveBeenCalledWith(
+    expect((service.avancarStatus as jest.Mock).mock.calls[0]).toEqual([
       'os-1',
       S.Entregue,
       'usuario-1',
-    );
+    ]);
   });
 });

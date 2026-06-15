@@ -1,7 +1,12 @@
-import { ConflictException, HttpException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { DefaultPageSize } from '../querying/constants';
 import { PaginationService } from '../querying/pagination.service';
+import type { OrdemServicoService } from '../ordens-de-servico/ordem-servico.service';
 import { EstoqueEntity } from './estoque.entity';
 import { EstoqueService } from './estoque.service';
 import { TipoOperacaoEstoque } from './dtos/operacao-estoque.dto';
@@ -18,6 +23,9 @@ type EstoqueRepositoryMock = jest.Mocked<
 describe('EstoqueService', () => {
   let service: EstoqueService;
   let estoqueRepository: EstoqueRepositoryMock;
+  let ordemServicoService: jest.Mocked<
+    Pick<OrdemServicoService, 'tentarLiberarOsAposReposicaoEstoque'>
+  >;
 
   const item = (overrides: Partial<EstoqueEntity> = {}): EstoqueEntity => {
     const entity = Object.assign(new EstoqueEntity(), {
@@ -57,9 +65,16 @@ describe('EstoqueService', () => {
       createQueryBuilder: jest.fn().mockReturnValue(createQueryBuilderMock()),
     };
 
+    ordemServicoService = {
+      tentarLiberarOsAposReposicaoEstoque: jest
+        .fn()
+        .mockResolvedValue(undefined),
+    };
+
     service = new EstoqueService(
       estoqueRepository as unknown as Repository<EstoqueEntity>,
       new PaginationService(),
+      ordemServicoService as unknown as OrdemServicoService,
     );
   });
 
@@ -78,6 +93,9 @@ describe('EstoqueService', () => {
     estoqueRepository.save.mockResolvedValue(created);
 
     await expect(service.create(createEstoqueDto)).resolves.toBe(created);
+    expect(
+      ordemServicoService.tentarLiberarOsAposReposicaoEstoque,
+    ).toHaveBeenCalledWith([created.id], null);
   });
 
   it('rejects duplicate codigo on create', async () => {
@@ -175,6 +193,26 @@ describe('EstoqueService', () => {
     estoqueRepository.save.mockResolvedValue(updated);
 
     await expect(service.update(1, updateEstoqueDto)).resolves.toBe(updated);
+    expect(
+      ordemServicoService.tentarLiberarOsAposReposicaoEstoque,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('update não dispara tentativa de liberar OS', async () => {
+    const existing = item({ quantidadeFisica: 10 });
+    const updated = item({
+      quantidadeFisica: 10,
+      pecasInsumos: 'Só mudou nome',
+    });
+    estoqueRepository.findOneBy.mockResolvedValue(existing);
+    estoqueRepository.merge.mockReturnValue(updated);
+    estoqueRepository.save.mockResolvedValue(updated);
+
+    await service.update(1, { pecasInsumos: 'Só mudou nome' });
+
+    expect(
+      ordemServicoService.tentarLiberarOsAposReposicaoEstoque,
+    ).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate codigo on update', async () => {
@@ -187,6 +225,45 @@ describe('EstoqueService', () => {
     await expect(
       service.update(1, { codigo: 'PCA-002' }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('allows codigo update when no other item holds the new code', async () => {
+    const existing = item({ codigo: 'PCA-OLD' });
+    const updated = item({
+      codigo: 'PCA-RARE',
+      pecasInsumos: existing.pecasInsumos,
+    });
+
+    estoqueRepository.findOneBy.mockResolvedValue(existing);
+    estoqueRepository.findOne.mockResolvedValueOnce(null);
+    estoqueRepository.merge.mockReturnValue(updated);
+    estoqueRepository.save.mockResolvedValue(updated);
+
+    await expect(service.update(1, { codigo: 'PCA-RARE' })).resolves.toBe(
+      updated,
+    );
+  });
+
+  it('skip duplicate check when codigo in update equals current codigo', async () => {
+    const existing = item({ codigo: 'PCA-SAME', quantidadeFisica: 4 });
+    const updated = item({ codigo: 'PCA-SAME', pecasInsumos: 'Só nome' });
+    estoqueRepository.findOneBy.mockResolvedValue(existing);
+    estoqueRepository.merge.mockReturnValue(updated);
+    estoqueRepository.save.mockResolvedValue(updated);
+
+    await expect(
+      service.update(1, { codigo: 'PCA-SAME', pecasInsumos: 'Só nome' }),
+    ).resolves.toBe(updated);
+    expect(estoqueRepository.findOne).not.toHaveBeenCalled();
+  });
+
+  it('rejeita executarOperacao quando operação é reposicao (reservado ao controller)', async () => {
+    await expect(
+      service.executarOperacao(1, {
+        operacao: TipoOperacaoEstoque.REPOSICAO,
+        quantidade: 5,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('reserves stock successfully', async () => {
@@ -218,37 +295,32 @@ describe('EstoqueService', () => {
     ).rejects.toThrow('Estoque insuficiente');
   });
 
-  it('gives stock write-off successfully', async () => {
-    const existing = item({
-      quantidadeFisica: 50,
-      quantidadeReservada: 10,
-    });
-
+  it('baixa reduz físico respeitando disponível', async () => {
+    const existing = item({ quantidadeFisica: 50, quantidadeReservada: 20 });
     estoqueRepository.findOneBy.mockResolvedValue(existing);
     estoqueRepository.save.mockImplementation((entity) =>
       Promise.resolve(entity as EstoqueEntity),
     );
 
     const result = await service.executarOperacao(1, {
-      operacao: TipoOperacaoEstoque.DAR_BAIXA,
-      quantidade: 10,
+      operacao: TipoOperacaoEstoque.BAIXA,
+      quantidade: 12,
     });
 
-    expect(result.quantidadeFisica).toBe(40);
-    expect(result.quantidadeReservada).toBe(0);
+    expect(result.quantidadeFisica).toBe(38);
+    expect(result.quantidadeReservada).toBe(20);
   });
 
-  it('rejects write-off when quantity exceeds physical stock', async () => {
-    const existing = item({ quantidadeFisica: 5, quantidadeReservada: 0 });
-
+  it('rejeita baixa quando quantidade excede disponível', async () => {
+    const existing = item({ quantidadeFisica: 15, quantidadeReservada: 14 });
     estoqueRepository.findOneBy.mockResolvedValue(existing);
 
     await expect(
       service.executarOperacao(1, {
-        operacao: TipoOperacaoEstoque.DAR_BAIXA,
-        quantidade: 10,
+        operacao: TipoOperacaoEstoque.BAIXA,
+        quantidade: 2,
       }),
-    ).rejects.toThrow('Quantidade para baixa excede o estoque físico');
+    ).rejects.toThrow('Baixa excede o estoque disponível');
   });
 
   it('soft removes an item', async () => {
@@ -258,5 +330,37 @@ describe('EstoqueService', () => {
     estoqueRepository.softRemove.mockResolvedValue(existing);
 
     await expect(service.remove(1)).resolves.toBe(existing);
+  });
+
+  it('registrarReposicaoEstoque passa usuarioId null quando omitido', async () => {
+    const base = item({ quantidadeFisica: 5 });
+    const after = item({ quantidadeFisica: 8 });
+    estoqueRepository.findOneBy.mockResolvedValue(base);
+    estoqueRepository.save.mockResolvedValue(after);
+
+    await service.registrarReposicaoEstoque(1, { quantidade: 3 });
+
+    expect(
+      ordemServicoService.tentarLiberarOsAposReposicaoEstoque,
+    ).toHaveBeenCalledWith([1], null);
+  });
+
+  it('registrarReposicaoEstoque soma física e tenta liberar OS com usuarioId', async () => {
+    const base = item({ quantidadeFisica: 10 });
+    const after = Object.assign(new EstoqueEntity(), {
+      ...base,
+      quantidadeFisica: 25,
+    });
+    estoqueRepository.findOneBy.mockResolvedValue(base);
+    estoqueRepository.save.mockResolvedValue(after);
+
+    await expect(
+      service.registrarReposicaoEstoque(1, { quantidade: 15 }, 'admin-uuid'),
+    ).resolves.toBe(after);
+
+    expect(base.quantidadeFisica).toBe(25);
+    expect(
+      ordemServicoService.tentarLiberarOsAposReposicaoEstoque,
+    ).toHaveBeenCalledWith([1], 'admin-uuid');
   });
 });

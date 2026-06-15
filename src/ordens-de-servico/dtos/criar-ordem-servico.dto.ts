@@ -52,7 +52,8 @@ export class CriarOrdemServicoDto {
   placa: string;
 
   @ApiProperty({
-    description: 'Observação livre sobre a OS',
+    description:
+      'Observação livre sobre a OS. Se alguma peça/insumo não tiver quantidade disponível no estoque, será acrescentado automaticamente um aviso sobre a necessidade de aguardar a compra.',
     required: false,
     nullable: true,
   })

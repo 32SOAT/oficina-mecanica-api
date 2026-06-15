@@ -1,9 +1,10 @@
-import { IsEnum, IsInt, IsPositive } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsDefined, IsIn, IsInt, IsPositive } from 'class-validator';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 
 export enum TipoOperacaoEstoque {
+  REPOSICAO = 'reposicao',
   RESERVAR = 'reservar',
-  DAR_BAIXA = 'dar_baixa',
+  BAIXA = 'baixa',
 }
 
 export class OperacaoEstoqueDto {
@@ -12,16 +13,31 @@ export class OperacaoEstoqueDto {
     enum: TipoOperacaoEstoque,
     example: TipoOperacaoEstoque.RESERVAR,
   })
-  @IsEnum(TipoOperacaoEstoque, {
-    message: 'Operação deve ser "reservar" ou "dar_baixa".',
-  })
+  @IsIn(
+    [
+      TipoOperacaoEstoque.REPOSICAO,
+      TipoOperacaoEstoque.RESERVAR,
+      TipoOperacaoEstoque.BAIXA,
+    ],
+    {
+      message: 'Operação deve ser "reposicao", "reservar" ou "baixa".',
+    },
+  )
   operacao: TipoOperacaoEstoque;
 
   @ApiProperty({
-    description: 'Quantidade para a operação',
+    description:
+      'Obrigatório. Em baixa, não pode exceder quantidade física menos reservada.',
     example: 5,
+  })
+  @IsDefined({
+    message: 'Quantidade é obrigatória para reposição, reservar ou baixa.',
   })
   @IsInt({ message: 'Quantidade deve ser um número inteiro.' })
   @IsPositive({ message: 'Quantidade deve ser positiva.' })
   quantidade: number;
 }
+
+export class EntradaReposicaoEstoqueDto extends PickType(OperacaoEstoqueDto, [
+  'quantidade',
+]) {}

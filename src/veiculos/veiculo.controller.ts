@@ -15,7 +15,6 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
-  ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
@@ -29,7 +28,7 @@ import {
   ApiWrappedResponse,
 } from '../common/decorators/swagger-response.decorator';
 
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiTags('Veículos')
 @Controller('veiculos')
 export class VeiculoController {
@@ -52,20 +51,6 @@ export class VeiculoController {
   @ApiOperation({
     summary: 'Listar veículos com paginação',
     description: 'Retorna uma lista paginada de veículos ativos.',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Número da página (inicia em 1)',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'take',
-    required: false,
-    type: Number,
-    description: 'Limite de itens por página',
-    example: 10,
   })
   @ApiPaginatedResponse(VeiculoEntity, 200, 'Lista de veículos retornada')
   async findAll(@Query() paginationDto: PaginationDto) {
