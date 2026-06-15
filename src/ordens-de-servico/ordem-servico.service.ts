@@ -12,10 +12,8 @@ import { ClienteEntity } from '../clientes/cliente.entity';
 import { VeiculoEntity } from '../veiculos/veiculo.entity';
 import { ServicoEntity } from '../servicos/servico.entity';
 import { EstoqueEntity } from '../estoque/estoque.entity';
-import {
-  isValidBrazilianTaxId,
-  normalizeTaxId,
-} from '../clientes/br-document.validator';
+import { Cnpj } from '../clientes/domain/value-objects/cnpj';
+import { Cpf } from '../clientes/domain/value-objects/cpf';
 import {
   isValidBrazilianPlate,
   normalizePlate,
@@ -66,8 +64,8 @@ export class OrdemServicoService {
       );
     }
 
-    const documento = normalizeTaxId(dto.documentoCliente);
-    if (!isValidBrazilianTaxId(documento)) {
+    const documento = Cpf.normalize(dto.documentoCliente);
+    if (!Cpf.isValid(documento) && !Cnpj.isValid(documento)) {
       throw new BadRequestException('CPF/CNPJ inválido.');
     }
 

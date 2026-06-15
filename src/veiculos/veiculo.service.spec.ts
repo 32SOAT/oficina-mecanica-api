@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { DefaultPageSize } from '../querying/constants';
-import { ClienteService } from '../clientes/cliente.service';
+import { FindClienteByDocumentoUseCase } from '../clientes/application/use-cases/find-cliente-by-documento.use-case';
 import { UpdateVeiculoDto } from './dtos/update-veiculo.dto';
 import { VeiculoEntity } from './veiculo.entity';
 import { VeiculoService } from './veiculo.service';
@@ -16,8 +16,8 @@ type MockRepository = {
   findOne: jest.Mock;
 };
 
-type ClienteServiceMock = {
-  findByDocumento: jest.Mock;
+type FindClienteByDocumentoUseCaseMock = {
+  execute: jest.Mock;
 };
 
 type PaginationServiceMock = {
@@ -28,7 +28,7 @@ type PaginationServiceMock = {
 describe('VeiculoService', () => {
   let service: VeiculoService;
   let veiculoRepository: MockRepository;
-  let clienteService: ClienteServiceMock;
+  let findClienteByDocumentoUseCase: FindClienteByDocumentoUseCaseMock;
   let paginationService: PaginationServiceMock;
 
   const cliente = {
@@ -66,8 +66,8 @@ describe('VeiculoService', () => {
       findOne: jest.fn(),
     };
 
-    clienteService = {
-      findByDocumento: jest.fn(),
+    findClienteByDocumentoUseCase = {
+      execute: jest.fn(),
     };
 
     paginationService = {
@@ -78,7 +78,7 @@ describe('VeiculoService', () => {
     service = new VeiculoService(
       veiculoRepository as unknown as Repository<VeiculoEntity>,
       paginationService,
-      clienteService as unknown as ClienteService,
+      findClienteByDocumentoUseCase as unknown as FindClienteByDocumentoUseCase,
     );
   });
 
@@ -91,14 +91,14 @@ describe('VeiculoService', () => {
       documentoCliente: cliente.documento,
     };
     const createdVeiculo = veiculo;
-    clienteService.findByDocumento.mockResolvedValue(cliente);
+    findClienteByDocumentoUseCase.execute.mockResolvedValue(cliente);
     veiculoRepository.create.mockReturnValue(createdVeiculo);
     veiculoRepository.save.mockResolvedValue(createdVeiculo);
 
     await expect(service.create(createVeiculoDto)).resolves.toBe(
       createdVeiculo,
     );
-    expect(clienteService.findByDocumento).toHaveBeenCalledWith(
+    expect(findClienteByDocumentoUseCase.execute).toHaveBeenCalledWith(
       createVeiculoDto.documentoCliente,
     );
     expect(veiculoRepository.create).toHaveBeenCalledWith({
@@ -119,7 +119,7 @@ describe('VeiculoService', () => {
       ano: 2020,
       documentoCliente: cliente.documento,
     };
-    clienteService.findByDocumento.mockResolvedValue(cliente);
+    findClienteByDocumentoUseCase.execute.mockResolvedValue(cliente);
 
     await expect(service.create(createVeiculoDto)).rejects.toThrow(
       'Placa inválida.',
@@ -135,7 +135,7 @@ describe('VeiculoService', () => {
       documentoCliente: cliente.documento,
     };
     const createdVeiculo = { ...veiculo, placa: 'ABC1D23' };
-    clienteService.findByDocumento.mockResolvedValue(cliente);
+    findClienteByDocumentoUseCase.execute.mockResolvedValue(cliente);
     veiculoRepository.create.mockReturnValue(createdVeiculo);
     veiculoRepository.save.mockResolvedValue(createdVeiculo);
 
@@ -159,7 +159,7 @@ describe('VeiculoService', () => {
       ano: 2020,
       documentoCliente: cliente.documento,
     };
-    clienteService.findByDocumento.mockResolvedValue(cliente);
+    findClienteByDocumentoUseCase.execute.mockResolvedValue(cliente);
     veiculoRepository.findOne.mockResolvedValue(veiculo);
 
     await expect(service.create(createVeiculoDto)).rejects.toThrow(
@@ -175,7 +175,7 @@ describe('VeiculoService', () => {
       ano: 2020,
       documentoCliente: 'invalid',
     };
-    clienteService.findByDocumento.mockRejectedValue(
+    findClienteByDocumentoUseCase.execute.mockRejectedValue(
       new HttpException('Cliente não encontrado.', 404),
     );
 
@@ -308,14 +308,14 @@ describe('VeiculoService', () => {
     };
     const updatedVeiculo = { ...veiculo, cliente_id: novoCliente.id };
     veiculoRepository.findOneBy.mockResolvedValue(veiculo);
-    clienteService.findByDocumento.mockResolvedValue(novoCliente as any);
+    findClienteByDocumentoUseCase.execute.mockResolvedValue(novoCliente as any);
     veiculoRepository.merge.mockReturnValue(updatedVeiculo);
     veiculoRepository.save.mockResolvedValue(updatedVeiculo);
 
     await expect(service.update(veiculo.id, updateVeiculoDto)).resolves.toBe(
       updatedVeiculo,
     );
-    expect(clienteService.findByDocumento).toHaveBeenCalledWith(
+    expect(findClienteByDocumentoUseCase.execute).toHaveBeenCalledWith(
       novoCliente.documento,
     );
     expect(veiculoRepository.merge).toHaveBeenCalledWith(veiculo, {});

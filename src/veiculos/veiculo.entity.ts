@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { ClienteEntity } from '../clientes/cliente.entity';
+import { ClienteTypeormEntity } from '../clientes/infra/typeorm/cliente.typeorm.entity';
 
 @Entity('veiculo')
 @Index('IDX_veiculo_placa', ['placa'], { unique: true })
@@ -44,9 +44,9 @@ export class VeiculoEntity {
   cliente_id: string;
 
   @ApiProperty({ description: 'Cliente proprietário' })
-  @ManyToOne(() => ClienteEntity, { eager: true })
+  @ManyToOne(() => ClienteTypeormEntity, { eager: true })
   @JoinColumn({ name: 'cliente_id' })
-  cliente: ClienteEntity;
+  cliente: ClienteTypeormEntity;
 
   @ApiProperty({
     description: 'Data de criação',

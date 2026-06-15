@@ -7,7 +7,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsImmutable } from '../../common/decorators/validation.decorators';
+import { IsImmutable } from '../../../common/decorators/validation.decorators';
 
 export class UpdateClienteDto {
   @ApiProperty({

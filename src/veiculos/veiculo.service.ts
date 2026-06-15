@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { DefaultPageSize } from '../querying/constants';
 import { PaginationDto } from '../querying/dtos/pagination.dto';
 import { PaginationService } from '../querying/pagination.service';
-import { ClienteService } from '../clientes/cliente.service';
+import { FindClienteByDocumentoUseCase } from '../clientes/application/use-cases/find-cliente-by-documento.use-case';
 import { isValidBrazilianPlate, normalizePlate } from './br-plate.validator';
 import { VeiculoEntity } from './veiculo.entity';
 import { CreateVeiculoDto } from './dtos/create-veiculo.dto';
@@ -21,7 +21,7 @@ export class VeiculoService {
     @InjectRepository(VeiculoEntity)
     private readonly veiculoRepository: Repository<VeiculoEntity>,
     private readonly paginationService: PaginationService,
-    private readonly clienteService: ClienteService,
+    private readonly findClienteByDocumentoUseCase: FindClienteByDocumentoUseCase,
   ) {}
 
   async create(createVeiculoDto: CreateVeiculoDto): Promise<VeiculoEntity> {
@@ -35,7 +35,7 @@ export class VeiculoService {
     if (duplicate) {
       throw new ConflictException('Placa já cadastrada para outro veículo.');
     }
-    const cliente = await this.clienteService.findByDocumento(
+    const cliente = await this.findClienteByDocumentoUseCase.execute(
       createVeiculoDto.documentoCliente,
     );
     const veiculoData = this.veiculoRepository.create({
@@ -95,7 +95,7 @@ export class VeiculoService {
 
     if (documentoCliente !== undefined) {
       const cliente =
-        await this.clienteService.findByDocumento(documentoCliente);
+        await this.findClienteByDocumentoUseCase.execute(documentoCliente);
       clienteId = cliente.id;
     }
 

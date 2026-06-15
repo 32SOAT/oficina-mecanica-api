@@ -7,12 +7,18 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { Cliente } from '../../domain/cliente';
+import { ClienteDocumento } from '../../domain/cliente-documento';
 
 @Entity('cliente')
-export class ClienteEntity {
-  @ApiProperty({ description: 'ID único do cliente', example: 'uuid-string' })
+export class ClienteTypeormEntity {
+  @ApiProperty({
+    description: 'ID único do cliente',
+    example: 'uuid-string',
+    nullable: true,
+  })
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id: string | null;
 
   @ApiProperty({
     description: 'Documento do cliente (CPF ou CNPJ)',
@@ -56,4 +62,30 @@ export class ClienteEntity {
   @ApiProperty({ description: 'Data de exclusão (soft delete)', example: null })
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', precision: 3 })
   deletedAt: Date | null;
+
+  public static fromDomain(cliente: Cliente): ClienteTypeormEntity {
+    const entity = new ClienteTypeormEntity();
+    entity.id = cliente.id;
+    entity.documento = cliente.documento.toString();
+    entity.nome = cliente.nome;
+    entity.email = cliente.email;
+    entity.celularNumero = cliente.celularNumero;
+    entity.createdAt = cliente.createdAt;
+    entity.updatedAt = cliente.updatedAt;
+    entity.deletedAt = cliente.deletedAt;
+    return entity;
+  }
+
+  public toDomain(): Cliente {
+    return Cliente.create({
+      id: this.id,
+      documento: ClienteDocumento.create(this.documento),
+      nome: this.nome,
+      email: this.email,
+      celularNumero: this.celularNumero,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      deletedAt: this.deletedAt,
+    });
+  }
 }

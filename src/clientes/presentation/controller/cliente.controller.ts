@@ -18,23 +18,35 @@ import {
   ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { PaginationDto } from '../querying/dtos/pagination.dto';
-import { ClienteService } from './cliente.service';
-import { ClienteEntity } from './cliente.entity';
-import { CreateClienteDto } from './dtos/create-cliente.dto';
-import { FindClienteByDocumentDto } from './dtos/find-cliente-by-document.dto';
-import { UpdateClienteDto } from './dtos/update-cliente.dto';
+import { PaginationDto } from '../../../querying/dtos/pagination.dto';
+import { PaginationService } from '../../../querying/pagination.service';
+import { CreateClienteDto } from '../dtos/create-cliente.dto';
+import { FindClienteByDocumentDto } from '../dtos/find-cliente-by-document.dto';
+import { UpdateClienteDto } from '../dtos/update-cliente.dto';
+import { ClienteResponseDto } from '../dtos/cliente-response.dto';
+import { CreateClienteUseCase } from '../../application/use-cases/create-cliente.use-case';
+import { FindAllClientesUseCase } from '../../application/use-cases/find-all-clientes.use-case';
+import { FindClienteByDocumentoUseCase } from '../../application/use-cases/find-cliente-by-documento.use-case';
+import { UpdateClienteUseCase } from '../../application/use-cases/update-cliente.use-case';
+import { RemoveClienteUseCase } from '../../application/use-cases/remove-cliente.use-case';
 import {
   ApiDataResponse,
   ApiPaginatedResponse,
   ApiWrappedResponse,
-} from '../common/decorators/swagger-response.decorator';
+} from '../../../common/decorators/swagger-response.decorator';
 
 @ApiBearerAuth()
 @ApiTags('Clientes')
 @Controller('clientes')
 export class ClienteController {
-  constructor(private readonly clienteService: ClienteService) {}
+  constructor(
+    private readonly createClienteUseCase: CreateClienteUseCase,
+    private readonly findAllClientesUseCase: FindAllClientesUseCase,
+    private readonly findClienteByDocumentoUseCase: FindClienteByDocumentoUseCase,
+    private readonly updateClienteUseCase: UpdateClienteUseCase,
+    private readonly removeClienteUseCase: RemoveClienteUseCase,
+    private readonly paginationService: PaginationService,
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -42,13 +54,14 @@ export class ClienteController {
     description: 'Cria um novo cliente com os dados fornecidos.',
   })
   @ApiBody({ type: CreateClienteDto })
-  @ApiDataResponse(ClienteEntity, 201, 'Cliente criado com sucesso')
+  @ApiDataResponse(ClienteResponseDto, 201, 'Cliente criado com sucesso')
   @ApiResponse({
     status: 409,
     description: 'Documento já está em uso por outro cliente.',
   })
   async create(@Body() createClienteDto: CreateClienteDto) {
-    return this.clienteService.create(createClienteDto);
+    const cliente = await this.createClienteUseCase.execute(createClienteDto);
+    return ClienteResponseDto.fromDomain(cliente);
   }
 
   @Get()
@@ -70,9 +83,19 @@ export class ClienteController {
     description: 'Limite de itens por página.',
     example: 10,
   })
-  @ApiPaginatedResponse(ClienteEntity, 200, 'Lista de clientes retornada')
+  @ApiPaginatedResponse(ClienteResponseDto, 200, 'Lista de clientes retornada')
   async findAll(@Query() paginationDto: PaginationDto) {
-    return this.clienteService.findAll(paginationDto);
+    const result = await this.findAllClientesUseCase.execute(paginationDto);
+    return {
+      data: result.data.map((cliente) =>
+        ClienteResponseDto.fromDomain(cliente),
+      ),
+      meta: this.paginationService.createMeta(
+        result.take,
+        result.page,
+        result.count,
+      ),
+    };
   }
 
   @Post('by-document')
@@ -81,17 +104,17 @@ export class ClienteController {
     description: 'Busca um cliente ativo pelo documento (CPF ou CNPJ).',
   })
   @ApiBody({ type: FindClienteByDocumentDto })
-  @ApiWrappedResponse(ClienteEntity, 200, 'Cliente encontrado com sucesso')
+  @ApiWrappedResponse(ClienteResponseDto, 200, 'Cliente encontrado com sucesso')
   @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
   async findByDocumento(
     @Body() findClienteByDocumentDto: FindClienteByDocumentDto,
   ) {
-    const data = await this.clienteService.findByDocumento(
+    const cliente = await this.findClienteByDocumentoUseCase.execute(
       findClienteByDocumentDto.documento,
     );
     return {
       success: true,
-      data,
+      data: ClienteResponseDto.fromDomain(cliente),
       message: 'Cliente encontrado com sucesso.',
     };
   }
@@ -118,7 +141,7 @@ export class ClienteController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateClienteDto: UpdateClienteDto,
   ) {
-    await this.clienteService.update(id, updateClienteDto);
+    await this.updateClienteUseCase.execute(id, updateClienteDto);
     return {
       success: true,
       message: 'Cliente atualizado com sucesso.',
@@ -139,7 +162,7 @@ export class ClienteController {
   @ApiWrappedResponse(undefined, 200, 'Cliente removido com sucesso')
   @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
-    await this.clienteService.remove(id);
+    await this.removeClienteUseCase.execute(id);
     return {
       success: true,
       message: 'Cliente removido com sucesso.',
