@@ -69,20 +69,6 @@ export class ClienteController {
     summary: 'Listar clientes com paginação',
     description: 'Retorna uma lista paginada de clientes ativos.',
   })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Número da página (inicia em 1).',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'take',
-    required: false,
-    type: Number,
-    description: 'Limite de itens por página.',
-    example: 10,
-  })
   @ApiPaginatedResponse(ClienteResponseDto, 200, 'Lista de clientes retornada')
   async findAll(@Query() paginationDto: PaginationDto) {
     const result = await this.findAllClientesUseCase.execute(paginationDto);
