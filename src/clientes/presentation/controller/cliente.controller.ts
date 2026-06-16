@@ -16,7 +16,6 @@ import {
   ApiBody,
   ApiParam,
   ApiBearerAuth,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { PaginationDto } from '../../../querying/dtos/pagination.dto';
 import { PaginationService } from '../../../querying/pagination.service';
