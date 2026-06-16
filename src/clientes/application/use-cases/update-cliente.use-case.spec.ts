@@ -40,6 +40,10 @@ describe('UpdateClienteUseCase', () => {
     );
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('updates a client when data is valid and documento is unique', async () => {
     const existingCliente = makeCliente();
 
@@ -50,32 +54,39 @@ describe('UpdateClienteUseCase', () => {
       celular: '11988888888',
     };
 
-    const updatedCliente = Cliente.create({
-      id: existingCliente.id!,
-      documento: ClienteDocumento.create(dto.documento!),
-      nome: dto.nome!,
-      email: dto.email!,
-      celularNumero: dto.celular!,
-    });
-
     clienteRepository.findById.mockResolvedValue(existingCliente);
     clienteRepository.existsByDocumento.mockResolvedValue(false);
-    clienteRepository.save.mockResolvedValue(updatedCliente);
+    clienteRepository.save.mockImplementation(async (cliente) => cliente);
 
     const result = await useCase.execute(existingCliente.id!, dto);
 
-    expect(result).toBe(updatedCliente);
-
-    expect(clienteRepository.findById).toHaveBeenCalledWith(
-      existingCliente.id!,
-    );
-
+    expect(result.nome).toBe(dto.nome);
+    expect(result.documento.toString()).toBe(dto.documento);
     expect(clienteRepository.existsByDocumento).toHaveBeenCalledWith(
       dto.documento,
       existingCliente.id!,
     );
+    expect(clienteRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: existingCliente.id,
+        nome: dto.nome,
+        email: dto.email,
+        celularNumero: dto.celular,
+      }),
+    );
+  });
 
-    expect(clienteRepository.save).toHaveBeenCalledWith(updatedCliente);
+  it('updates partial fields without checking documento', async () => {
+    const existingCliente = makeCliente();
+    clienteRepository.findById.mockResolvedValue(existingCliente);
+    clienteRepository.save.mockImplementation(async (cliente) => cliente);
+
+    const result = await useCase.execute(existingCliente.id!, {
+      nome: 'Partial Update',
+    });
+
+    expect(result.nome).toBe('Partial Update');
+    expect(clienteRepository.existsByDocumento).not.toHaveBeenCalled();
   });
 
   it('throws http exception when client is not found', async () => {
@@ -117,5 +128,17 @@ describe('UpdateClienteUseCase', () => {
 
     expect(clienteRepository.existsByDocumento).not.toHaveBeenCalled();
     expect(clienteRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('rethrows unexpected errors from buildDocumento', async () => {
+    const existingCliente = makeCliente();
+    clienteRepository.findById.mockResolvedValue(existingCliente);
+    jest.spyOn(ClienteDocumento, 'create').mockImplementation(() => {
+      throw new Error('unexpected');
+    });
+
+    await expect(
+      useCase.execute(existingCliente.id!, { documento: '39053344705' }),
+    ).rejects.toThrow('unexpected');
   });
 });

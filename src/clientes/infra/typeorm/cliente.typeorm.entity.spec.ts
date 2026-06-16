@@ -3,6 +3,20 @@ import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
 
 describe('ClienteTypeormEntity', () => {
+  it('should convert domain to entity without id when creating', () => {
+    const cliente = Cliente.create({
+      documento: ClienteDocumento.create('28857786013'),
+      nome: 'Novo',
+      email: 'novo@email.com',
+      celularNumero: '5511999999999',
+    });
+
+    const entity = ClienteTypeormEntity.fromDomain(cliente);
+
+    expect(entity.id).toBeUndefined();
+    expect(entity.documento).toBe('28857786013');
+  });
+
   it('should convert domain to entity (fromDomain)', () => {
     const cliente = Cliente.create({
       id: '123',
