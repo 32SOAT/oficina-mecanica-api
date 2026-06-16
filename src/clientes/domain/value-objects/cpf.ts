@@ -27,7 +27,8 @@ export class Cpf {
     const firstDigit = firstVerifier % 11 < 2 ? 0 : 11 - (firstVerifier % 11);
 
     const secondVerifier = Cpf.calculateVerifier(base + String(firstDigit), 11);
-    const secondDigit = secondVerifier % 11 < 2 ? 0 : 11 - (secondVerifier % 11);
+    const secondDigit =
+      secondVerifier % 11 < 2 ? 0 : 11 - (secondVerifier % 11);
 
     return digits === `${firstDigit}${secondDigit}`;
   }

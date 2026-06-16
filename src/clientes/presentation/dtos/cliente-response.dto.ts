@@ -47,16 +47,16 @@ export class ClienteResponseDto {
   })
   deletedAt: Date | null;
 
-  static fromDomain(this: void, cliente: Cliente): ClienteResponseDto {
-    const dto = new ClienteResponseDto();
-    dto.id = cliente.id!;
-    dto.documento = cliente.documento.toString();
-    dto.nome = cliente.nome;
-    dto.email = cliente.email;
-    dto.celularNumero = cliente.celularNumero;
-    dto.createdAt = cliente.createdAt;
-    dto.updatedAt = cliente.updatedAt;
-    dto.deletedAt = cliente.deletedAt;
-    return dto;
+  static fromDomain(cliente: Cliente): ClienteResponseDto {
+    return Object.assign(new ClienteResponseDto(), {
+      id: cliente.id,
+      documento: cliente.documento.toString(),
+      nome: cliente.nome,
+      email: cliente.email,
+      celularNumero: cliente.celularNumero,
+      createdAt: cliente.createdAt,
+      updatedAt: cliente.updatedAt,
+      deletedAt: cliente.deletedAt,
+    });
   }
 }

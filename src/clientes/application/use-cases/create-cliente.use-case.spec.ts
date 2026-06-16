@@ -42,7 +42,9 @@ describe('CreateClienteUseCase', () => {
     clienteRepository.save.mockResolvedValue(savedCliente);
 
     await expect(useCase.execute(dto)).resolves.toBe(savedCliente);
-    expect(clienteRepository.existsByDocumento).toHaveBeenCalledWith(dto.documento);
+    expect(clienteRepository.existsByDocumento).toHaveBeenCalledWith(
+      dto.documento,
+    );
     expect(clienteRepository.save).toHaveBeenCalled();
   });
 

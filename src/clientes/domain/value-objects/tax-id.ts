@@ -1,9 +1,15 @@
-const onlyDigitsRegex = /\D/g;
+const NON_DIGIT_CHARACTERS_REGEX = /\D/g;
 
-export function normalizeTaxId(raw: string): string {
-  return String(raw).replace(onlyDigitsRegex, '');
+export function normalizeTaxId(rawValue: string): string {
+  const stringValue = String(rawValue);
+
+  return stringValue.replace(NON_DIGIT_CHARACTERS_REGEX, '');
 }
 
-export function hasRepeatedDigits(value: string): boolean {
-  return /^([0-9])\1+$/.test(value);
+export function hasRepeatedDigits(digits: string): boolean {
+  if (digits.length === 0) return false;
+
+  const repeatedDigitPattern = /^([0-9])\1+$/;
+
+  return repeatedDigitPattern.test(digits);
 }
