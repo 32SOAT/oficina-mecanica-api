@@ -58,4 +58,19 @@ describe('OrdemServicoTypeormEntity', () => {
     });
     expect(os.todasPecasDisponiveis()).toBe(true);
   });
+
+  it('todasPecasDisponiveis retorna true sem peças', () => {
+    expect(createOs().todasPecasDisponiveis()).toBe(true);
+  });
+
+  it('todasPecasDisponiveis retorna false quando alguma indisponível', () => {
+    const os = createOs({
+      itensPeca: [
+        Object.assign(new ItemOsEstoqueEntity(), {
+          disponivelNoDiagnostico: false,
+        }),
+      ],
+    });
+    expect(os.todasPecasDisponiveis()).toBe(false);
+  });
 });

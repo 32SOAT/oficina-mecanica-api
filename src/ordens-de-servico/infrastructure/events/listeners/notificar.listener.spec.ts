@@ -182,4 +182,46 @@ describe('NotificarListener', () => {
     expect(warnSpy).toHaveBeenCalledTimes(1);
     expect(logSpy).not.toHaveBeenCalled();
   });
+
+  it('loga warning quando OS não existe para mecânicos', async () => {
+    osRepo.findOne.mockResolvedValue(null);
+    await listener.handle(
+      new StatusAlteradoEvent('os-x', null, StatusOrdemServico.Recebida, null),
+    );
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it('loga warning quando OS não existe para administrador', async () => {
+    osRepo.findOne.mockResolvedValue(null);
+    await listener.handle(
+      new StatusAlteradoEvent(
+        'os-x',
+        null,
+        StatusOrdemServico.AguardandoPecasInsumos,
+        null,
+      ),
+    );
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it('loga warning quando OS não existe para finalizada', async () => {
+    osRepo.findOne.mockResolvedValue(null);
+    await listener.handle(
+      new StatusAlteradoEvent(
+        'os-x',
+        null,
+        StatusOrdemServico.Finalizada,
+        null,
+      ),
+    );
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it('loga warning quando OS não existe para reprovada', async () => {
+    osRepo.findOne.mockResolvedValue(null);
+    await listener.handle(
+      new StatusAlteradoEvent('os-x', null, StatusOrdemServico.Reprovada, null),
+    );
+    expect(warnSpy).toHaveBeenCalled();
+  });
 });

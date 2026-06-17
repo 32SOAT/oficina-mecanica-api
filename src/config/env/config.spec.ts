@@ -3,6 +3,21 @@ import { getDatabaseOptions, typeOrmConfig } from './database.config';
 import { jwtConfig } from './jwt.config';
 
 describe('config env', () => {
+  it('builds app config with defaults', () => {
+    delete process.env.NODE_ENV;
+    delete process.env.APP_PORT;
+
+    const value = (
+      appConfig as unknown as () => {
+        environment: string;
+        port: number;
+      }
+    )();
+
+    expect(value.environment).toBe('development');
+    expect(value.port).toBe(3000);
+  });
+
   it('builds app config from environment', () => {
     process.env.NODE_ENV = 'development';
     process.env.APP_PORT = '4000';
@@ -35,6 +50,25 @@ describe('config env', () => {
       jwtConfig as unknown as () => { secret: string; expiresIn: string }
     )();
     expect(value.expiresIn).toBe('7d');
+  });
+
+  it('builds database options with defaults', () => {
+    delete process.env.POSTGRES_HOST;
+    delete process.env.POSTGRES_PORT;
+    delete process.env.POSTGRES_USER;
+    delete process.env.POSTGRES_PASSWORD;
+    delete process.env.POSTGRES_DB;
+    process.env.POSTGRES_SYNC = '0';
+
+    const options = getDatabaseOptions();
+    expect(options).toMatchObject({
+      host: 'localhost',
+      port: 5432,
+      username: 'postgres',
+      password: 'postgres',
+      database: 'oficina_mecanica',
+      synchronize: false,
+    });
   });
 
   it('builds database options and registerAs wrapper', () => {

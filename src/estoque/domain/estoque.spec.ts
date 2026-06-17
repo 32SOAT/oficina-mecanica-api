@@ -39,6 +39,26 @@ describe('Estoque', () => {
     });
   });
 
+  describe('create', () => {
+    it('creates item with zero reserved quantity', () => {
+      const item = Estoque.create({
+        codigo: 'PCA-010',
+        pecasInsumos: 'Filtro',
+        quantidadeFisica: 5,
+        precoUnitario: 20,
+      });
+      expect(item.quantidadeReservada).toBe(0);
+    });
+  });
+
+  describe('adicionarReposicao', () => {
+    it('increases physical quantity', () => {
+      const item = createItem({ quantidadeFisica: 10, quantidadeReservada: 0 });
+      const updated = item.adicionarReposicao(5);
+      expect(updated.quantidadeFisica).toBe(15);
+    });
+  });
+
   describe('reservar', () => {
     it('increases reserved quantity', () => {
       const item = createItem({

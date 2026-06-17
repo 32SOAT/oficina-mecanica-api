@@ -102,4 +102,71 @@ describe('OrdemServicoController', () => {
       'usuario-1',
     );
   });
+
+  it('POST iniciar-diagnostico delega transição', async () => {
+    transicionarOrdemServicoUseCase.execute.mockResolvedValue({});
+    await controller.iniciarDiagnostico(mockReq, 'os-1');
+    expect(transicionarOrdemServicoUseCase.execute).toHaveBeenCalledWith(
+      'os-1',
+      S.EmDiagnostico,
+      'usuario-1',
+    );
+  });
+
+  it('POST gerar-orcamento delega', async () => {
+    gerarOrcamentoOrdemServicoUseCase.execute.mockResolvedValue({});
+    await controller.gerarOrcamento(mockReq, 'os-1');
+    expect(gerarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalledWith(
+      'os-1',
+      'usuario-1',
+    );
+  });
+
+  it('POST aprovar-orcamento delega', async () => {
+    aprovarOrcamentoOrdemServicoUseCase.execute.mockResolvedValue({});
+    await controller.aprovarOrcamento(mockReq, 'os-1');
+    expect(aprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('POST reprovar-orcamento delega', async () => {
+    reprovarOrcamentoOrdemServicoUseCase.execute.mockResolvedValue({});
+    await controller.reprovarOrcamento(mockReq, 'os-1');
+    expect(reprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('POST iniciar-execucao delega', async () => {
+    iniciarExecucaoOrdemServicoUseCase.execute.mockResolvedValue({});
+    await controller.iniciarExecucao(mockReq, 'os-1');
+    expect(iniciarExecucaoOrdemServicoUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('POST finalizar delega transição', async () => {
+    transicionarOrdemServicoUseCase.execute.mockResolvedValue({});
+    await controller.finalizar(mockReq, 'os-1');
+    expect(transicionarOrdemServicoUseCase.execute).toHaveBeenCalledWith(
+      'os-1',
+      S.Finalizada,
+      'usuario-1',
+    );
+  });
+
+  it('POST entregar delega transição', async () => {
+    transicionarOrdemServicoUseCase.execute.mockResolvedValue({});
+    await controller.entregar(mockReq, 'os-1');
+    expect(transicionarOrdemServicoUseCase.execute).toHaveBeenCalledWith(
+      'os-1',
+      S.Entregue,
+      'usuario-1',
+    );
+  });
+
+  it('POST cancelar delega transição', async () => {
+    transicionarOrdemServicoUseCase.execute.mockResolvedValue({});
+    await controller.cancelar(mockReq, 'os-1');
+    expect(transicionarOrdemServicoUseCase.execute).toHaveBeenCalledWith(
+      'os-1',
+      S.Cancelada,
+      'usuario-1',
+    );
+  });
 });
