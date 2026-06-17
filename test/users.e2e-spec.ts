@@ -1,17 +1,18 @@
 import {
-  HttpException,
   INestApplication,
+  NotFoundException,
   ValidationPipe,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { UserController } from '../src/users/user.controller';
-import { UserService } from '../src/users/user.service';
-
-type UserServiceMock = jest.Mocked<
-  Pick<UserService, 'create' | 'findAll' | 'findOne' | 'update' | 'remove'>
->;
+import { CreateUserUseCase } from '../src/users/application/use-cases/create-user.use-case';
+import { FindAllUsersUseCase } from '../src/users/application/use-cases/find-all-users.use-case';
+import { FindUserByIdUseCase } from '../src/users/application/use-cases/find-user-by-id.use-case';
+import { UpdateUserUseCase } from '../src/users/application/use-cases/update-user.use-case';
+import { RemoveUserUseCase } from '../src/users/application/use-cases/remove-user.use-case';
+import { UserController } from '../src/users/presentation/controllers/user.controller';
+import { UserPresentationMapper } from '../src/users/presentation/mappers/user-presentation.mapper';
 
 const expectValidationMessages = (body: unknown, messages: string[]): void => {
   const validationBody = body as { message?: unknown };
@@ -21,7 +22,11 @@ const expectValidationMessages = (body: unknown, messages: string[]): void => {
 
 describe('UserController (e2e)', () => {
   let app: INestApplication<App>;
-  let userService: UserServiceMock;
+  const createUserUseCase = { execute: jest.fn() };
+  const findAllUsersUseCase = { execute: jest.fn() };
+  const findUserByIdUseCase = { execute: jest.fn() };
+  const updateUserUseCase = { execute: jest.fn() };
+  const removeUserUseCase = { execute: jest.fn() };
   const user = {
     id: 'user-id',
     username: 'Jane',
@@ -29,21 +34,14 @@ describe('UserController (e2e)', () => {
   };
 
   beforeEach(async () => {
-    userService = {
-      create: jest.fn(),
-      findAll: jest.fn(),
-      findOne: jest.fn(),
-      update: jest.fn(),
-      remove: jest.fn(),
-    };
-
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [UserController],
       providers: [
-        {
-          provide: UserService,
-          useValue: userService,
-        },
+        { provide: CreateUserUseCase, useValue: createUserUseCase },
+        { provide: FindAllUsersUseCase, useValue: findAllUsersUseCase },
+        { provide: FindUserByIdUseCase, useValue: findUserByIdUseCase },
+        { provide: UpdateUserUseCase, useValue: updateUserUseCase },
+        { provide: RemoveUserUseCase, useValue: removeUserUseCase },
       ],
     }).compile();
 
@@ -55,6 +53,7 @@ describe('UserController (e2e)', () => {
       }),
     );
     await app.init();
+    jest.clearAllMocks();
   });
 
   afterEach(async () => {
@@ -66,7 +65,7 @@ describe('UserController (e2e)', () => {
       username: 'Jane',
       email: 'jane@example.com',
     };
-    userService.create.mockResolvedValue(user);
+    createUserUseCase.execute.mockResolvedValue(user);
 
     const response = await request(app.getHttpServer())
       .post('/users')
@@ -77,7 +76,9 @@ describe('UserController (e2e)', () => {
       .expect(201);
 
     expect(response.body).toEqual(user);
-    expect(userService.create).toHaveBeenCalledWith(createUserDto);
+    expect(createUserUseCase.execute).toHaveBeenCalledWith(
+      UserPresentationMapper.toCreateInput(createUserDto),
+    );
   });
 
   it('POST /users rejects invalid request bodies', async () => {
@@ -92,7 +93,7 @@ describe('UserController (e2e)', () => {
       'username should not be empty',
       'email must be an email',
     ]);
-    expect(userService.create).not.toHaveBeenCalled();
+    expect(createUserUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('GET /users lists users with transformed pagination query params', async () => {
@@ -107,14 +108,14 @@ describe('UserController (e2e)', () => {
         hasPreviousPage: true,
       },
     };
-    userService.findAll.mockResolvedValue(result);
+    findAllUsersUseCase.execute.mockResolvedValue(result);
 
     const response = await request(app.getHttpServer())
       .get('/users?page=2&take=1')
       .expect(200);
 
     expect(response.body).toEqual(result);
-    expect(userService.findAll).toHaveBeenCalledWith(
+    expect(findAllUsersUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         page: 2,
         take: 1,
@@ -130,11 +131,11 @@ describe('UserController (e2e)', () => {
     expectValidationMessages(response.body as unknown, [
       'Page deve ser positivo.',
     ]);
-    expect(userService.findAll).not.toHaveBeenCalled();
+    expect(findAllUsersUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('GET /users/:id returns a user', async () => {
-    userService.findOne.mockResolvedValue(user);
+    findUserByIdUseCase.execute.mockResolvedValue(user);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}`)
@@ -145,12 +146,12 @@ describe('UserController (e2e)', () => {
       data: user,
       message: 'Usuário obtido com sucesso.',
     });
-    expect(userService.findOne).toHaveBeenCalledWith(user.id);
+    expect(findUserByIdUseCase.execute).toHaveBeenCalledWith(user.id);
   });
 
   it('GET /users/:id returns 404 when a user is not found', async () => {
-    userService.findOne.mockRejectedValue(
-      new HttpException('Usuário não encontrado.', 404),
+    findUserByIdUseCase.execute.mockRejectedValue(
+      new NotFoundException('Usuário não encontrado.'),
     );
 
     const response = await request(app.getHttpServer())
@@ -169,7 +170,7 @@ describe('UserController (e2e)', () => {
     const updateUserDto = {
       username: 'Jane Updated',
     };
-    userService.update.mockResolvedValue({
+    updateUserUseCase.execute.mockResolvedValue({
       ...user,
       ...updateUserDto,
     });
@@ -183,7 +184,10 @@ describe('UserController (e2e)', () => {
       success: true,
       message: 'Usuário atualizado com sucesso.',
     });
-    expect(userService.update).toHaveBeenCalledWith(user.id, updateUserDto);
+    expect(updateUserUseCase.execute).toHaveBeenCalledWith(
+      user.id,
+      UserPresentationMapper.toUpdateInput(updateUserDto),
+    );
   });
 
   it('PATCH /users/:id rejects invalid request bodies', async () => {
@@ -197,11 +201,11 @@ describe('UserController (e2e)', () => {
     expectValidationMessages(response.body as unknown, [
       'email must be an email',
     ]);
-    expect(userService.update).not.toHaveBeenCalled();
+    expect(updateUserUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('DELETE /users/:id removes a user', async () => {
-    userService.remove.mockResolvedValue(user);
+    removeUserUseCase.execute.mockResolvedValue(user);
 
     const response = await request(app.getHttpServer())
       .delete(`/users/${user.id}`)
@@ -211,6 +215,6 @@ describe('UserController (e2e)', () => {
       success: true,
       message: 'Usuário removido com sucesso.',
     });
-    expect(userService.remove).toHaveBeenCalledWith(user.id);
+    expect(removeUserUseCase.execute).toHaveBeenCalledWith(user.id);
   });
 });

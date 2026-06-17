@@ -3,29 +3,27 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { AppController } from '../src/app.controller';
-import { AppService } from '../src/app.service';
-import { TransformResponseInterceptor } from '../src/interceptors/transform-response.interceptor';
+import { TransformResponseInterceptor } from '../src/common/interceptors/transform-response.interceptor';
+import { HealthController } from '../src/health/presentation/controllers/health.controller';
+import { CheckHealthUseCase } from '../src/health/application/use-cases/check-health.use-case';
 
-describe('AppController (e2e)', () => {
+describe('HealthController (e2e)', () => {
   let app: INestApplication<App>;
-  let appService: jest.Mocked<Pick<AppService, 'check'>>;
+  const checkHealthUseCase = { execute: jest.fn() };
   const healthPayload = {
-    status: 'ok',
+    status: 'ok' as const,
     timestamp: '2023-10-01T12:00:00.000Z',
   };
 
   beforeEach(async () => {
-    appService = {
-      check: jest.fn().mockReturnValue(healthPayload),
-    };
+    checkHealthUseCase.execute.mockReturnValue(healthPayload);
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      controllers: [AppController],
+      controllers: [HealthController],
       providers: [
         {
-          provide: AppService,
-          useValue: appService,
+          provide: CheckHealthUseCase,
+          useValue: checkHealthUseCase,
         },
         {
           provide: APP_INTERCEPTOR,

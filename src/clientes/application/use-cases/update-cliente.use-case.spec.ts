@@ -5,11 +5,11 @@ import {
 } from '@nestjs/common';
 
 import { UpdateClienteUseCase } from './update-cliente.use-case';
-import type { ClienteRepository } from '../cliente-repository.interface';
+import type { ClienteRepository } from '../ports/cliente.repository';
 
 import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
-import { UpdateClienteDto } from '../../presentation/dtos/update-cliente.dto';
+import { UpdateClienteInput } from '../dto/update-cliente.input';
 
 type ClienteRepositoryMock = jest.Mocked<
   Pick<ClienteRepository, 'findById' | 'existsByDocumento' | 'save'>
@@ -47,31 +47,31 @@ describe('UpdateClienteUseCase', () => {
   it('updates a client when data is valid and documento is unique', async () => {
     const existingCliente = makeCliente();
 
-    const dto: UpdateClienteDto = {
+    const input: UpdateClienteInput = {
       documento: '04252011000110',
       nome: 'Serviços Vivo',
       email: 'servico-vivo.updated@example.com',
-      celular: '11988888888',
+      celularNumero: '11988888888',
     };
 
     clienteRepository.findById.mockResolvedValue(existingCliente);
     clienteRepository.existsByDocumento.mockResolvedValue(false);
     clienteRepository.save.mockImplementation(async (cliente) => cliente);
 
-    const result = await useCase.execute(existingCliente.id!, dto);
+    const result = await useCase.execute(existingCliente.id!, input);
 
-    expect(result.nome).toBe(dto.nome);
-    expect(result.documento.toString()).toBe(dto.documento);
+    expect(result.nome).toBe(input.nome);
+    expect(result.documento).toBe(input.documento);
     expect(clienteRepository.existsByDocumento).toHaveBeenCalledWith(
-      dto.documento,
+      input.documento,
       existingCliente.id!,
     );
     expect(clienteRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
         id: existingCliente.id,
-        nome: dto.nome,
-        email: dto.email,
-        celularNumero: dto.celular,
+        nome: input.nome,
+        email: input.email,
+        celularNumero: input.celularNumero,
       }),
     );
   });

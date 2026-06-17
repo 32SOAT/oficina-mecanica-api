@@ -1,9 +1,10 @@
 import { ConflictException, BadRequestException } from '@nestjs/common';
-import { CreateClienteDto } from '../../presentation/dtos/create-cliente.dto';
+import { CreateClienteInput } from '../dto/create-cliente.input';
+import { ClienteOutputMapper } from '../dto/cliente.output';
 import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
 import { CreateClienteUseCase } from './create-cliente.use-case';
-import type { ClienteRepository } from '../cliente-repository.interface';
+import type { ClienteRepository } from '../ports/cliente.repository';
 
 type ClienteRepositoryMock = jest.Mocked<
   Pick<ClienteRepository, 'existsByDocumento' | 'save'>
@@ -28,7 +29,7 @@ describe('CreateClienteUseCase', () => {
   });
 
   it('creates a client when documento is valid and unique', async () => {
-    const dto: CreateClienteDto = {
+    const input: CreateClienteInput = {
       documento: '39053344705',
       nome: 'Jane Doe',
       email: 'jane@example.com',
@@ -36,24 +37,26 @@ describe('CreateClienteUseCase', () => {
     };
     const savedCliente = Cliente.create({
       id: 'cliente-id',
-      documento: ClienteDocumento.create(dto.documento),
-      nome: dto.nome,
-      email: dto.email,
-      celularNumero: dto.celularNumero,
+      documento: ClienteDocumento.create(input.documento),
+      nome: input.nome,
+      email: input.email,
+      celularNumero: input.celularNumero,
     });
 
     clienteRepository.existsByDocumento.mockResolvedValue(false);
     clienteRepository.save.mockResolvedValue(savedCliente);
 
-    await expect(useCase.execute(dto)).resolves.toBe(savedCliente);
+    await expect(useCase.execute(input)).resolves.toEqual(
+      ClienteOutputMapper.fromDomain(savedCliente),
+    );
     expect(clienteRepository.existsByDocumento).toHaveBeenCalledWith(
-      dto.documento,
+      input.documento,
     );
     expect(clienteRepository.save).toHaveBeenCalled();
   });
 
   it('throws conflict when documento is already in use', async () => {
-    const dto: CreateClienteDto = {
+    const input: CreateClienteInput = {
       documento: '39053344705',
       nome: 'Jane Doe',
       email: 'jane@example.com',
@@ -62,21 +65,21 @@ describe('CreateClienteUseCase', () => {
 
     clienteRepository.existsByDocumento.mockResolvedValue(true);
 
-    await expect(useCase.execute(dto)).rejects.toBeInstanceOf(
+    await expect(useCase.execute(input)).rejects.toBeInstanceOf(
       ConflictException,
     );
     expect(clienteRepository.save).not.toHaveBeenCalled();
   });
 
   it('throws bad request when documento is invalid', async () => {
-    const dto: CreateClienteDto = {
+    const input: CreateClienteInput = {
       documento: '11111111111',
       nome: 'Jane Doe',
       email: 'jane@example.com',
       celularNumero: '11999999999',
     };
 
-    await expect(useCase.execute(dto)).rejects.toBeInstanceOf(
+    await expect(useCase.execute(input)).rejects.toBeInstanceOf(
       BadRequestException,
     );
     expect(clienteRepository.existsByDocumento).not.toHaveBeenCalled();

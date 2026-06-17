@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { Cliente } from '../../domain/cliente';
-import { ClienteRepository } from '../../application/cliente-repository.interface';
+import { ClienteRepository } from '../../application/ports/cliente.repository';
 import { ClienteTypeormEntity } from './cliente.typeorm.entity';
 
 @Injectable()

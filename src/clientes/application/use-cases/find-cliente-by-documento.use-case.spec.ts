@@ -1,9 +1,10 @@
 import { BadRequestException, HttpException } from '@nestjs/common';
 
 import { FindClienteByDocumentoUseCase } from './find-cliente-by-documento.use-case';
-import type { ClienteRepository } from '../cliente-repository.interface';
+import type { ClienteRepository } from '../ports/cliente.repository';
 import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
+import { ClienteOutputMapper } from '../dto/cliente.output';
 
 type ClienteRepositoryMock = jest.Mocked<
   Pick<ClienteRepository, 'findByDocumento'>
@@ -44,7 +45,7 @@ describe('FindClienteByDocumentoUseCase', () => {
 
     expect(clienteRepository.findByDocumento).toHaveBeenCalledWith(documento);
 
-    expect(result).toBe(cliente);
+    expect(result).toEqual(ClienteOutputMapper.fromDomain(cliente));
   });
 
   it('should throw HttpException when cliente is not found', async () => {

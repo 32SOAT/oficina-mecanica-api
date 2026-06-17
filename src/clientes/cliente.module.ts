@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { QueryingModule } from '../querying/querying.module';
 import { ClienteController } from './presentation/controller/cliente.controller';
 import { CreateClienteUseCase } from './application/use-cases/create-cliente.use-case';
 import { FindAllClientesUseCase } from './application/use-cases/find-all-clientes.use-case';
@@ -10,7 +9,7 @@ import { RemoveClienteUseCase } from './application/use-cases/remove-cliente.use
 import { ClienteInfraModule } from './infra/cliente-infra.module';
 
 @Module({
-  imports: [QueryingModule, ClienteInfraModule],
+  imports: [ClienteInfraModule],
   controllers: [ClienteController],
   providers: [
     CreateClienteUseCase,
@@ -20,5 +19,6 @@ import { ClienteInfraModule } from './infra/cliente-infra.module';
     UpdateClienteUseCase,
     RemoveClienteUseCase,
   ],
+  exports: [FindClienteByDocumentoUseCase],
 })
 export class ClienteModule {}

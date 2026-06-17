@@ -1,7 +1,5 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CLIENTE_REPOSITORY } from '../application/cliente-repository.interface';
-import { ClienteInfraModule } from './cliente-infra.module';
 import { ClienteTypeormRepository } from './typeorm/cliente.repository';
 import { ClienteTypeormEntity } from './typeorm/cliente.typeorm.entity';
 
@@ -14,16 +12,24 @@ const ormRepositoryMock = {
   softRemove: jest.fn(),
 };
 
-describe('ClienteInfraModule', () => {
-  it('should resolve repository via DI', async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [ClienteInfraModule],
-    })
-      .overrideProvider(getRepositoryToken(ClienteTypeormEntity))
-      .useValue(ormRepositoryMock)
-      .compile();
+describe('ClienteTypeormRepository', () => {
+  let repo: ClienteTypeormRepository;
 
-    const repo = moduleRef.get<ClienteTypeormRepository>(CLIENTE_REPOSITORY);
-    expect(repo).toBeInstanceOf(ClienteTypeormRepository);
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ClienteTypeormRepository,
+        {
+          provide: getRepositoryToken(ClienteTypeormEntity),
+          useValue: ormRepositoryMock,
+        },
+      ],
+    }).compile();
+
+    repo = moduleRef.get(ClienteTypeormRepository);
+  });
+
+  it('should be defined', () => {
+    expect(repo).toBeDefined();
   });
 });

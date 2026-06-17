@@ -17,12 +17,12 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { PaginationDto } from '../../../querying/dtos/pagination.dto';
-import { PaginationService } from '../../../querying/pagination.service';
+import { PaginationDto } from '../../../common/pagination/pagination.dto';
 import { CreateClienteDto } from '../dtos/create-cliente.dto';
 import { FindClienteByDocumentDto } from '../dtos/find-cliente-by-document.dto';
 import { UpdateClienteDto } from '../dtos/update-cliente.dto';
 import { ClienteResponseDto } from '../dtos/cliente-response.dto';
+import { ClientePresentationMapper } from '../mappers/cliente-presentation.mapper';
 import { CreateClienteUseCase } from '../../application/use-cases/create-cliente.use-case';
 import { FindAllClientesUseCase } from '../../application/use-cases/find-all-clientes.use-case';
 import { FindClienteByDocumentoUseCase } from '../../application/use-cases/find-cliente-by-documento.use-case';
@@ -44,7 +44,6 @@ export class ClienteController {
     private readonly findClienteByDocumentoUseCase: FindClienteByDocumentoUseCase,
     private readonly updateClienteUseCase: UpdateClienteUseCase,
     private readonly removeClienteUseCase: RemoveClienteUseCase,
-    private readonly paginationService: PaginationService,
   ) {}
 
   @Post()
@@ -59,8 +58,10 @@ export class ClienteController {
     description: 'Documento já está em uso por outro cliente.',
   })
   async create(@Body() createClienteDto: CreateClienteDto) {
-    const cliente = await this.createClienteUseCase.execute(createClienteDto);
-    return ClienteResponseDto.fromDomain(cliente);
+    const output = await this.createClienteUseCase.execute(
+      ClientePresentationMapper.toCreateInput(createClienteDto),
+    );
+    return ClienteResponseDto.fromOutput(output);
   }
 
   @Get()
@@ -70,16 +71,12 @@ export class ClienteController {
   })
   @ApiPaginatedResponse(ClienteResponseDto, 200, 'Lista de clientes retornada')
   async findAll(@Query() paginationDto: PaginationDto) {
-    const result = await this.findAllClientesUseCase.execute(paginationDto);
+    const result = await this.findAllClientesUseCase.execute(
+      ClientePresentationMapper.toFindAllInput(paginationDto),
+    );
     return {
-      data: result.data.map((cliente) =>
-        ClienteResponseDto.fromDomain(cliente),
-      ),
-      meta: this.paginationService.createMeta(
-        result.take,
-        result.page,
-        result.count,
-      ),
+      data: result.data.map((cliente) => ClienteResponseDto.fromOutput(cliente)),
+      meta: result.meta,
     };
   }
 
@@ -99,7 +96,7 @@ export class ClienteController {
     );
     return {
       success: true,
-      data: ClienteResponseDto.fromDomain(cliente),
+      data: ClienteResponseDto.fromOutput(cliente),
       message: 'Cliente encontrado com sucesso.',
     };
   }
@@ -126,7 +123,10 @@ export class ClienteController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateClienteDto: UpdateClienteDto,
   ) {
-    await this.updateClienteUseCase.execute(id, updateClienteDto);
+    await this.updateClienteUseCase.execute(
+      id,
+      ClientePresentationMapper.toUpdateInput(updateClienteDto),
+    );
     return {
       success: true,
       message: 'Cliente atualizado com sucesso.',

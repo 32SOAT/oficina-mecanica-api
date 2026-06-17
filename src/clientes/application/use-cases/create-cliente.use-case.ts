@@ -1,21 +1,30 @@
-import { BadRequestException, ConflictException, Inject } from '@nestjs/common';
-import { CreateClienteDto } from '../../presentation/dtos/create-cliente.dto';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
+import { CreateClienteInput } from '../dto/create-cliente.input';
+import { ClienteOutput, ClienteOutputMapper } from '../dto/cliente.output';
 import { Cliente } from '../../domain/cliente';
 import {
   ClienteDocumento,
   InvalidClienteDocumentoError,
 } from '../../domain/cliente-documento';
-import { CLIENTE_REPOSITORY } from '../cliente-repository.interface';
-import type { ClienteRepository } from '../cliente-repository.interface';
+import {
+  CLIENTE_REPOSITORY,
+  ClienteRepository,
+} from '../ports/cliente.repository';
 
+@Injectable()
 export class CreateClienteUseCase {
   constructor(
     @Inject(CLIENTE_REPOSITORY)
     private readonly clienteRepository: ClienteRepository,
   ) {}
 
-  async execute(createClienteDto: CreateClienteDto): Promise<Cliente> {
-    const documento = this.buildDocumento(createClienteDto.documento);
+  async execute(input: CreateClienteInput): Promise<ClienteOutput> {
+    const documento = this.buildDocumento(input.documento);
 
     const exists = await this.clienteRepository.existsByDocumento(
       documento.toString(),
@@ -27,12 +36,13 @@ export class CreateClienteUseCase {
 
     const cliente = Cliente.create({
       documento,
-      nome: createClienteDto.nome,
-      email: createClienteDto.email,
-      celularNumero: createClienteDto.celularNumero,
+      nome: input.nome,
+      email: input.email,
+      celularNumero: input.celularNumero,
     });
 
-    return this.clienteRepository.save(cliente);
+    const saved = await this.clienteRepository.save(cliente);
+    return ClienteOutputMapper.fromDomain(saved);
   }
 
   private buildDocumento(documento: string): ClienteDocumento {

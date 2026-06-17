@@ -3,16 +3,20 @@ import {
   HttpException,
   BadRequestException,
   Inject,
+  Injectable,
 } from '@nestjs/common';
-import { UpdateClienteDto } from '../../presentation/dtos/update-cliente.dto';
-import { Cliente } from '../../domain/cliente';
+import { UpdateClienteInput } from '../dto/update-cliente.input';
+import { ClienteOutput, ClienteOutputMapper } from '../dto/cliente.output';
 import {
   ClienteDocumento,
   InvalidClienteDocumentoError,
 } from '../../domain/cliente-documento';
-import { CLIENTE_REPOSITORY } from '../cliente-repository.interface';
-import type { ClienteRepository } from '../cliente-repository.interface';
+import {
+  CLIENTE_REPOSITORY,
+  ClienteRepository,
+} from '../ports/cliente.repository';
 
+@Injectable()
 export class UpdateClienteUseCase {
   constructor(
     @Inject(CLIENTE_REPOSITORY)
@@ -21,16 +25,16 @@ export class UpdateClienteUseCase {
 
   async execute(
     id: string,
-    updateClienteDto: UpdateClienteDto,
-  ): Promise<Cliente> {
+    input: UpdateClienteInput,
+  ): Promise<ClienteOutput> {
     const existingCliente = await this.clienteRepository.findById(id);
     if (!existingCliente) {
       throw new HttpException('Cliente não encontrado.', 404);
     }
 
     let documento = existingCliente.documento;
-    if (updateClienteDto.documento) {
-      documento = this.buildDocumento(updateClienteDto.documento);
+    if (input.documento) {
+      documento = this.buildDocumento(input.documento);
       const duplicate = await this.clienteRepository.existsByDocumento(
         documento.toString(),
         id,
@@ -41,13 +45,14 @@ export class UpdateClienteUseCase {
     }
 
     const updatedCliente = existingCliente.update({
-      nome: updateClienteDto.nome,
-      email: updateClienteDto.email,
-      celularNumero: updateClienteDto.celular,
+      nome: input.nome,
+      email: input.email,
+      celularNumero: input.celularNumero,
       documento: documento.toString(),
     });
 
-    return this.clienteRepository.save(updatedCliente);
+    const saved = await this.clienteRepository.save(updatedCliente);
+    return ClienteOutputMapper.fromDomain(saved);
   }
 
   private buildDocumento(documento: string): ClienteDocumento {

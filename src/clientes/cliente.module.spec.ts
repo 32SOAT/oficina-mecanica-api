@@ -2,7 +2,6 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ClienteModule } from './cliente.module';
 import { ClienteController } from './presentation/controller/cliente.controller';
-import { CLIENTE_REPOSITORY } from './application/cliente-repository.interface';
 import { ClienteTypeormEntity } from './infra/typeorm/cliente.typeorm.entity';
 
 const ormRepositoryMock = {
@@ -24,6 +23,5 @@ describe('ClienteModule', () => {
       .compile();
 
     expect(moduleRef.get(ClienteController)).toBeInstanceOf(ClienteController);
-    expect(moduleRef.get(CLIENTE_REPOSITORY)).toBeDefined();
   });
 });

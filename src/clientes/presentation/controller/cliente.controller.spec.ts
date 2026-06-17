@@ -1,12 +1,13 @@
 import { HttpException } from '@nestjs/common';
 import { ClienteController } from './cliente.controller';
-import { PaginationService } from '../../../querying/pagination.service';
-import { Cliente } from '../../domain/cliente';
+import { ClienteOutputMapper } from '../../application/dto/cliente.output';
 import { CreateClienteUseCase } from '../../application/use-cases/create-cliente.use-case';
 import { FindAllClientesUseCase } from '../../application/use-cases/find-all-clientes.use-case';
 import { FindClienteByDocumentoUseCase } from '../../application/use-cases/find-cliente-by-documento.use-case';
 import { UpdateClienteUseCase } from '../../application/use-cases/update-cliente.use-case';
 import { RemoveClienteUseCase } from '../../application/use-cases/remove-cliente.use-case';
+import { ClientePresentationMapper } from '../mappers/cliente-presentation.mapper';
+import { Cliente } from '../../domain/cliente';
 
 type CreateClienteUseCaseMock = jest.Mocked<
   Pick<CreateClienteUseCase, 'execute'>
@@ -31,14 +32,15 @@ describe('ClienteController', () => {
   let findClienteByDocumentoUseCase: FindClienteByDocumentoUseCaseMock;
   let updateClienteUseCase: UpdateClienteUseCaseMock;
   let removeClienteUseCase: RemoveClienteUseCaseMock;
-  let paginationService: PaginationService;
-  const cliente = Cliente.create({
+
+  const clienteDomain = Cliente.create({
     id: 'cliente-id',
     documento: '39053344705',
     nome: 'Jane Doe',
     email: 'jane@example.com',
     celularNumero: '11999999999',
   });
+  const clienteOutput = ClienteOutputMapper.fromDomain(clienteDomain);
 
   beforeEach(() => {
     createClienteUseCase = { execute: jest.fn() };
@@ -46,7 +48,6 @@ describe('ClienteController', () => {
     findClienteByDocumentoUseCase = { execute: jest.fn() };
     updateClienteUseCase = { execute: jest.fn() };
     removeClienteUseCase = { execute: jest.fn() };
-    paginationService = new PaginationService();
 
     controller = new ClienteController(
       createClienteUseCase as unknown as CreateClienteUseCase,
@@ -54,7 +55,6 @@ describe('ClienteController', () => {
       findClienteByDocumentoUseCase as unknown as FindClienteByDocumentoUseCase,
       updateClienteUseCase as unknown as UpdateClienteUseCase,
       removeClienteUseCase as unknown as RemoveClienteUseCase,
-      paginationService,
     );
   });
 
@@ -65,11 +65,13 @@ describe('ClienteController', () => {
       email: 'jane@example.com',
       celularNumero: '11999999999',
     };
-    createClienteUseCase.execute.mockResolvedValue(cliente);
+    createClienteUseCase.execute.mockResolvedValue(clienteOutput);
 
     const result = await controller.create(createClienteDto);
-    expect(result.id).toBe(cliente.id);
-    expect(createClienteUseCase.execute).toHaveBeenCalledWith(createClienteDto);
+    expect(result.id).toBe(clienteOutput.id);
+    expect(createClienteUseCase.execute).toHaveBeenCalledWith(
+      ClientePresentationMapper.toCreateInput(createClienteDto),
+    );
   });
 
   it('lets create service exceptions propagate to Nest', async () => {
@@ -87,12 +89,9 @@ describe('ClienteController', () => {
   });
 
   it('lists clients with pagination', async () => {
-    const paginationDto = {
-      page: 2,
-      take: 5,
-    };
-    const result = {
-      data: [cliente],
+    const paginationDto = { page: 2, take: 5 };
+    findAllClientesUseCase.execute.mockResolvedValue({
+      data: [clienteOutput],
       meta: {
         itemsPerPage: 5,
         totalItems: 6,
@@ -101,23 +100,19 @@ describe('ClienteController', () => {
         hasNextPage: false,
         hasPreviousPage: true,
       },
-    };
-    findAllClientesUseCase.execute.mockResolvedValue({
-      data: [cliente],
-      take: paginationDto.take,
-      page: paginationDto.page,
-      count: result.meta.totalItems,
     });
 
     const response = await controller.findAll(paginationDto);
     expect(response.data.length).toBe(1);
     expect(response.meta?.currentPage).toBe(2);
-    expect(findAllClientesUseCase.execute).toHaveBeenCalledWith(paginationDto);
+    expect(findAllClientesUseCase.execute).toHaveBeenCalledWith(
+      ClientePresentationMapper.toFindAllInput(paginationDto),
+    );
   });
 
   it('lists clients with default pagination when no query is provided', async () => {
-    const result = {
-      data: [cliente],
+    findAllClientesUseCase.execute.mockResolvedValue({
+      data: [clienteOutput],
       meta: {
         itemsPerPage: 10,
         totalItems: 1,
@@ -126,29 +121,25 @@ describe('ClienteController', () => {
         hasNextPage: false,
         hasPreviousPage: false,
       },
-    };
-    findAllClientesUseCase.execute.mockResolvedValue({
-      data: [cliente],
-      take: Number(result.meta.itemsPerPage),
-      page: 1,
-      count: result.meta.totalItems,
     });
 
     const response = await controller.findAll({});
     expect(response.data.length).toBe(1);
     expect(response.meta?.currentPage).toBe(1);
-    expect(findAllClientesUseCase.execute).toHaveBeenCalledWith({});
+    expect(findAllClientesUseCase.execute).toHaveBeenCalledWith(
+      ClientePresentationMapper.toFindAllInput({}),
+    );
   });
 
   it('finds one client by documento', async () => {
     const findClienteByDocumentDto = {
-      documento: cliente.documento.toString(),
+      documento: clienteOutput.documento,
     };
-    findClienteByDocumentoUseCase.execute.mockResolvedValue(cliente);
+    findClienteByDocumentoUseCase.execute.mockResolvedValue(clienteOutput);
 
     const result = await controller.findByDocumento(findClienteByDocumentDto);
     expect(result.success).toBe(true);
-    expect(result.data.id).toBe(cliente.id);
+    expect(result.data.id).toBe(clienteOutput.id);
     expect(findClienteByDocumentoUseCase.execute).toHaveBeenCalledWith(
       findClienteByDocumentDto.documento,
     );
@@ -164,17 +155,17 @@ describe('ClienteController', () => {
   });
 
   it('updates a client', async () => {
-    const updateClienteDto = {
+    const updateClienteDto = { nome: 'Jane Updated' };
+    updateClienteUseCase.execute.mockResolvedValue({
+      ...clienteOutput,
       nome: 'Jane Updated',
-    };
-    const updatedCliente = cliente.update(updateClienteDto);
-    updateClienteUseCase.execute.mockResolvedValue(updatedCliente);
+    });
 
-    const response = await controller.update(cliente.id!, updateClienteDto);
+    const response = await controller.update(clienteOutput.id, updateClienteDto);
     expect(response.success).toBe(true);
     expect(updateClienteUseCase.execute).toHaveBeenCalledWith(
-      cliente.id,
-      updateClienteDto,
+      clienteOutput.id,
+      ClientePresentationMapper.toUpdateInput(updateClienteDto),
     );
   });
 
@@ -188,11 +179,11 @@ describe('ClienteController', () => {
   });
 
   it('removes a client', async () => {
-    removeClienteUseCase.execute.mockResolvedValue(cliente);
+    removeClienteUseCase.execute.mockResolvedValue(clienteOutput);
 
-    const response = await controller.remove(cliente.id!);
+    const response = await controller.remove(clienteOutput.id);
     expect(response.success).toBe(true);
-    expect(removeClienteUseCase.execute).toHaveBeenCalledWith(cliente.id);
+    expect(removeClienteUseCase.execute).toHaveBeenCalledWith(clienteOutput.id);
   });
 
   it('lets remove service exceptions propagate to Nest', async () => {

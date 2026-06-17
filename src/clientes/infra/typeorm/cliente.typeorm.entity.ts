@@ -92,3 +92,6 @@ export class ClienteTypeormEntity {
     });
   }
 }
+
+/** @deprecated Use ClienteTypeormEntity */
+export { ClienteTypeormEntity as ClienteEntity };

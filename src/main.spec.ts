@@ -9,18 +9,14 @@ describe('main bootstrap', () => {
       get: jest
         .fn()
         .mockReturnValue({ get: jest.fn().mockReturnValue({ port: 3333 }) }),
-      getHttpAdapter: jest.fn().mockReturnValue({
-        getInstance: jest.fn().mockReturnValue({
-          disable: jest.fn(),
-        }),
-      }),
+      getHttpAdapter: jest.fn(),
       useGlobalPipes: jest.fn(),
       enableVersioning: jest.fn(),
       setGlobalPrefix: jest.fn(),
       listen: jest.fn().mockResolvedValue(undefined),
     };
-    const createDocument = jest.fn().mockReturnValue({});
-    const setup = jest.fn();
+    const configureApp = jest.fn();
+    const configureSwagger = jest.fn();
     const create = jest.fn().mockResolvedValue(appMock);
 
     jest.doMock('@nestjs/core', () => ({
@@ -29,32 +25,12 @@ describe('main bootstrap', () => {
     jest.doMock('./app.module', () => ({
       AppModule: class AppModule {},
     }));
-    jest.doMock('@nestjs/swagger', () => {
-      class DocumentBuilder {
-        setTitle() {
-          return this;
-        }
-        setDescription() {
-          return this;
-        }
-        setVersion() {
-          return this;
-        }
-        addBearerAuth() {
-          return this;
-        }
-        build() {
-          return {};
-        }
-      }
-      return {
-        DocumentBuilder,
-        SwaggerModule: {
-          createDocument,
-          setup,
-        },
-      };
-    });
+    jest.doMock('./common/bootstrap/configure-app', () => ({
+      configureApp,
+    }));
+    jest.doMock('./common/bootstrap/configure-swagger', () => ({
+      configureSwagger,
+    }));
 
     jest.isolateModules(() => {
       jest.requireActual('./main');
@@ -62,15 +38,9 @@ describe('main bootstrap', () => {
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(create).toHaveBeenCalled();
-    expect(appMock.useGlobalPipes).toHaveBeenCalled();
-    expect(appMock.enableVersioning).toHaveBeenCalledWith({
-      type: 0,
-      defaultVersion: '1',
-    });
-    expect(appMock.setGlobalPrefix).toHaveBeenCalledWith('api');
+    expect(configureApp).toHaveBeenCalledWith(appMock);
+    expect(configureSwagger).toHaveBeenCalledWith(appMock);
     expect(appMock.listen).toHaveBeenCalledWith(3333);
-    expect(createDocument).toHaveBeenCalled();
-    expect(setup).toHaveBeenCalled();
   });
 
   it('logs and exits on bootstrap error', async () => {
@@ -88,6 +58,12 @@ describe('main bootstrap', () => {
     }));
     jest.doMock('./app.module', () => ({
       AppModule: class AppModule {},
+    }));
+    jest.doMock('./common/bootstrap/configure-app', () => ({
+      configureApp: jest.fn(),
+    }));
+    jest.doMock('./common/bootstrap/configure-swagger', () => ({
+      configureSwagger: jest.fn(),
     }));
 
     jest.isolateModules(() => {

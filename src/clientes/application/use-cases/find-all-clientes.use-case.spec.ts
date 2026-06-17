@@ -1,7 +1,9 @@
 import { FindAllClientesUseCase } from '../use-cases/find-all-clientes.use-case';
-import { DefaultPageSize } from '../../../querying/constants';
-import type { ClienteRepository } from '../cliente-repository.interface';
-import type { PaginationDto } from '../../../querying/dtos/pagination.dto';
+import { DEFAULT_PAGE_SIZE } from '../constants';
+import type { ClienteRepository } from '../ports/cliente.repository';
+import { Cliente } from '../../domain/cliente';
+import { ClienteDocumento } from '../../domain/cliente-documento';
+import { ClienteOutputMapper } from '../dto/cliente.output';
 
 type ClienteRepositoryMock = jest.Mocked<Pick<ClienteRepository, 'findAll'>>;
 
@@ -20,43 +22,51 @@ describe('FindAllClientesUseCase', () => {
   });
 
   it('returns paginated clients with default pagination', async () => {
-    const data = [{ id: '1' }, { id: '2' }];
-    const count = 2;
+    const cliente = Cliente.create({
+      id: '1',
+      documento: ClienteDocumento.create('39053344705'),
+      nome: 'Jane',
+      email: 'jane@example.com',
+      celularNumero: '11999999999',
+    });
+    const output = ClienteOutputMapper.fromDomain(cliente);
 
-    clienteRepository.findAll.mockResolvedValue([data as any, count]);
+    clienteRepository.findAll.mockResolvedValue([[cliente], 1]);
 
     const result = await useCase.execute({});
 
     expect(clienteRepository.findAll).toHaveBeenCalledWith(
       0,
-      DefaultPageSize.CLIENTE,
+      DEFAULT_PAGE_SIZE,
     );
 
-    expect(result).toEqual({
-      data,
-      count,
-      page: 1,
-      take: DefaultPageSize.CLIENTE,
+    expect(result.data).toEqual([output]);
+    expect(result.meta).toEqual({
+      itemsPerPage: DEFAULT_PAGE_SIZE,
+      totalItems: 1,
+      currentPage: 1,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
     });
   });
 
   it('calculates skip correctly based on page and take', async () => {
-    const data = [{ id: '3' }];
-    const count = 1;
+    const cliente = Cliente.create({
+      id: '3',
+      documento: ClienteDocumento.create('39053344705'),
+      nome: 'Jane',
+      email: 'jane@example.com',
+      celularNumero: '11999999999',
+    });
 
-    clienteRepository.findAll.mockResolvedValue([data as any, count]);
+    clienteRepository.findAll.mockResolvedValue([[cliente], 30]);
 
-    const dto: PaginationDto = {
-      page: 3,
-      take: 10,
-    };
-
-    const result = await useCase.execute(dto);
+    const result = await useCase.execute({ page: 3, take: 10 });
 
     expect(clienteRepository.findAll).toHaveBeenCalledWith(20, 10);
-    expect(result.page).toBe(3);
-    expect(result.take).toBe(10);
-    expect(result.data).toBe(data);
+    expect(result.data[0]).toEqual(ClienteOutputMapper.fromDomain(cliente));
+    expect(result.meta?.currentPage).toBe(3);
   });
 
   it('uses default take when only page is provided', async () => {
@@ -67,8 +77,8 @@ describe('FindAllClientesUseCase', () => {
     });
 
     expect(clienteRepository.findAll).toHaveBeenCalledWith(
-      (2 - 1) * DefaultPageSize.CLIENTE,
-      DefaultPageSize.CLIENTE,
+      (2 - 1) * DEFAULT_PAGE_SIZE,
+      DEFAULT_PAGE_SIZE,
     );
   });
 
@@ -81,8 +91,6 @@ describe('FindAllClientesUseCase', () => {
     });
 
     expect(result).toHaveProperty('data');
-    expect(result).toHaveProperty('count');
-    expect(result).toHaveProperty('page');
-    expect(result).toHaveProperty('take');
+    expect(result).toHaveProperty('meta');
   });
 });

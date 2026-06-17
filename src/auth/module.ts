@@ -1,0 +1,23 @@
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
+import { IssueAuthTokenUseCase } from './application/use-cases/issue-auth-token.use-case';
+import { ValidateCredentialsUseCase } from './application/use-cases/validate-credentials.use-case';
+import { JwtAuthGuard } from './auth.guard';
+import { AuthInfraModule } from './infrastructure/infra.module';
+import { AuthController } from './presentation/controllers/auth.controller';
+
+@Module({
+  imports: [AuthInfraModule],
+  controllers: [AuthController],
+  providers: [
+    ValidateCredentialsUseCase,
+    IssueAuthTokenUseCase,
+    ChangePasswordUseCase,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
+})
+export class AuthModule {}

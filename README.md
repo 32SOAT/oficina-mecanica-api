@@ -178,13 +178,13 @@ A imagem de produção **não** inclui as ferramentas de dev usadas no `npm run 
 **Aplicar migrations:**
 
 ```bash
-docker compose exec app npx typeorm migration:run -d dist/config/app-data-source
+docker compose exec app npx typeorm migration:run -d dist/database/data-source
 ```
 
 **Reverter a última migration:**
 
 ```bash
-docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source
+docker compose exec app npx typeorm migration:revert -d dist/database/data-source
 ```
 
 **Se você alterou arquivos de migration no repositório**, é preciso **reconstruir a imagem** do `app` para que o `dist/` dentro do container inclua essas alterações; depois suba de novo e rode o `migration:run` como acima.
@@ -359,7 +359,7 @@ docker run --rm -t -v "${PWD}:/zap/wrk" zaproxy/zap-stable zap-api-scan.py -t ht
 | Instalar deps    | `npm install`                                                | (na build da imagem)                                                                  |
 | Build            | `npm run build`                                              | `docker compose build`                                                                |
 | Subir API + DB   | `docker compose up -d db` e, em seguida, `npm run start:dev` | `docker compose up -d` (sobe `db` e `app`)                                            |
-| Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/config/app-data-source`    |
-| Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/config/app-data-source` |
+| Migrations       | `npm run migration:run`                                      | `docker compose exec app npx typeorm migration:run -d dist/database/data-source`    |
+| Revert migration | `npm run migration:revert`                                   | `docker compose exec app npx typeorm migration:revert -d dist/database/data-source` |
 
 
