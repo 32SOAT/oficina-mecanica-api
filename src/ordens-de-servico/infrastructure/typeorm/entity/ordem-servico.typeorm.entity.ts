@@ -12,7 +12,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BadRequestException } from '@nestjs/common';
-import { ClienteEntity } from '../../../../clientes/infra/typeorm/cliente.typeorm.entity';
+import { ClienteEntity } from '../../../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
 import { VeiculoEntity } from '../../../../veiculos/infrastructure/typeorm/entity/veiculo.typeorm.entity';
 import { ItemOsServicoEntity } from './item-os-servico.entity';
 import { ItemOsEstoqueEntity } from './item-os-estoque.entity';

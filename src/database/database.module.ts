@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigType } from '../config/config.module';
-import { ClienteTypeormEntity } from '../clientes/infra/typeorm/cliente.typeorm.entity';
+import { ClienteTypeormEntity } from '../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
 import { EstoqueTypeormEntity } from '../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
 import { HistoricoStatusOsEntity } from '../ordens-de-servico/infrastructure/typeorm/entity/historico-status-os.entity';
 import { ItemOsEstoqueEntity } from '../ordens-de-servico/infrastructure/typeorm/entity/item-os-estoque.entity';

@@ -1,8 +1,8 @@
 import { IsNull, Repository } from 'typeorm';
 import { ClienteTypeormRepository } from './cliente.repository';
-import { ClienteTypeormEntity } from './cliente.typeorm.entity';
-import { Cliente } from '../../domain/cliente';
-import { ClienteDocumento } from '../../domain/cliente-documento';
+import { ClienteTypeormEntity } from '../entity/cliente.typeorm.entity';
+import { Cliente } from '../../../domain/cliente';
+import { ClienteDocumento } from '../../../domain/cliente-documento';
 
 const makeCliente = (id = 'cliente-id') =>
   Cliente.create({

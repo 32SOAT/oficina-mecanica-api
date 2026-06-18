@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClienteModule } from '../../clientes/cliente.module';
+import { ClienteModule } from '../../clientes/module';
 import { VEICULO_REPOSITORY } from '../application/ports/veiculo.repository';
 import { CLIENTE_LOOKUP_PORT } from '../application/ports/cliente-lookup.port';
 import { ClienteLookupAdapter } from './adapters/cliente-lookup.adapter';

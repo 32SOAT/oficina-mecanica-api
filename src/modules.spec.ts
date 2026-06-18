@@ -1,5 +1,5 @@
 import { HealthModule } from './health/module';
-import { ClienteModule } from './clientes/cliente.module';
+import { ClienteModule } from './clientes/module';
 import { SeedingModule } from './database/seeds/seeding.module';
 import { ServicoModule } from './servicos/module';
 import { OrdemServicoModule } from './ordens-de-servico/module';

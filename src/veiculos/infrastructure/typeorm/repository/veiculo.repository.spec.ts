@@ -2,7 +2,7 @@ import { Repository } from 'typeorm';
 import { VeiculoTypeormRepository } from './veiculo.repository';
 import { VeiculoTypeormEntity } from '../entity/veiculo.typeorm.entity';
 import { Veiculo } from '../../../domain/veiculo';
-import { ClienteTypeormEntity } from '../../../../clientes/infra/typeorm/cliente.typeorm.entity';
+import { ClienteTypeormEntity } from '../../../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
 
 const makeEntity = () => {
   const entity = new VeiculoTypeormEntity();

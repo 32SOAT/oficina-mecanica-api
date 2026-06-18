@@ -6,7 +6,7 @@ import {
   ApiOkResponse,
   ApiResponse,
 } from '@nestjs/swagger';
-import { Public } from '../../../auth/public.decorator';
+import { Public } from '../../../auth/presentation/decorators/public.decorator';
 import { FindOrdemServicoByIdUseCase } from '../../application/use-cases/find-ordem-servico-by-id.use-case';
 import { FindOrdemServicoHistoricoUseCase } from '../../application/use-cases/find-ordem-servico-historico.use-case';
 import { StatusPublicoResponse } from '../dto/status-publico.response';

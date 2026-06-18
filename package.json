@@ -92,9 +92,7 @@
     "collectCoverageFrom": [
       "src/**/*.ts",
       "!src/**/*.spec.ts",
-      "!src/database/migrations/**",
-      "!src/**/presentation/dto/**",
-      "!src/**/presentation/dtos/**"
+      "!src/database/migrations/**"
     ],
     "coverageDirectory": "coverage",
     "coveragePathIgnorePatterns": [

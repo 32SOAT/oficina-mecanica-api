@@ -5,7 +5,7 @@ import { shouldEnableSeedingModule } from './database/seeds/seeding-environment'
 import { SeedingModule } from './database/seeds/seeding.module';
 import { CoreModule } from './common/core/core.module';
 import { HealthModule } from './health/module';
-import { ClienteModule } from './clientes/cliente.module';
+import { ClienteModule } from './clientes/module';
 import { VeiculoModule } from './veiculos/module';
 import { UserModule } from './users/module';
 import { AuthModule } from './auth/module';

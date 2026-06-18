@@ -24,7 +24,7 @@ import {
   ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { type AuthenticatedRequest } from '../../../auth/authenticated-request.interface';
+import { type AuthenticatedRequest } from '../../../auth/presentation/interfaces/authenticated-request.interface';
 import { PaginationDto } from '../../../common/pagination/pagination.dto';
 import { CreateEstoqueUseCase } from '../../application/use-cases/create-estoque.use-case';
 import { ExecutarOperacaoEstoqueUseCase } from '../../application/use-cases/executar-operacao-estoque.use-case';

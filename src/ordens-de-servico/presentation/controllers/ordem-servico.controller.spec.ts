@@ -1,6 +1,6 @@
 import { OrdemServicoController } from './ordem-servico.controller';
 import { StatusOrdemServico as S } from '../../domain/status-ordem-servico.enum';
-import { type AuthenticatedRequest } from '../../../auth/authenticated-request.interface';
+import { type AuthenticatedRequest } from '../../../auth/presentation/interfaces/authenticated-request.interface';
 
 const mockReq = {
   user: { sub: 'usuario-1', email: 'a@b.c', username: 'admin' },

@@ -17,7 +17,7 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
-import { type AuthenticatedRequest } from '../../../auth/authenticated-request.interface';
+import { type AuthenticatedRequest } from '../../../auth/presentation/interfaces/authenticated-request.interface';
 import { AprovarOrcamentoOrdemServicoUseCase } from '../../application/use-cases/aprovar-orcamento-ordem-servico.use-case';
 import { AvancarStatusOrdemServicoUseCase } from '../../application/use-cases/avancar-status-ordem-servico.use-case';
 import { CreateOrdemServicoUseCase } from '../../application/use-cases/create-ordem-servico.use-case';

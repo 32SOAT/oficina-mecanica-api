@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { ClienteTypeormEntity } from '../../../../clientes/infra/typeorm/cliente.typeorm.entity';
+import { ClienteTypeormEntity } from '../../../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
 import { Veiculo } from '../../../domain/veiculo';
 
 @Entity('veiculo')

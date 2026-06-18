@@ -1,6 +1,6 @@
 import { ClienteTypeormEntity } from './cliente.typeorm.entity';
-import { Cliente } from '../../domain/cliente';
-import { ClienteDocumento } from '../../domain/cliente-documento';
+import { Cliente } from '../../../domain/cliente';
+import { ClienteDocumento } from '../../../domain/cliente-documento';
 
 describe('ClienteTypeormEntity', () => {
   it('should convert domain to entity without id when creating', () => {

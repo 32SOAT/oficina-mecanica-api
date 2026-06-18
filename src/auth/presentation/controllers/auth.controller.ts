@@ -14,8 +14,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import type { AuthenticatedRequest } from '../../authenticated-request.interface';
-import { Public } from '../../public.decorator';
+import type { AuthenticatedRequest } from '../interfaces/authenticated-request.interface';
+import { Public } from '../decorators/public.decorator';
 import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { IssueAuthTokenUseCase } from '../../application/use-cases/issue-auth-token.use-case';
 import { ValidateCredentialsUseCase } from '../../application/use-cases/validate-credentials.use-case';

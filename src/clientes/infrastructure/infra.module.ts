@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClienteTypeormEntity } from './typeorm/cliente.typeorm.entity';
-import { ClienteTypeormRepository } from './typeorm/cliente.repository';
+import { ClienteTypeormEntity } from './typeorm/entity/cliente.typeorm.entity';
+import { ClienteTypeormRepository } from './typeorm/repository/cliente.repository';
 import {
   CLIENTE_REPOSITORY,
   ClienteRepository,

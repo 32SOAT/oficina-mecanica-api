@@ -18,10 +18,10 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { PaginationDto } from '../../../common/pagination/pagination.dto';
-import { CreateClienteDto } from '../dtos/create-cliente.dto';
-import { FindClienteByDocumentDto } from '../dtos/find-cliente-by-document.dto';
-import { UpdateClienteDto } from '../dtos/update-cliente.dto';
-import { ClienteResponseDto } from '../dtos/cliente-response.dto';
+import { CreateClienteDto } from '../dto/create-cliente.dto';
+import { FindClienteByDocumentDto } from '../dto/find-cliente-by-document.dto';
+import { UpdateClienteDto } from '../dto/update-cliente.dto';
+import { ClienteResponseDto } from '../dto/cliente-response.dto';
 import { ClientePresentationMapper } from '../mappers/cliente-presentation.mapper';
 import { CreateClienteUseCase } from '../../application/use-cases/create-cliente.use-case';
 import { FindAllClientesUseCase } from '../../application/use-cases/find-all-clientes.use-case';

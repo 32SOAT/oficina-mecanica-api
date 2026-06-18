@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ClienteTypeormEntity } from '../../../../clientes/infra/typeorm/cliente.typeorm.entity';
+import { ClienteTypeormEntity } from '../../../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
 import {
   ClienteResumoOutput,
   VeiculoOutput,

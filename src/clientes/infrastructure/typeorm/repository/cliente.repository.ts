@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
-import { Cliente } from '../../domain/cliente';
-import { ClienteRepository } from '../../application/ports/cliente.repository';
-import { ClienteTypeormEntity } from './cliente.typeorm.entity';
+import { Cliente } from '../../../domain/cliente';
+import { ClienteRepository } from '../../../application/ports/cliente.repository';
+import { ClienteTypeormEntity } from '../entity/cliente.typeorm.entity';
 
 @Injectable()
 export class ClienteTypeormRepository implements ClienteRepository {

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClienteEntity } from '../../clientes/infra/typeorm/cliente.typeorm.entity';
+import { ClienteEntity } from '../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
 import { VeiculoEntity } from '../../veiculos/infrastructure/typeorm/entity/veiculo.typeorm.entity';
 import { ServicoEntity } from '../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
 import { EstoqueEntity } from '../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';

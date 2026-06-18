@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ClienteModule } from './cliente.module';
-import { ClienteController } from './presentation/controller/cliente.controller';
-import { ClienteTypeormEntity } from './infra/typeorm/cliente.typeorm.entity';
+import { ClienteModule } from './module';
+import { ClienteController } from './presentation/controllers/cliente.controller';
+import { ClienteTypeormEntity } from './infrastructure/typeorm/entity/cliente.typeorm.entity';
 
 const ormRepositoryMock = {
   save: jest.fn(),

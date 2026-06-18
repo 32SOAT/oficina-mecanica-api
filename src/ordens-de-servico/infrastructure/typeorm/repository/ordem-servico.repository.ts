@@ -7,7 +7,7 @@ import {
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ClienteEntity } from '../../../../clientes/infra/typeorm/cliente.typeorm.entity';
+import { ClienteEntity } from '../../../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
 import { VeiculoEntity } from '../../../../veiculos/infrastructure/typeorm/entity/veiculo.typeorm.entity';
 import { ServicoEntity } from '../../../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
 import { EstoqueEntity } from '../../../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';

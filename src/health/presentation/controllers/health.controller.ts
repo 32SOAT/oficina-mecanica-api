@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Public } from '../../../auth/public.decorator';
+import { Public } from '../../../auth/presentation/decorators/public.decorator';
 import { CheckHealthUseCase } from '../../application/use-cases/check-health.use-case';
 import { HealthResponseDto } from '../dto/health-response.dto';
 

@@ -1,7 +1,7 @@
 import { Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiWrappedResponse } from '../../common/decorators/swagger-response.decorator';
-import { Public } from '../../auth/public.decorator';
+import { Public } from '../../auth/presentation/decorators/public.decorator';
 import { SeedSummaryDto } from './dto/seed-summary.dto';
 import { SeedingService } from './seeding.service';
 

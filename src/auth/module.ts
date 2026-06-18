@@ -3,7 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
 import { IssueAuthTokenUseCase } from './application/use-cases/issue-auth-token.use-case';
 import { ValidateCredentialsUseCase } from './application/use-cases/validate-credentials.use-case';
-import { JwtAuthGuard } from './auth.guard';
+import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 import { AuthInfraModule } from './infrastructure/infra.module';
 import { AuthController } from './presentation/controllers/auth.controller';
 
