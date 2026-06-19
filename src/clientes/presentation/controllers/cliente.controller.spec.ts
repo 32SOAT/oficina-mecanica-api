@@ -1,6 +1,8 @@
-import { HttpException } from '@nestjs/common';
+import {
+  BadRequestError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { ClienteController } from './cliente.controller';
-import { ClienteOutputMapper } from '../../application/dto/cliente.output';
 import { CreateClienteUseCase } from '../../application/use-cases/create-cliente.use-case';
 import { FindAllClientesUseCase } from '../../application/use-cases/find-all-clientes.use-case';
 import { FindClienteByDocumentoUseCase } from '../../application/use-cases/find-cliente-by-documento.use-case';
@@ -40,7 +42,6 @@ describe('ClienteController', () => {
     email: 'jane@example.com',
     celularNumero: '11999999999',
   });
-  const clienteOutput = ClienteOutputMapper.fromDomain(clienteDomain);
 
   beforeEach(() => {
     createClienteUseCase = { execute: jest.fn() };
@@ -65,17 +66,17 @@ describe('ClienteController', () => {
       email: 'jane@example.com',
       celularNumero: '11999999999',
     };
-    createClienteUseCase.execute.mockResolvedValue(clienteOutput);
+    createClienteUseCase.execute.mockResolvedValue(clienteDomain);
 
     const result = await controller.create(createClienteDto);
-    expect(result.id).toBe(clienteOutput.id);
+    expect(result.id).toBe(clienteDomain.id);
     expect(createClienteUseCase.execute).toHaveBeenCalledWith(
       ClientePresentationMapper.toCreateInput(createClienteDto),
     );
   });
 
-  it('lets create service exceptions propagate to Nest', async () => {
-    const error = new HttpException('Invalid data', 400);
+  it('lets create use case BadRequestError propagate', async () => {
+    const error = new BadRequestError('Invalid data');
     createClienteUseCase.execute.mockRejectedValue(error);
 
     await expect(
@@ -91,7 +92,7 @@ describe('ClienteController', () => {
   it('lists clients with pagination', async () => {
     const paginationDto = { page: 2, take: 5 };
     findAllClientesUseCase.execute.mockResolvedValue({
-      data: [clienteOutput],
+      data: [clienteDomain],
       meta: {
         itemsPerPage: 5,
         totalItems: 6,
@@ -112,7 +113,7 @@ describe('ClienteController', () => {
 
   it('lists clients with default pagination when no query is provided', async () => {
     findAllClientesUseCase.execute.mockResolvedValue({
-      data: [clienteOutput],
+      data: [clienteDomain],
       meta: {
         itemsPerPage: 10,
         totalItems: 1,
@@ -133,20 +134,20 @@ describe('ClienteController', () => {
 
   it('finds one client by documento', async () => {
     const findClienteByDocumentDto = {
-      documento: clienteOutput.documento,
+      documento: clienteDomain.documento.toString(),
     };
-    findClienteByDocumentoUseCase.execute.mockResolvedValue(clienteOutput);
+    findClienteByDocumentoUseCase.execute.mockResolvedValue(clienteDomain);
 
     const result = await controller.findByDocumento(findClienteByDocumentDto);
     expect(result.success).toBe(true);
-    expect(result.data.id).toBe(clienteOutput.id);
+    expect(result.data.id).toBe(clienteDomain.id);
     expect(findClienteByDocumentoUseCase.execute).toHaveBeenCalledWith(
       findClienteByDocumentDto.documento,
     );
   });
 
-  it('lets findByDocumento service exceptions propagate to Nest', async () => {
-    const error = new HttpException('Client Not Found', 404);
+  it('lets findByDocumento use case NotFoundError propagate', async () => {
+    const error = new NotFoundError('Client Not Found');
     findClienteByDocumentoUseCase.execute.mockRejectedValue(error);
 
     await expect(
@@ -156,21 +157,26 @@ describe('ClienteController', () => {
 
   it('updates a client', async () => {
     const updateClienteDto = { nome: 'Jane Updated' };
-    updateClienteUseCase.execute.mockResolvedValue({
-      ...clienteOutput,
-      nome: 'Jane Updated',
-    });
+    updateClienteUseCase.execute.mockResolvedValue(
+      Cliente.create({
+        id: clienteDomain.id,
+        documento: clienteDomain.documento.toString(),
+        nome: 'Jane Updated',
+        email: clienteDomain.email,
+        celularNumero: clienteDomain.celularNumero,
+      }),
+    );
 
-    const response = await controller.update(clienteOutput.id, updateClienteDto);
+    const response = await controller.update(clienteDomain.id, updateClienteDto);
     expect(response.success).toBe(true);
     expect(updateClienteUseCase.execute).toHaveBeenCalledWith(
-      clienteOutput.id,
+      clienteDomain.id,
       ClientePresentationMapper.toUpdateInput(updateClienteDto),
     );
   });
 
-  it('lets update service exceptions propagate to Nest', async () => {
-    const error = new HttpException('Client Not Found', 404);
+  it('lets update use case NotFoundError propagate', async () => {
+    const error = new NotFoundError('Client Not Found');
     updateClienteUseCase.execute.mockRejectedValue(error);
 
     await expect(controller.update('missing-cliente-id', {})).rejects.toBe(
@@ -179,15 +185,15 @@ describe('ClienteController', () => {
   });
 
   it('removes a client', async () => {
-    removeClienteUseCase.execute.mockResolvedValue(clienteOutput);
+    removeClienteUseCase.execute.mockResolvedValue(clienteDomain);
 
-    const response = await controller.remove(clienteOutput.id);
+    const response = await controller.remove(clienteDomain.id);
     expect(response.success).toBe(true);
-    expect(removeClienteUseCase.execute).toHaveBeenCalledWith(clienteOutput.id);
+    expect(removeClienteUseCase.execute).toHaveBeenCalledWith(clienteDomain.id);
   });
 
-  it('lets remove service exceptions propagate to Nest', async () => {
-    const error = new HttpException('Client Not Found', 404);
+  it('lets remove use case NotFoundError propagate', async () => {
+    const error = new NotFoundError('Client Not Found');
     removeClienteUseCase.execute.mockRejectedValue(error);
 
     await expect(controller.remove('missing-cliente-id')).rejects.toBe(error);

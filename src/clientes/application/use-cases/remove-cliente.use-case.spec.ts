@@ -1,9 +1,8 @@
-import { HttpException } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
 import { RemoveClienteUseCase } from './remove-cliente.use-case';
 import type { ClienteRepository } from '../ports/cliente.repository';
 import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
-import { ClienteOutputMapper } from '../dto/cliente.output';
 
 type ClienteRepositoryMock = jest.Mocked<
   Pick<ClienteRepository, 'findById' | 'softRemove'>
@@ -40,31 +39,31 @@ describe('RemoveClienteUseCase', () => {
 
     expect(clienteRepository.findById).toHaveBeenCalledWith('1');
     expect(clienteRepository.softRemove).toHaveBeenCalledWith(cliente);
-    expect(result).toEqual(ClienteOutputMapper.fromDomain(cliente));
+    expect(result).toEqual(cliente);
   });
 
-  it('should throw HttpException when cliente does not exist', async () => {
+  it('should throw NotFoundError when cliente does not exist', async () => {
     clienteRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('1')).rejects.toBeInstanceOf(HttpException);
+    await expect(useCase.execute('1')).rejects.toBeInstanceOf(NotFoundError);
 
     expect(clienteRepository.findById).toHaveBeenCalledWith('1');
     expect(clienteRepository.softRemove).not.toHaveBeenCalled();
   });
 
-  it('should return 404 error with correct message', async () => {
+  it('should return NotFoundError with correct message and statusCode 404', async () => {
     clienteRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('999')).rejects.toMatchObject({
       message: 'Cliente não encontrado.',
-      status: 404,
+      statusCode: 404,
     });
   });
 
   it('should not call softRemove when cliente is missing', async () => {
     clienteRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('abc')).rejects.toBeInstanceOf(HttpException);
+    await expect(useCase.execute('abc')).rejects.toBeInstanceOf(NotFoundError);
 
     expect(clienteRepository.findById).toHaveBeenCalledWith('abc');
     expect(clienteRepository.softRemove).not.toHaveBeenCalled();

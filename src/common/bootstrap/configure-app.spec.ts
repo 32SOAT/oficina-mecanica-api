@@ -1,8 +1,9 @@
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ApplicationExceptionFilter } from '../presentation/filters/application-exception.filter';
 import { configureApp } from './configure-app';
 
 describe('configureApp', () => {
-  it('configures versioning, prefix and validation pipe', () => {
+  it('configures versioning, prefix, validation pipe and exception filter', () => {
     const disable = jest.fn();
     const app = {
       getHttpAdapter: jest.fn().mockReturnValue({
@@ -11,6 +12,7 @@ describe('configureApp', () => {
       enableVersioning: jest.fn(),
       setGlobalPrefix: jest.fn(),
       useGlobalPipes: jest.fn(),
+      useGlobalFilters: jest.fn(),
     };
 
     configureApp(app as never);
@@ -22,5 +24,8 @@ describe('configureApp', () => {
     });
     expect(app.setGlobalPrefix).toHaveBeenCalledWith('api');
     expect(app.useGlobalPipes).toHaveBeenCalledWith(expect.any(ValidationPipe));
+    expect(app.useGlobalFilters).toHaveBeenCalledWith(
+      expect.any(ApplicationExceptionFilter),
+    );
   });
 });

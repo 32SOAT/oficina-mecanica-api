@@ -9,26 +9,15 @@ export type ChangePasswordInput = {
   newPassword: string;
 };
 
-export type AuthenticatedUserOutput = {
-  id: string;
-  username: string;
-  email: string;
-};
-
-export type LoginOutput = {
-  user: AuthenticatedUserOutput;
-  token: string;
-};
-
 export type TokenPayload = {
   sub: string;
   email: string;
   username: string;
 };
 
-export type AuthUserWithPassword = {
-  id: string;
-  username: string;
-  email: string;
-  passwordHash: string;
-};
+export type {
+  AuthenticatedUserReadModel,
+  LoginReadModel,
+  AuthenticatedUserOutput,
+  LoginOutput,
+} from '../read-models/auth-read-model';

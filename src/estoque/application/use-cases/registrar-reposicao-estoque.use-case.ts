@@ -1,7 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
 import { ReposicaoEstoqueInput } from '../dto/reposicao-estoque.input';
-import { EstoqueOutput } from '../dto/estoque.output';
-import { EstoqueOutputMapper } from '../mappers/estoque-output.mapper';
+import { Estoque } from '../../domain/estoque';
 import {
   ESTOQUE_REPOSITORY,
   EstoqueRepository,
@@ -20,21 +20,16 @@ export class RegistrarReposicaoEstoqueUseCase {
     private readonly ordemServicoReposicaoPort: OrdemServicoReposicaoPort,
   ) {}
 
-  async execute(
-    id: number,
-    input: ReposicaoEstoqueInput,
-  ): Promise<EstoqueOutput> {
+  async execute(id: number, input: ReposicaoEstoqueInput): Promise<Estoque> {
     const existing = await this.estoqueRepository.findById(id);
     if (!existing) {
-      throw new NotFoundException('Item de estoque não encontrado.');
+      throw new NotFoundError('Item de estoque não encontrado.');
     }
 
-    const estoque = EstoqueOutputMapper.toDomain(existing).adicionarReposicao(
-      input.quantidade,
-    );
+    const estoque = existing.adicionarReposicao(input.quantidade);
     const saved = await this.estoqueRepository.save(estoque);
     await this.ordemServicoReposicaoPort.tentarLiberarOsAposReposicao(
-      [saved.id],
+      [saved.id!],
       input.usuarioId ?? null,
     );
     return saved;

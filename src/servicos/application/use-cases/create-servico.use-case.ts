@@ -1,10 +1,9 @@
+import { Injectable, Inject } from '@nestjs/common';
 import {
-  BadRequestException,
-  ConflictException,
-  Inject,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+} from '../../../common/application/errors/application.errors';
 import { CreateServicoInput } from '../dto/create-servico.input';
-import { ServicoOutput } from '../dto/servico.output';
 import { Servico } from '../../domain/servico';
 import { InvalidPrecoMaoDeObraError } from '../../domain/errors/invalid-preco-mao-de-obra.error';
 import {
@@ -12,15 +11,16 @@ import {
   ServicoRepository,
 } from '../ports/servico.repository';
 
+@Injectable()
 export class CreateServicoUseCase {
   constructor(
     @Inject(SERVICO_REPOSITORY)
     private readonly servicoRepository: ServicoRepository,
   ) {}
 
-  async execute(input: CreateServicoInput): Promise<ServicoOutput> {
+  async execute(input: CreateServicoInput): Promise<Servico> {
     if (await this.servicoRepository.existsByNome(input.servico)) {
-      throw new ConflictException('Serviço com este nome já existe.');
+      throw new ConflictError('Serviço com este nome já existe.');
     }
 
     const servico = this.buildServico(input);
@@ -36,7 +36,7 @@ export class CreateServicoUseCase {
       });
     } catch (error) {
       if (error instanceof InvalidPrecoMaoDeObraError) {
-        throw new BadRequestException(error.message);
+        throw new BadRequestError(error.message);
       }
       throw error;
     }

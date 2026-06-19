@@ -1,23 +1,28 @@
-import { BadRequestException, HttpException } from '@nestjs/common';
+import {
+  BadRequestError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { FindAllVeiculosUseCase } from './find-all-veiculos.use-case';
 import { FindVeiculoByPlacaUseCase } from './find-veiculo-by-placa.use-case';
 import { UpdateVeiculoUseCase } from './update-veiculo.use-case';
 import { RemoveVeiculoUseCase } from './remove-veiculo.use-case';
 import type { VeiculoRepository } from '../ports/veiculo.repository';
-import type { ClienteLookupPort } from '../ports/cliente-lookup.port';
+import type { ClienteLookupPort } from '../../../clientes/application/ports/cliente-lookup.port';
 import { DEFAULT_PAGE_SIZE } from '../constants';
+import { Veiculo } from '../../domain/veiculo';
 
-const output = {
-  id: 'veiculo-id',
-  placa: 'ABC1D23',
-  marca: 'Toyota',
-  modelo: 'Corolla',
-  ano: 2020,
-  cliente_id: 'cliente-id',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  deletedAt: null,
-};
+const makeVeiculo = (
+  overrides: Partial<ConstructorParameters<typeof Veiculo.create>[0]> = {},
+) =>
+  Veiculo.create({
+    id: 'veiculo-id',
+    placa: 'ABC1D23',
+    marca: 'Toyota',
+    modelo: 'Corolla',
+    ano: 2020,
+    clienteId: 'cliente-id',
+    ...overrides,
+  });
 
 describe('Veiculo use cases', () => {
   describe('FindAllVeiculosUseCase', () => {
@@ -27,7 +32,8 @@ describe('Veiculo use cases', () => {
     );
 
     it('returns paginated veiculos', async () => {
-      veiculoRepository.findAll.mockResolvedValue([[output], 1]);
+      const veiculo = makeVeiculo();
+      veiculoRepository.findAll.mockResolvedValue([[veiculo], 1]);
       const result = await useCase.execute({ page: 1, take: 10 });
       expect(veiculoRepository.findAll).toHaveBeenCalledWith(0, 10);
       expect(result.data).toHaveLength(1);
@@ -50,20 +56,21 @@ describe('Veiculo use cases', () => {
     );
 
     it('finds by placa', async () => {
-      veiculoRepository.findByPlaca.mockResolvedValue(output);
-      await expect(useCase.execute('ABC1D23')).resolves.toEqual(output);
+      const veiculo = makeVeiculo();
+      veiculoRepository.findByPlaca.mockResolvedValue(veiculo);
+      await expect(useCase.execute('ABC1D23')).resolves.toEqual(veiculo);
     });
 
-    it('throws 404 when not found', async () => {
+    it('throws NotFoundError when not found', async () => {
       veiculoRepository.findByPlaca.mockResolvedValue(null);
       await expect(useCase.execute('ABC1D23')).rejects.toBeInstanceOf(
-        HttpException,
+        NotFoundError,
       );
     });
 
-    it('throws 400 for invalid placa', async () => {
+    it('throws BadRequestError for invalid placa', async () => {
       await expect(useCase.execute('INVALID')).rejects.toBeInstanceOf(
-        BadRequestException,
+        BadRequestError,
       );
     });
   });
@@ -77,20 +84,22 @@ describe('Veiculo use cases', () => {
     );
 
     it('updates veiculo', async () => {
-      veiculoRepository.findById.mockResolvedValue(output);
-      veiculoRepository.save.mockResolvedValue({ ...output, modelo: 'Yaris' });
+      const existing = makeVeiculo();
+      const updated = makeVeiculo({ modelo: 'Yaris' });
+      veiculoRepository.findById.mockResolvedValue(existing);
+      veiculoRepository.save.mockResolvedValue(updated);
 
       const result = await useCase.execute('veiculo-id', { modelo: 'Yaris' });
       expect(result.modelo).toBe('Yaris');
     });
 
     it('resolves cliente by documento', async () => {
-      veiculoRepository.findById.mockResolvedValue(output);
+      const existing = makeVeiculo();
+      veiculoRepository.findById.mockResolvedValue(existing);
       clienteLookup.resolveClienteIdByDocumento.mockResolvedValue('new-cliente');
-      veiculoRepository.save.mockResolvedValue({
-        ...output,
-        cliente_id: 'new-cliente',
-      });
+      veiculoRepository.save.mockResolvedValue(
+        makeVeiculo({ clienteId: 'new-cliente' }),
+      );
 
       await useCase.execute('veiculo-id', {
         documentoCliente: '39053344705',
@@ -99,11 +108,11 @@ describe('Veiculo use cases', () => {
       expect(clienteLookup.resolveClienteIdByDocumento).toHaveBeenCalled();
     });
 
-    it('throws when not found', async () => {
+    it('throws NotFoundError when not found', async () => {
       veiculoRepository.findById.mockResolvedValue(null);
       await expect(
         useCase.execute('missing', { modelo: 'X' }),
-      ).rejects.toBeInstanceOf(HttpException);
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 
@@ -114,20 +123,19 @@ describe('Veiculo use cases', () => {
     );
 
     it('removes veiculo', async () => {
-      veiculoRepository.findById.mockResolvedValue(output);
-      veiculoRepository.softRemove.mockResolvedValue({
-        ...output,
-        deletedAt: new Date(),
-      });
+      const existing = makeVeiculo();
+      const removed = makeVeiculo({ deletedAt: new Date() });
+      veiculoRepository.findById.mockResolvedValue(existing);
+      veiculoRepository.softRemove.mockResolvedValue(removed);
 
       const result = await useCase.execute('veiculo-id');
       expect(result.deletedAt).toBeInstanceOf(Date);
     });
 
-    it('throws when not found', async () => {
+    it('throws NotFoundError when not found', async () => {
       veiculoRepository.findById.mockResolvedValue(null);
       await expect(useCase.execute('missing')).rejects.toBeInstanceOf(
-        HttpException,
+        NotFoundError,
       );
     });
   });

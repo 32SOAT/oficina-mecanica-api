@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LoginOutput } from '../../application/dto/auth.dto';
+import type { LoginReadModel } from '../../application/read-models/auth-read-model';
 
 class UserDto {
   @ApiProperty({ description: 'ID do usuário' })
@@ -19,7 +19,7 @@ export class LoginResponseDto {
   @ApiProperty({ description: 'Token JWT' })
   token: string;
 
-  static fromOutput(output: LoginOutput): LoginResponseDto {
-    return Object.assign(new LoginResponseDto(), output);
+  static fromReadModel(readModel: LoginReadModel): LoginResponseDto {
+    return Object.assign(new LoginResponseDto(), readModel);
   }
 }

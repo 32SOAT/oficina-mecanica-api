@@ -1,4 +1,3 @@
-import { HttpException } from '@nestjs/common';
 import { ServicoController } from './servico.controller';
 import { CreateServicoUseCase } from '../../application/use-cases/create-servico.use-case';
 import { FindAllServicosUseCase } from '../../application/use-cases/find-all-servicos.use-case';

@@ -8,9 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { BadRequestException } from '@nestjs/common';
 import { Estoque } from '../../../domain/estoque';
-import { EstoqueOperacaoInvalidaError } from '../../../domain/errors/estoque-operacao-invalida.error';
 
 @Entity('estoque')
 @Index('IDX_estoque_codigo', ['codigo'], { unique: true })
@@ -144,9 +142,6 @@ export class EstoqueTypeormEntity {
       const updated = mutate(this.toDomain());
       this.applyFromDomain(updated);
     } catch (error) {
-      if (error instanceof EstoqueOperacaoInvalidaError) {
-        throw new BadRequestException(error.message);
-      }
       throw error;
     }
   }

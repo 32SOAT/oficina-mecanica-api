@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   calculateOffset,
   createPaginationMeta,
@@ -8,6 +8,7 @@ import { DEFAULT_PAGE_SIZE } from '../constants';
 import { FindAllUsersInput } from '../dto/user.dto';
 import { USER_REPOSITORY, UserRepository } from '../ports/user.repository';
 
+@Injectable()
 export class FindAllUsersUseCase {
   constructor(
     @Inject(USER_REPOSITORY)

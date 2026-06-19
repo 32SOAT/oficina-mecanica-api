@@ -41,17 +41,6 @@ export class ConsultaOrdemServicoController {
   ): Promise<StatusPublicoResponse> {
     const os = await this.findOrdemServicoByIdUseCase.execute(id);
     const historico = await this.findOrdemServicoHistoricoUseCase.execute(id);
-    const veiculo = os.veiculo as { placa: string; modelo: string };
-    return {
-      id: os.id,
-      status: os.status,
-      atualizadoEm: os.updatedAt,
-      valorTotal: Number(os.valorTotal),
-      veiculo: { placa: veiculo.placa, modelo: veiculo.modelo },
-      linhaDoTempo: historico.map((h) => ({
-        status: h.statusNovo,
-        em: h.createdAt,
-      })),
-    };
+    return StatusPublicoResponse.fromReadModel(os, historico);
   }
 }

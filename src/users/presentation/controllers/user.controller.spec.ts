@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
 import { UserController } from './user.controller';
 import { CreateUserUseCase } from '../../application/use-cases/create-user.use-case';
 import { FindAllUsersUseCase } from '../../application/use-cases/find-all-users.use-case';
@@ -79,8 +79,8 @@ describe('UserController', () => {
     expect(findUserByIdUseCase.execute).toHaveBeenCalledWith(output.id);
   });
 
-  it('lets findOne use case exceptions propagate to Nest', async () => {
-    const error = new NotFoundException('Usuário não encontrado.');
+  it('lets findOne use case NotFoundError propagate', async () => {
+    const error = new NotFoundError('Usuário não encontrado.');
     findUserByIdUseCase.execute.mockRejectedValue(error);
 
     await expect(controller.findOne('missing-user-id')).rejects.toBe(error);
@@ -103,8 +103,8 @@ describe('UserController', () => {
     );
   });
 
-  it('lets update use case exceptions propagate to Nest', async () => {
-    const error = new NotFoundException('Usuário não encontrado.');
+  it('lets update use case NotFoundError propagate', async () => {
+    const error = new NotFoundError('Usuário não encontrado.');
     updateUserUseCase.execute.mockRejectedValue(error);
 
     await expect(controller.update('missing-user-id', {})).rejects.toBe(error);
@@ -120,8 +120,8 @@ describe('UserController', () => {
     expect(removeUserUseCase.execute).toHaveBeenCalledWith(output.id);
   });
 
-  it('lets remove use case exceptions propagate to Nest', async () => {
-    const error = new NotFoundException('Usuário não encontrado.');
+  it('lets remove use case NotFoundError propagate', async () => {
+    const error = new NotFoundError('Usuário não encontrado.');
     removeUserUseCase.execute.mockRejectedValue(error);
 
     await expect(controller.remove('missing-user-id')).rejects.toBe(error);

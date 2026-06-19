@@ -1,27 +1,30 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { RemoveEstoqueUseCase } from './remove-estoque.use-case';
 import type { EstoqueRepository } from '../ports/estoque.repository';
-import type { EstoqueOutput } from '../dto/estoque.output';
+import { Estoque } from '../../domain/estoque';
 
 type EstoqueRepositoryMock = jest.Mocked<
   Pick<EstoqueRepository, 'findById' | 'softRemove'>
 >;
 
-const makeEstoqueOutput = (
-  overrides: Partial<EstoqueOutput> = {},
-): EstoqueOutput => ({
-  id: 1,
-  codigo: 'PCA-001',
-  pecasInsumos: 'Pastilha de freio',
-  quantidadeFisica: 0,
-  quantidadeReservada: 0,
-  quantidadeDisponivel: 0,
-  precoUnitario: 89.9,
-  createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
-  deletedAt: null,
-  ...overrides,
-});
+const makeEstoque = (
+  overrides: Partial<ConstructorParameters<typeof Estoque>[0]> = {},
+): Estoque =>
+  new Estoque({
+    id: 1,
+    codigo: 'PCA-001',
+    pecasInsumos: 'Pastilha de freio',
+    quantidadeFisica: 0,
+    quantidadeReservada: 0,
+    precoUnitario: 89.9,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    deletedAt: null,
+    ...overrides,
+  });
 
 describe('RemoveEstoqueUseCase', () => {
   let useCase: RemoveEstoqueUseCase;
@@ -39,8 +42,8 @@ describe('RemoveEstoqueUseCase', () => {
   });
 
   it('removes item when physical and reserved quantities are zero', async () => {
-    const existing = makeEstoqueOutput();
-    const removed = makeEstoqueOutput({
+    const existing = makeEstoque();
+    const removed = makeEstoque({
       deletedAt: new Date('2024-01-02'),
     });
 
@@ -49,41 +52,34 @@ describe('RemoveEstoqueUseCase', () => {
 
     const result = await useCase.execute(1);
 
-    expect(estoqueRepository.softRemove).toHaveBeenCalled();
+    expect(estoqueRepository.softRemove).toHaveBeenCalledWith(existing);
     expect(result.deletedAt).toBeInstanceOf(Date);
   });
 
-  it('throws BadRequestException when item still has physical quantity', async () => {
+  it('throws BadRequestError when item still has physical quantity', async () => {
     estoqueRepository.findById.mockResolvedValue(
-      makeEstoqueOutput({ quantidadeFisica: 3, quantidadeDisponivel: 3 }),
+      makeEstoque({ quantidadeFisica: 3 }),
     );
 
-    await expect(useCase.execute(1)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(useCase.execute(1)).rejects.toBeInstanceOf(BadRequestError);
     expect(estoqueRepository.softRemove).not.toHaveBeenCalled();
   });
 
-  it('throws BadRequestException when item still has reserved quantity', async () => {
+  it('throws BadRequestError when item still has reserved quantity', async () => {
     estoqueRepository.findById.mockResolvedValue(
-      makeEstoqueOutput({
+      makeEstoque({
         quantidadeFisica: 0,
         quantidadeReservada: 2,
-        quantidadeDisponivel: -2,
       }),
     );
 
-    await expect(useCase.execute(1)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(useCase.execute(1)).rejects.toBeInstanceOf(BadRequestError);
     expect(estoqueRepository.softRemove).not.toHaveBeenCalled();
   });
 
-  it('throws NotFoundException when item does not exist', async () => {
+  it('throws NotFoundError when item does not exist', async () => {
     estoqueRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute(99)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(useCase.execute(99)).rejects.toBeInstanceOf(NotFoundError);
   });
 });

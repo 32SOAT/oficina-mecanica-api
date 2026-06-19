@@ -6,7 +6,7 @@ import {
 import { PaginationMeta } from '../../../common/pagination/pagination';
 import { DEFAULT_PAGE_SIZE } from '../constants';
 import { FindAllEstoquesInput } from '../dto/find-all-estoques.input';
-import { EstoqueOutput } from '../dto/estoque.output';
+import { Estoque } from '../../domain/estoque';
 import {
   ESTOQUE_REPOSITORY,
   EstoqueRepository,
@@ -34,6 +34,6 @@ export class FindAllEstoquesUseCase {
 }
 
 export type FindAllEstoquesResult = {
-  data: EstoqueOutput[];
+  data: Estoque[];
   meta: PaginationMeta | undefined;
 };

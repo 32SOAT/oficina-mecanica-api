@@ -35,7 +35,7 @@ describe('AuthController', () => {
       const dto = { email: 'admin@oficina.com', password: 'admin123' };
       const result = await controller.login(dto);
 
-      expect(result).toEqual(LoginResponseDto.fromOutput(loginOutput));
+      expect(result).toEqual(LoginResponseDto.fromReadModel(loginOutput));
       expect(validateCredentialsUseCase.execute).toHaveBeenCalledWith(
         AuthPresentationMapper.toValidateCredentialsInput(dto),
       );

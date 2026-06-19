@@ -1,5 +1,6 @@
-import { HttpException, Inject, Injectable } from '@nestjs/common';
-import { ClienteOutput, ClienteOutputMapper } from '../dto/cliente.output';
+import { Injectable, Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
+import { Cliente } from '../../domain/cliente';
 import {
   CLIENTE_REPOSITORY,
   ClienteRepository,
@@ -12,12 +13,11 @@ export class RemoveClienteUseCase {
     private readonly clienteRepository: ClienteRepository,
   ) {}
 
-  async execute(id: string): Promise<ClienteOutput> {
-    const existingCliente = await this.clienteRepository.findById(id);
-    if (!existingCliente) {
-      throw new HttpException('Cliente não encontrado.', 404);
+  async execute(id: string): Promise<Cliente> {
+    const cliente = await this.clienteRepository.findById(id);
+    if (!cliente) {
+      throw new NotFoundError('Cliente não encontrado.');
     }
-    const removed = await this.clienteRepository.softRemove(existingCliente);
-    return ClienteOutputMapper.fromDomain(removed);
+    return this.clienteRepository.softRemove(cliente);
   }
 }

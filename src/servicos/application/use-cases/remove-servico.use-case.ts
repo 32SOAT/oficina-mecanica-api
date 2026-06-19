@@ -1,33 +1,24 @@
-import { HttpException, Inject } from '@nestjs/common';
-import { ServicoOutput } from '../dto/servico.output';
+import { Injectable, Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
 import { Servico } from '../../domain/servico';
 import {
   SERVICO_REPOSITORY,
   ServicoRepository,
 } from '../ports/servico.repository';
 
+@Injectable()
 export class RemoveServicoUseCase {
   constructor(
     @Inject(SERVICO_REPOSITORY)
     private readonly servicoRepository: ServicoRepository,
   ) {}
 
-  async execute(id: number): Promise<ServicoOutput> {
+  async execute(id: number): Promise<Servico> {
     const existing = await this.servicoRepository.findById(id);
     if (!existing) {
-      throw new HttpException('Serviço não encontrado', 404);
+      throw new NotFoundError('Serviço não encontrado');
     }
 
-    const servico = Servico.create({
-      id: existing.id,
-      nome: existing.servico,
-      descricao: existing.descricao,
-      precoMaoDeObra: existing.precoMaoDeObra,
-      createdAt: existing.createdAt,
-      updatedAt: existing.updatedAt,
-      deletedAt: existing.deletedAt,
-    });
-
-    return this.servicoRepository.softRemove(servico.softRemove());
+    return this.servicoRepository.softRemove(existing.softRemove());
   }
 }

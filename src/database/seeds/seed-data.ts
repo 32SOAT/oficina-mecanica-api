@@ -1,4 +1,3 @@
-export const BCRYPT_ROUNDS = 10;
 export const SEEDED_USER_PLAIN_PASSWORD = 'SeedPassword123!';
 
 export const CLIENTES_TO_SEED = 5;

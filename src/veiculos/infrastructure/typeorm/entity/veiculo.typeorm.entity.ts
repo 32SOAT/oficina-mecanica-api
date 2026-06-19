@@ -70,6 +70,32 @@ export class VeiculoTypeormEntity {
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', precision: 3 })
   deletedAt: Date | null;
 
+  public toDomain(): Veiculo {
+    return Veiculo.create({
+      id: this.id,
+      placa: this.placa,
+      marca: this.marca,
+      modelo: this.modelo,
+      ano: this.ano,
+      clienteId: this.cliente_id,
+      cliente: this.cliente
+        ? {
+            id: this.cliente.id,
+            documento: this.cliente.documento,
+            nome: this.cliente.nome,
+            email: this.cliente.email,
+            celularNumero: this.cliente.celularNumero,
+            createdAt: this.cliente.createdAt,
+            updatedAt: this.cliente.updatedAt,
+            deletedAt: this.cliente.deletedAt,
+          }
+        : undefined,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      deletedAt: this.deletedAt,
+    });
+  }
+
   public static fromDomain(veiculo: Veiculo): VeiculoTypeormEntity {
     const entity = new VeiculoTypeormEntity();
 

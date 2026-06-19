@@ -1,14 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
+import {
+  comparePassword,
+  hashPassword,
+} from '../../../common/security/password-hash';
 import { PasswordHasher } from '../../application/ports/password-hasher.port';
 
 @Injectable()
 export class BcryptPasswordHasher implements PasswordHasher {
-  async compare(plain: string, hash: string): Promise<boolean> {
-    return bcrypt.compare(plain, hash);
+  compare(plain: string, hash: string): Promise<boolean> {
+    return comparePassword(plain, hash);
   }
 
-  async hash(plain: string): Promise<string> {
-    return bcrypt.hash(plain, 10);
+  hash(plain: string): Promise<string> {
+    return hashPassword(plain);
   }
 }

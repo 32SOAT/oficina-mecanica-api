@@ -1,21 +1,22 @@
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   AuthenticatedUserOutput,
   ValidateCredentialsInput,
 } from '../dto/auth.dto';
 import {
-  AUTH_USER_REPOSITORY,
-  AuthUserRepository,
-} from '../ports/auth-user.repository';
+  USER_CREDENTIAL_PORT,
+  UserCredentialPort,
+} from '../../../users/application/ports/user-credential.port';
 import {
   PASSWORD_HASHER,
   PasswordHasher,
 } from '../ports/password-hasher.port';
 
+@Injectable()
 export class ValidateCredentialsUseCase {
   constructor(
-    @Inject(AUTH_USER_REPOSITORY)
-    private readonly authUserRepository: AuthUserRepository,
+    @Inject(USER_CREDENTIAL_PORT)
+    private readonly userCredentialPort: UserCredentialPort,
     @Inject(PASSWORD_HASHER)
     private readonly passwordHasher: PasswordHasher,
   ) {}
@@ -23,7 +24,7 @@ export class ValidateCredentialsUseCase {
   async execute(
     input: ValidateCredentialsInput,
   ): Promise<AuthenticatedUserOutput | null> {
-    const user = await this.authUserRepository.findByEmailWithPassword(
+    const user = await this.userCredentialPort.findByEmailWithPassword(
       input.email,
     );
     if (!user) {

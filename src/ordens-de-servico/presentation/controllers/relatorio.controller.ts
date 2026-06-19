@@ -1,37 +1,21 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiOperation,
-  ApiPropertyOptional,
   ApiTags,
   ApiBearerAuth,
   ApiResponse,
 } from '@nestjs/swagger';
-import { IsDateString, IsOptional } from 'class-validator';
-import { RelatorioTypeormRepository } from '../../infrastructure/typeorm/repository/relatorio.repository';
-
-class JanelaQuery {
-  @ApiPropertyOptional({
-    example: '2026-01-01',
-    description: 'Início do intervalo. Opcional.',
-  })
-  @IsOptional()
-  @IsDateString()
-  dataInicio?: string;
-
-  @ApiPropertyOptional({
-    example: '2026-05-01',
-    description: 'Fim do intervalo. Opcional.',
-  })
-  @IsOptional()
-  @IsDateString()
-  dataFim?: string;
-}
+import { GetTempoMedioServicosUseCase } from '../../application/use-cases/get-tempo-medio-servicos.use-case';
+import { JanelaTempoQueryDto } from '../dto/janela-tempo-query.dto';
+import { TempoMedioResponseDto } from '../dto/tempo-medio-response.dto';
 
 @ApiBearerAuth('JWT-auth')
 @ApiTags('Relatórios')
 @Controller('relatorios')
 export class RelatorioController {
-  constructor(private readonly service: RelatorioTypeormRepository) {}
+  constructor(
+    private readonly getTempoMedioServicosUseCase: GetTempoMedioServicosUseCase,
+  ) {}
 
   @Get('tempo-medio-servicos')
   @ApiOperation({
@@ -44,7 +28,8 @@ export class RelatorioController {
     status: 400,
     description: 'Parâmetros de data inválidos.',
   })
-  tempoMedio(@Query() query: JanelaQuery) {
-    return this.service.tempoMedioServicos(query);
+  async tempoMedio(@Query() query: JanelaTempoQueryDto) {
+    const readModel = await this.getTempoMedioServicosUseCase.execute(query);
+    return TempoMedioResponseDto.fromReadModel(readModel);
   }
 }

@@ -18,6 +18,16 @@ const makeEntity = () => {
   return entity;
 };
 
+const makeVeiculo = () =>
+  Veiculo.create({
+    id: 'veiculo-id',
+    placa: 'ABC1D23',
+    marca: 'Toyota',
+    modelo: 'Corolla',
+    ano: 2020,
+    clienteId: 'cliente-id',
+  });
+
 describe('VeiculoTypeormRepository', () => {
   let repository: VeiculoTypeormRepository;
   let ormRepository: jest.Mocked<
@@ -39,42 +49,15 @@ describe('VeiculoTypeormRepository', () => {
     );
   });
 
-  it('maps output without cliente relation', async () => {
+  it('save usa entidade salva quando reload não encontra cliente', async () => {
     const entity = makeEntity();
     ormRepository.save.mockResolvedValue(entity);
-    ormRepository.findOne.mockResolvedValue(entity);
+    ormRepository.findOne.mockResolvedValue(null);
 
-    const result = await repository.save(
-      Veiculo.create({
-        id: 'veiculo-id',
-        placa: 'ABC1D23',
-        marca: 'Toyota',
-        modelo: 'Corolla',
-        ano: 2020,
-        clienteId: 'cliente-id',
-      }),
-    );
+    const result = await repository.save(makeVeiculo());
 
+    expect(result.placa.toString()).toBe('ABC1D23');
     expect(result.cliente).toBeUndefined();
-  });
-
-  it('saves veiculo', async () => {
-    const entity = makeEntity();
-    ormRepository.save.mockResolvedValue(entity);
-    ormRepository.findOne.mockResolvedValue(entity);
-
-    const result = await repository.save(
-      Veiculo.create({
-        id: 'veiculo-id',
-        placa: 'ABC1D23',
-        marca: 'Toyota',
-        modelo: 'Corolla',
-        ano: 2020,
-        clienteId: 'cliente-id',
-      }),
-    );
-
-    expect(result.placa).toBe('ABC1D23');
   });
 
   it('finds all veiculos', async () => {
@@ -82,19 +65,43 @@ describe('VeiculoTypeormRepository', () => {
     ormRepository.findAndCount.mockResolvedValue([[entity], 1]);
 
     const [veiculos, count] = await repository.findAll(0, 10);
+
     expect(veiculos).toHaveLength(1);
     expect(count).toBe(1);
   });
 
-  it('finds by placa and id', async () => {
+  it('finds by placa when veículo existe', async () => {
+    ormRepository.findOne.mockResolvedValue(makeEntity());
+
+    const result = await repository.findByPlaca('ABC1D23');
+
+    expect(result?.placa.toString()).toBe('ABC1D23');
+  });
+
+  it('finds by placa and id retorna null quando não existe', async () => {
     ormRepository.findOne.mockResolvedValue(null);
+
     await expect(repository.findByPlaca('ABC1D23')).resolves.toBeNull();
     await expect(repository.findById('missing')).resolves.toBeNull();
   });
 
   it('checks placa existence', async () => {
+    ormRepository.findOne.mockResolvedValue(null);
+    await expect(repository.existsByPlaca('NOPE')).resolves.toBe(false);
+
     ormRepository.findOne.mockResolvedValue(makeEntity());
     await expect(repository.existsByPlaca('ABC1D23')).resolves.toBe(true);
+  });
+
+  it('soft removes veiculo sem cliente no reload', async () => {
+    const entity = makeEntity();
+    entity.deletedAt = new Date();
+    ormRepository.softRemove.mockResolvedValue(entity);
+    ormRepository.findOne.mockResolvedValue(null);
+
+    const result = await repository.softRemove(makeVeiculo().softRemove());
+
+    expect(result.deletedAt).toBeInstanceOf(Date);
   });
 
   it('soft removes veiculo with cliente relation', async () => {
@@ -110,16 +117,7 @@ describe('VeiculoTypeormRepository', () => {
     ormRepository.softRemove.mockResolvedValue(entity);
     ormRepository.findOne.mockResolvedValue(entity);
 
-    const result = await repository.softRemove(
-      Veiculo.create({
-        id: 'veiculo-id',
-        placa: 'ABC1D23',
-        marca: 'Toyota',
-        modelo: 'Corolla',
-        ano: 2020,
-        clienteId: 'cliente-id',
-      }).softRemove(),
-    );
+    const result = await repository.softRemove(makeVeiculo().softRemove());
 
     expect(result.cliente?.nome).toBe('Jane');
   });

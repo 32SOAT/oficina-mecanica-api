@@ -1,35 +1,24 @@
-import { HttpException, Inject } from '@nestjs/common';
-import { VeiculoOutput } from '../dto/veiculo.output';
+import { Injectable, Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
 import { Veiculo } from '../../domain/veiculo';
 import {
   VEICULO_REPOSITORY,
   VeiculoRepository,
 } from '../ports/veiculo.repository';
 
+@Injectable()
 export class RemoveVeiculoUseCase {
   constructor(
     @Inject(VEICULO_REPOSITORY)
     private readonly veiculoRepository: VeiculoRepository,
   ) {}
 
-  async execute(id: string): Promise<VeiculoOutput> {
+  async execute(id: string): Promise<Veiculo> {
     const existing = await this.veiculoRepository.findById(id);
     if (!existing) {
-      throw new HttpException('Veiculo não encontrado.', 404);
+      throw new NotFoundError('Veiculo não encontrado.');
     }
 
-    const veiculo = Veiculo.create({
-      id: existing.id,
-      placa: existing.placa,
-      marca: existing.marca,
-      modelo: existing.modelo,
-      ano: existing.ano,
-      clienteId: existing.cliente_id,
-      createdAt: existing.createdAt,
-      updatedAt: existing.updatedAt,
-      deletedAt: existing.deletedAt,
-    });
-
-    return this.veiculoRepository.softRemove(veiculo.softRemove());
+    return this.veiculoRepository.softRemove(existing.softRemove());
   }
 }

@@ -116,6 +116,6 @@ describe('ServicoTypeormRepository', () => {
         precoMaoDeObra: 150,
       }),
     );
-    expect(result.servico).toBe('Troca de óleo');
+    expect(result.nome).toBe('Troca de óleo');
   });
 });

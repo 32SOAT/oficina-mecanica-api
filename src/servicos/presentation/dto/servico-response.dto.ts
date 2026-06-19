@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ServicoOutput } from '../../application/dto/servico.output';
+import { Servico } from '../../domain/servico';
 
 export class ServicoResponseDto {
   @ApiProperty({ description: 'ID único do serviço' })
@@ -23,7 +23,15 @@ export class ServicoResponseDto {
   @ApiProperty({ nullable: true })
   deletedAt: Date | null;
 
-  static fromOutput(output: ServicoOutput): ServicoResponseDto {
-    return Object.assign(new ServicoResponseDto(), output);
+  static fromDomain(servico: Servico): ServicoResponseDto {
+    return Object.assign(new ServicoResponseDto(), {
+      id: servico.id!,
+      servico: servico.nome,
+      descricao: servico.descricao,
+      precoMaoDeObra: servico.precoMaoDeObra,
+      createdAt: servico.createdAt,
+      updatedAt: servico.updatedAt,
+      deletedAt: servico.deletedAt,
+    });
   }
 }

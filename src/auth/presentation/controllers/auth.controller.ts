@@ -54,7 +54,7 @@ export class AuthController {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    return LoginResponseDto.fromOutput(this.issueAuthTokenUseCase.execute(user));
+    return LoginResponseDto.fromReadModel(this.issueAuthTokenUseCase.execute(user));
   }
 
   @ApiBearerAuth('JWT-auth')

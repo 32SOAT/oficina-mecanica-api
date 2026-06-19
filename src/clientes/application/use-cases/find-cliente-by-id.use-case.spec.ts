@@ -1,9 +1,10 @@
-import { HttpException } from '@nestjs/common';
+import {
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { FindClienteByIdUseCase } from './find-cliente-by-id.use-case';
 import type { ClienteRepository } from '../ports/cliente.repository';
 import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
-import { ClienteOutputMapper } from '../dto/cliente.output';
 
 type ClienteRepositoryMock = jest.Mocked<Pick<ClienteRepository, 'findById'>>;
 
@@ -35,23 +36,23 @@ describe('FindClienteByIdUseCase', () => {
     const result = await useCase.execute('1');
 
     expect(clienteRepository.findById).toHaveBeenCalledWith('1');
-    expect(result).toEqual(ClienteOutputMapper.fromDomain(cliente));
+    expect(result).toEqual(cliente);
   });
 
-  it('should throw HttpException when cliente is not found', async () => {
+  it('should throw NotFoundError when cliente is not found', async () => {
     clienteRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute('1')).rejects.toBeInstanceOf(HttpException);
+    await expect(useCase.execute('1')).rejects.toBeInstanceOf(NotFoundError);
 
     expect(clienteRepository.findById).toHaveBeenCalledWith('1');
   });
 
-  it('should throw 404 HttpException with correct message', async () => {
+  it('should throw NotFoundError with correct message and statusCode 404', async () => {
     clienteRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('999')).rejects.toMatchObject({
       message: 'Cliente não encontrado.',
-      status: 404,
+      statusCode: 404,
     });
   });
 

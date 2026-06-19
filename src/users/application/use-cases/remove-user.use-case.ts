@@ -1,19 +1,20 @@
-import { Inject, NotFoundException } from '@nestjs/common';
-import { UserOutput } from '../dto/user.dto';
-import { UserOutputMapper } from '../mappers/user-output.mapper';
+import { Injectable, Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
+import { User } from '../../domain/user';
 import { USER_REPOSITORY, UserRepository } from '../ports/user.repository';
 
+@Injectable()
 export class RemoveUserUseCase {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
   ) {}
 
-  async execute(id: string): Promise<UserOutput> {
+  async execute(id: string): Promise<User> {
     const existing = await this.userRepository.findById(id);
     if (!existing) {
-      throw new NotFoundException('Usuário não encontrado.');
+      throw new NotFoundError('Usuário não encontrado.');
     }
-    return this.userRepository.remove(UserOutputMapper.toDomain(existing));
+    return this.userRepository.remove(existing);
   }
 }

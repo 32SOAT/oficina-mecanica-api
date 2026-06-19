@@ -72,7 +72,7 @@ export class EstoqueController {
     const output = await this.createEstoqueUseCase.execute(
       EstoquePresentationMapper.toCreateInput(createEstoqueDto),
     );
-    return EstoqueResponseDto.fromOutput(output);
+    return EstoqueResponseDto.fromDomain(output);
   }
 
   @Get()
@@ -104,7 +104,7 @@ export class EstoqueController {
       ),
     );
     return {
-      data: result.data.map(EstoqueResponseDto.fromOutput),
+      data: result.data.map(EstoqueResponseDto.fromDomain),
       meta: result.meta,
     };
   }
@@ -124,7 +124,7 @@ export class EstoqueController {
   @ApiResponse({ status: 404, description: 'Item de estoque não encontrado.' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const output = await this.findEstoqueByIdUseCase.execute(id);
-    return EstoqueResponseDto.fromOutput(output);
+    return EstoqueResponseDto.fromDomain(output);
   }
 
   @Patch(':id')
@@ -221,7 +221,7 @@ export class EstoqueController {
       return {
         success: true,
         message: `Reposição de ${dto.quantidade}.`,
-        data: EstoqueResponseDto.fromOutput(atualizado),
+        data: EstoqueResponseDto.fromDomain(atualizado),
       };
     }
 
@@ -232,7 +232,7 @@ export class EstoqueController {
     return {
       success: true,
       message: 'Operação executada com sucesso.',
-      data: EstoqueResponseDto.fromOutput(item),
+      data: EstoqueResponseDto.fromDomain(item),
     };
   }
 

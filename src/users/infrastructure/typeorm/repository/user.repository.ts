@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserOutput } from '../../../application/dto/user.dto';
 import { UserRepository } from '../../../application/ports/user.repository';
 import { User } from '../../../domain/user';
 import { UserTypeormEntity } from '../entity/user.typeorm.entity';
@@ -13,36 +12,28 @@ export class UserTypeormRepository implements UserRepository {
     private readonly repository: Repository<UserTypeormEntity>,
   ) {}
 
-  async save(user: User): Promise<UserOutput> {
+  async save(user: User): Promise<User> {
     const entity = UserTypeormEntity.fromDomain(user);
     const saved = await this.repository.save(entity);
-    return this.toOutput(saved);
+    return saved.toDomain();
   }
 
-  async findAll(skip: number, take: number): Promise<[UserOutput[], number]> {
+  async findAll(skip: number, take: number): Promise<[User[], number]> {
     const [entities, count] = await this.repository.findAndCount({
       skip,
       take,
     });
-    return [entities.map((entity) => this.toOutput(entity)), count];
+    return [entities.map((entity) => entity.toDomain()), count];
   }
 
-  async findById(id: string): Promise<UserOutput | null> {
+  async findById(id: string): Promise<User | null> {
     const entity = await this.repository.findOneBy({ id });
-    return entity ? this.toOutput(entity) : null;
+    return entity ? entity.toDomain() : null;
   }
 
-  async remove(user: User): Promise<UserOutput> {
+  async remove(user: User): Promise<User> {
     const entity = UserTypeormEntity.fromDomain(user);
     const removed = await this.repository.remove(entity);
-    return this.toOutput(removed);
-  }
-
-  private toOutput(entity: UserTypeormEntity): UserOutput {
-    return {
-      id: entity.id,
-      username: entity.username,
-      email: entity.email,
-    };
+    return removed.toDomain();
   }
 }

@@ -41,6 +41,6 @@ export class HealthController {
     description: 'Erro interno do servidor.',
   })
   check(): HealthResponseDto {
-    return HealthResponseDto.fromOutput(this.checkHealthUseCase.execute());
+    return HealthResponseDto.fromReadModel(this.checkHealthUseCase.execute());
   }
 }

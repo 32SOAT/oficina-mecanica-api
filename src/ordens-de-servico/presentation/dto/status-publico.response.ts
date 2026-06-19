@@ -1,5 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { StatusOrdemServico } from '../../domain/status-ordem-servico.enum';
+import type {
+  HistoricoStatusReadModel,
+  OrdemServicoReadModel,
+} from '../../application/read-models/ordem-servico-read-model';
 
 export class LinhaTempoEntry {
   @ApiProperty({ enum: StatusOrdemServico })
@@ -35,4 +39,25 @@ export class StatusPublicoResponse {
 
   @ApiProperty({ type: [LinhaTempoEntry] })
   linhaDoTempo: LinhaTempoEntry[];
+
+  static fromReadModel(
+    os: OrdemServicoReadModel,
+    historico: HistoricoStatusReadModel[],
+  ): StatusPublicoResponse {
+    if (!os.veiculo) {
+      throw new Error('Veículo não carregado no read model da OS.');
+    }
+
+    return Object.assign(new StatusPublicoResponse(), {
+      id: os.id,
+      status: os.status,
+      atualizadoEm: os.updatedAt,
+      valorTotal: Number(os.valorTotal),
+      veiculo: { placa: os.veiculo.placa, modelo: os.veiculo.modelo },
+      linhaDoTempo: historico.map((h) => ({
+        status: h.statusNovo,
+        em: h.createdAt,
+      })),
+    });
+  }
 }

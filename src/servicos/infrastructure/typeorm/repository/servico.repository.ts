@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ServicoOutput } from '../../../application/dto/servico.output';
 import { ServicoRepository } from '../../../application/ports/servico.repository';
 import { Servico } from '../../../domain/servico';
 import { ServicoTypeormEntity } from '../entity/servico.typeorm.entity';
@@ -13,26 +12,23 @@ export class ServicoTypeormRepository implements ServicoRepository {
     private readonly repository: Repository<ServicoTypeormEntity>,
   ) {}
 
-  async save(servico: Servico): Promise<ServicoOutput> {
+  async save(servico: Servico): Promise<Servico> {
     const entity = ServicoTypeormEntity.fromDomain(servico);
     const saved = await this.repository.save(entity);
-    return this.toOutput(saved);
+    return saved.toDomain();
   }
 
-  async findAll(
-    skip: number,
-    take: number,
-  ): Promise<[ServicoOutput[], number]> {
+  async findAll(skip: number, take: number): Promise<[Servico[], number]> {
     const [entities, count] = await this.repository.findAndCount({
       skip,
       take,
     });
-    return [entities.map((entity) => this.toOutput(entity)), count];
+    return [entities.map((entity) => entity.toDomain()), count];
   }
 
-  async findById(id: number): Promise<ServicoOutput | null> {
+  async findById(id: number): Promise<Servico | null> {
     const entity = await this.repository.findOneBy({ id });
-    return entity ? this.toOutput(entity) : null;
+    return entity ? entity.toDomain() : null;
   }
 
   async existsByNome(nome: string, excludeId?: number): Promise<boolean> {
@@ -49,21 +45,9 @@ export class ServicoTypeormRepository implements ServicoRepository {
     return Boolean(existing);
   }
 
-  async softRemove(servico: Servico): Promise<ServicoOutput> {
+  async softRemove(servico: Servico): Promise<Servico> {
     const entity = ServicoTypeormEntity.fromDomain(servico);
     const removed = await this.repository.softRemove(entity);
-    return this.toOutput(removed);
-  }
-
-  private toOutput(entity: ServicoTypeormEntity): ServicoOutput {
-    return {
-      id: entity.id,
-      servico: entity.servico,
-      descricao: entity.descricao,
-      precoMaoDeObra: Number(entity.precoMaoDeObra),
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-      deletedAt: entity.deletedAt,
-    };
+    return removed.toDomain();
   }
 }

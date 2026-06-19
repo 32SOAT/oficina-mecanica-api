@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { OrdemServicoTypeormEntity as OrdemServicoEntity } from '../entity/ordem-servico.typeorm.entity';
 import { HistoricoStatusOsEntity } from '../entity/historico-status-os.entity';
 import { StatusOrdemServico as S } from '../../../domain/status-ordem-servico.enum';
@@ -23,12 +23,30 @@ describe('RelatorioTypeormRepository.tempoMedioServicos', () => {
     });
   };
 
-  let osRepo: jest.Mocked<Pick<Repository<OrdemServicoEntity>, 'find'>>;
+  let osRepo: jest.Mocked<
+    Pick<Repository<OrdemServicoEntity>, 'createQueryBuilder'>
+  >;
   let histRepo: jest.Mocked<Pick<Repository<HistoricoStatusOsEntity>, 'find'>>;
+  let qb: {
+    where: jest.Mock;
+    innerJoin: jest.Mock;
+    andWhere: jest.Mock;
+    distinct: jest.Mock;
+    getMany: jest.Mock;
+  };
   let service: RelatorioTypeormRepository;
 
   beforeEach(() => {
-    osRepo = { find: jest.fn() };
+    qb = {
+      where: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      distinct: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+    osRepo = {
+      createQueryBuilder: jest.fn().mockReturnValue(qb),
+    };
     histRepo = { find: jest.fn() };
     service = new RelatorioTypeormRepository(
       osRepo as unknown as Repository<OrdemServicoEntity>,
@@ -37,54 +55,48 @@ describe('RelatorioTypeormRepository.tempoMedioServicos', () => {
   });
 
   it('soma intervalos em EmExecucao por OS e tira a média', async () => {
-    osRepo.find.mockResolvedValue([
+    qb.getMany.mockResolvedValue([
       { id: 'os-1' } as OrdemServicoEntity,
       { id: 'os-2' } as OrdemServicoEntity,
     ]);
-    histRepo.find.mockImplementation((opts: unknown) => {
-      const where = (opts as { where: { os_id: string } }).where;
-      if (where.os_id === 'os-1') {
-        return Promise.resolve(
-          buildHist('os-1', [
-            [S.Recebida, 0],
-            [S.EmDiagnostico, 1000],
-            [S.AguardandoAprovacao, 2000],
-            [S.Aprovada, 3000],
-            [S.AguardandoServico, 3500],
-            [S.EmExecucao, 4000],
-            [S.Finalizada, 6000],
-          ]),
-        );
-      }
-      if (where.os_id === 'os-2') {
-        return Promise.resolve(
-          buildHist('os-2', [
-            [S.Recebida, 0],
-            [S.EmExecucao, 1000],
-            [S.AguardandoPecasInsumos, 1500],
-            [S.AguardandoServico, 2000],
-            [S.EmExecucao, 2500],
-            [S.Finalizada, 3500],
-          ]),
-        );
-      }
-      return Promise.resolve([]);
-    });
+    histRepo.find.mockResolvedValue([
+      ...buildHist('os-1', [
+        [S.Recebida, 0],
+        [S.EmDiagnostico, 1000],
+        [S.AguardandoAprovacao, 2000],
+        [S.Aprovada, 3000],
+        [S.AguardandoServico, 3500],
+        [S.EmExecucao, 4000],
+        [S.Finalizada, 6000],
+      ]),
+      ...buildHist('os-2', [
+        [S.Recebida, 0],
+        [S.EmExecucao, 1000],
+        [S.AguardandoPecasInsumos, 1500],
+        [S.AguardandoServico, 2000],
+        [S.EmExecucao, 2500],
+        [S.Finalizada, 3500],
+      ]),
+    ]);
 
     const r = await service.tempoMedioServicos();
     expect(r.totalOSConsideradas).toBe(2);
     expect(r.tempoMedioMs).toBe((2000 + 1500) / 2);
+    expect(histRepo.find).toHaveBeenCalledWith({
+      where: { os_id: In(['os-1', 'os-2']) },
+      order: { createdAt: 'ASC' },
+    });
   });
 
   it('retorna 0 e 0 OSs quando não há OS finalizadas', async () => {
-    osRepo.find.mockResolvedValue([]);
+    qb.getMany.mockResolvedValue([]);
     const r = await service.tempoMedioServicos();
     expect(r.tempoMedioMs).toBe(0);
     expect(r.totalOSConsideradas).toBe(0);
   });
 
   it('ignora OS sem ciclo Em Execução', async () => {
-    osRepo.find.mockResolvedValue([{ id: 'os-1' } as OrdemServicoEntity]);
+    qb.getMany.mockResolvedValue([{ id: 'os-1' } as OrdemServicoEntity]);
     histRepo.find.mockResolvedValue(
       buildHist('os-1', [
         [S.Recebida, 0],
@@ -97,15 +109,21 @@ describe('RelatorioTypeormRepository.tempoMedioServicos', () => {
     expect(r.tempoMedioMs).toBe(0);
   });
 
-  it('ecoa a janela quando fornecida', async () => {
-    osRepo.find.mockResolvedValue([]);
-    const r = await service.tempoMedioServicos({
+  it('aplica filtro de janela na query', async () => {
+    qb.getMany.mockResolvedValue([]);
+    await service.tempoMedioServicos({
       dataInicio: '2026-01-01',
       dataFim: '2026-05-01',
     });
-    expect(r.janela).toEqual({
-      dataInicio: '2026-01-01',
-      dataFim: '2026-05-01',
-    });
+    expect(qb.innerJoin).toHaveBeenCalled();
+    expect(qb.andWhere).toHaveBeenCalledWith(
+      'h.createdAt >= :dataInicio',
+      expect.objectContaining({ dataInicio: expect.any(Date) }),
+    );
+    expect(qb.andWhere).toHaveBeenCalledWith(
+      'h.createdAt <= :dataFim',
+      expect.objectContaining({ dataFim: expect.any(Date) }),
+    );
+    expect(qb.distinct).toHaveBeenCalledWith(true);
   });
 });

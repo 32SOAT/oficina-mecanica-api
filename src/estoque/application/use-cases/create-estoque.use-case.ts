@@ -1,11 +1,6 @@
-import {
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ConflictError } from '../../../common/application/errors/application.errors';
 import { CreateEstoqueInput } from '../dto/create-estoque.input';
-import { EstoqueOutput } from '../dto/estoque.output';
 import { Estoque } from '../../domain/estoque';
 import {
   ESTOQUE_REPOSITORY,
@@ -25,9 +20,9 @@ export class CreateEstoqueUseCase {
     private readonly ordemServicoReposicaoPort: OrdemServicoReposicaoPort,
   ) {}
 
-  async execute(input: CreateEstoqueInput): Promise<EstoqueOutput> {
+  async execute(input: CreateEstoqueInput): Promise<Estoque> {
     if (await this.estoqueRepository.existsByCodigo(input.codigo)) {
-      throw new ConflictException(
+      throw new ConflictError(
         'Código já está em uso por outro item de estoque.',
       );
     }
@@ -35,7 +30,7 @@ export class CreateEstoqueUseCase {
     const estoque = Estoque.create(input);
     const saved = await this.estoqueRepository.save(estoque);
     await this.ordemServicoReposicaoPort.tentarLiberarOsAposReposicao(
-      [saved.id],
+      [saved.id!],
       null,
     );
     return saved;

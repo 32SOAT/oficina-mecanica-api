@@ -55,10 +55,10 @@ export class VeiculoController {
   @ApiResponse({ status: 404, description: 'Cliente não encontrado' })
   @ApiResponse({ status: 409, description: 'Placa já cadastrada' })
   async create(@Body() dto: CreateVeiculoDto) {
-    const output = await this.createVeiculoUseCase.execute(
+    const veiculo = await this.createVeiculoUseCase.execute(
       VeiculoPresentationMapper.toCreateInput(dto),
     );
-    return VeiculoResponseDto.fromOutput(output);
+    return VeiculoResponseDto.fromDomain(veiculo);
   }
 
   @Get()
@@ -72,7 +72,7 @@ export class VeiculoController {
       VeiculoPresentationMapper.toFindAllInput(paginationDto),
     );
     return {
-      data: result.data.map(VeiculoResponseDto.fromOutput),
+      data: result.data.map((veiculo) => VeiculoResponseDto.fromDomain(veiculo)),
       meta: result.meta,
     };
   }
@@ -91,10 +91,10 @@ export class VeiculoController {
   @ApiWrappedResponse(VeiculoResponseDto, 200, 'Veículo encontrado com sucesso')
   @ApiResponse({ status: 404, description: 'Veículo não encontrado' })
   async findByPlaca(@Param('placa') placa: string) {
-    const data = await this.findVeiculoByPlacaUseCase.execute(placa);
+    const veiculo = await this.findVeiculoByPlacaUseCase.execute(placa);
     return {
       success: true,
-      data: VeiculoResponseDto.fromOutput(data),
+      data: VeiculoResponseDto.fromDomain(veiculo),
       message: 'Veículo encontrado com sucesso.',
     };
   }

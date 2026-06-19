@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { EstoqueOutput } from '../../application/dto/estoque.output';
+import { Estoque } from '../../domain/estoque';
 
 export class EstoqueResponseDto {
   @ApiProperty({ description: 'ID único do item de estoque', example: 1 })
@@ -56,18 +56,18 @@ export class EstoqueResponseDto {
   @ApiProperty({ description: 'Data de exclusão (soft delete)', example: null })
   deletedAt: Date | null;
 
-  static fromOutput(output: EstoqueOutput): EstoqueResponseDto {
+  static fromDomain(estoque: Estoque): EstoqueResponseDto {
     return {
-      id: output.id,
-      codigo: output.codigo,
-      pecasInsumos: output.pecasInsumos,
-      quantidadeFisica: output.quantidadeFisica,
-      quantidadeReservada: output.quantidadeReservada,
-      quantidadeDisponivel: output.quantidadeDisponivel,
-      precoUnitario: output.precoUnitario,
-      createdAt: output.createdAt,
-      updatedAt: output.updatedAt,
-      deletedAt: output.deletedAt,
+      id: estoque.id!,
+      codigo: estoque.codigo,
+      pecasInsumos: estoque.pecasInsumos,
+      quantidadeFisica: estoque.quantidadeFisica,
+      quantidadeReservada: estoque.quantidadeReservada,
+      quantidadeDisponivel: estoque.quantidadeDisponivel,
+      precoUnitario: estoque.precoUnitario,
+      createdAt: estoque.createdAt,
+      updatedAt: estoque.updatedAt,
+      deletedAt: estoque.deletedAt,
     };
   }
 }

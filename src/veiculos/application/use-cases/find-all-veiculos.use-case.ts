@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import {
   calculateOffset,
   createPaginationMeta,
@@ -6,12 +6,13 @@ import {
 import { PaginationMeta } from '../../../common/pagination/pagination';
 import { DEFAULT_PAGE_SIZE } from '../constants';
 import { FindAllVeiculosInput } from '../dto/find-all-veiculos.input';
-import { VeiculoOutput } from '../dto/veiculo.output';
+import { Veiculo } from '../../domain/veiculo';
 import {
   VEICULO_REPOSITORY,
   VeiculoRepository,
 } from '../ports/veiculo.repository';
 
+@Injectable()
 export class FindAllVeiculosUseCase {
   constructor(
     @Inject(VEICULO_REPOSITORY)
@@ -29,6 +30,6 @@ export class FindAllVeiculosUseCase {
 }
 
 export type FindAllVeiculosResult = {
-  data: VeiculoOutput[];
+  data: Veiculo[];
   meta: PaginationMeta | undefined;
 };

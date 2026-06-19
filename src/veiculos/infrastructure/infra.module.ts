@@ -1,20 +1,27 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClienteModule } from '../../clientes/module';
+import { ClienteInfraModule } from '../../clientes/infrastructure/infra.module';
 import { VEICULO_REPOSITORY } from '../application/ports/veiculo.repository';
-import { CLIENTE_LOOKUP_PORT } from '../application/ports/cliente-lookup.port';
-import { ClienteLookupAdapter } from './adapters/cliente-lookup.adapter';
+import { VEICULO_TRANSACTIONAL_PORT } from '../application/ports/veiculo-transactional.port';
+import { VeiculoTransactionalAdapter } from './transactional/veiculo-transactional.adapter';
 import { VeiculoTypeormEntity } from './typeorm/entity/veiculo.typeorm.entity';
 import { VeiculoTypeormRepository } from './typeorm/repository/veiculo.repository';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([VeiculoTypeormEntity]), ClienteModule],
+  imports: [TypeOrmModule.forFeature([VeiculoTypeormEntity]), ClienteInfraModule],
   providers: [
     VeiculoTypeormRepository,
-    { provide: VEICULO_REPOSITORY, useClass: VeiculoTypeormRepository },
-    ClienteLookupAdapter,
-    { provide: CLIENTE_LOOKUP_PORT, useClass: ClienteLookupAdapter },
+    VeiculoTransactionalAdapter,
+    { provide: VEICULO_REPOSITORY, useExisting: VeiculoTypeormRepository },
+    {
+      provide: VEICULO_TRANSACTIONAL_PORT,
+      useExisting: VeiculoTransactionalAdapter,
+    },
   ],
-  exports: [VEICULO_REPOSITORY, CLIENTE_LOOKUP_PORT],
+  exports: [
+    VEICULO_REPOSITORY,
+    VEICULO_TRANSACTIONAL_PORT,
+    ClienteInfraModule,
+  ],
 })
 export class VeiculoInfraModule {}

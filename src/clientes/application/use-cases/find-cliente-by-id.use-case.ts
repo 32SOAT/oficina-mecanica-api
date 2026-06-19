@@ -1,5 +1,6 @@
-import { HttpException, Inject, Injectable } from '@nestjs/common';
-import { ClienteOutput, ClienteOutputMapper } from '../dto/cliente.output';
+import { Injectable, Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
+import { Cliente } from '../../domain/cliente';
 import {
   CLIENTE_REPOSITORY,
   ClienteRepository,
@@ -12,11 +13,11 @@ export class FindClienteByIdUseCase {
     private readonly clienteRepository: ClienteRepository,
   ) {}
 
-  async execute(id: string): Promise<ClienteOutput> {
+  async execute(id: string): Promise<Cliente> {
     const cliente = await this.clienteRepository.findById(id);
     if (!cliente) {
-      throw new HttpException('Cliente não encontrado.', 404);
+      throw new NotFoundError('Cliente não encontrado.');
     }
-    return ClienteOutputMapper.fromDomain(cliente);
+    return cliente;
   }
 }

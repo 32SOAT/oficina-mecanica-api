@@ -1,4 +1,1 @@
-export type HealthOutput = {
-  status: 'ok';
-  timestamp: string;
-};
+export type { HealthReadModel, HealthOutput } from '../read-models/health-read-model';

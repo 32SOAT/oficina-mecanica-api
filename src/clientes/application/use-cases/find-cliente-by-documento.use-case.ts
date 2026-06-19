@@ -1,9 +1,13 @@
-import { Injectable, BadRequestException, HttpException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import {
+  BadRequestError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import {
   ClienteDocumento,
   InvalidClienteDocumentoError,
 } from '../../domain/cliente-documento';
-import { ClienteOutput, ClienteOutputMapper } from '../dto/cliente.output';
+import { Cliente } from '../../domain/cliente';
 import {
   CLIENTE_REPOSITORY,
   ClienteRepository,
@@ -16,15 +20,15 @@ export class FindClienteByDocumentoUseCase {
     private readonly clienteRepository: ClienteRepository,
   ) {}
 
-  async execute(documentoRaw: string): Promise<ClienteOutput> {
+  async execute(documentoRaw: string): Promise<Cliente> {
     const documento = this.buildDocumento(documentoRaw);
     const cliente = await this.clienteRepository.findByDocumento(
       documento.toString(),
     );
     if (!cliente) {
-      throw new HttpException('Cliente não encontrado.', 404);
+      throw new NotFoundError('Cliente não encontrado.');
     }
-    return ClienteOutputMapper.fromDomain(cliente);
+    return cliente;
   }
 
   private buildDocumento(documento: string): ClienteDocumento {
@@ -32,7 +36,7 @@ export class FindClienteByDocumentoUseCase {
       return ClienteDocumento.create(documento);
     } catch (error) {
       if (error instanceof InvalidClienteDocumentoError) {
-        throw new BadRequestException(error.message);
+        throw new BadRequestError(error.message);
       }
       throw error;
     }

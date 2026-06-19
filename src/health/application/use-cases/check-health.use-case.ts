@@ -1,7 +1,7 @@
-import { HealthOutput } from '../dto/health.output';
+import { HealthReadModel } from '../read-models/health-read-model';
 
 export class CheckHealthUseCase {
-  execute(): HealthOutput {
+  execute(): HealthReadModel {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),

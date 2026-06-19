@@ -11,41 +11,132 @@ import { ReprovarOrcamentoOrdemServicoUseCase } from './reprovar-orcamento-ordem
 import { IniciarExecucaoOrdemServicoUseCase } from './iniciar-execucao-ordem-servico.use-case';
 import { TentarLiberarOsAposReposicaoEstoqueUseCase } from './tentar-liberar-os-apos-reposicao-estoque.use-case';
 import { AvancarStatusOrdemServicoUseCase } from './avancar-status-ordem-servico.use-case';
-import type { OrdemServicoRepository } from '../ports/ordem-servico.repository';
+import type { OrdemServicoEventsPort } from '../ports/ordem-servico-events.port';
+import type { OrdemServicoQueryPort } from '../ports/ordem-servico-query.port';
+import type {
+  OrdemServicoTransactionPort,
+  OrdemServicoTransactionalOperations,
+  OsWorkflowHandle,
+} from '../ports/ordem-servico-transaction.port';
 
 const osOutput = { id: 'os-id', status: StatusOrdemServico.Recebida } as never;
 
+const validCreateInput = {
+  documentoCliente: '39053344705',
+  placa: 'ABC1D23',
+  itensServico: [{ servicoId: 1 }],
+  itensPeca: [],
+};
+
+const makeOsHandle = (
+  overrides: Partial<OsWorkflowHandle> = {},
+): OsWorkflowHandle => ({
+  id: 'os-id',
+  status: StatusOrdemServico.Recebida,
+  observacao: null,
+  valorTotal: 0,
+  itensPeca: [],
+  avancarStatus: jest.fn().mockReturnValue({
+    anterior: StatusOrdemServico.Recebida,
+    novo: StatusOrdemServico.EmDiagnostico,
+  }),
+  calcularValorTotal: jest.fn().mockReturnValue(100),
+  todasPecasDisponiveis: jest.fn().mockReturnValue(true),
+  ...overrides,
+});
+
 describe('Ordem servico use cases', () => {
-  const repository = {
-    criar: jest.fn(),
+  const query = {
     findAll: jest.fn(),
     findById: jest.fn(),
     findHistorico: jest.fn(),
-    transicionar: jest.fn(),
-    substituirItensEmDiagnostico: jest.fn(),
-    gerarOrcamento: jest.fn(),
-    aprovarOrcamento: jest.fn(),
-    reprovarOrcamento: jest.fn(),
-    iniciarExecucao: jest.fn(),
-    tentarLiberarOsAposReposicaoEstoque: jest.fn(),
+    findIdsAguardandoPecasPorEstoque: jest.fn(),
+  };
+
+  const events: jest.Mocked<OrdemServicoEventsPort> = {
+    emitStatusAlterado: jest.fn(),
+    emitOsCriada: jest.fn(),
+    emitOrcamentoGerado: jest.fn(),
+    emitOrcamentoAprovado: jest.fn(),
+    emitOrcamentoReprovado: jest.fn(),
+    emitOsEmExecucao: jest.fn(),
+  };
+
+  const txOps: jest.Mocked<OrdemServicoTransactionalOperations> = {
+    findClienteIdByDocumento: jest.fn(),
+    findVeiculoIdForCliente: jest.fn(),
+    buildItensServico: jest.fn(),
+    buildItensPecaWithReserva: jest.fn(),
+    insertNewOs: jest.fn(),
+    loadOs: jest.fn(),
+    saveOs: jest.fn(),
+    estornarReservasPecas: jest.fn(),
+    softRemoveOsItens: jest.fn(),
+    replaceItensInDiagnostico: jest.fn(),
+    refreshValorTotal: jest.fn(),
+    syncPecaDisponibilidadeAposAprovacao: jest.fn(),
+    darBaixaPecasEmExecucao: jest.fn(),
+    estornarReservasAoReprovar: jest.fn(),
+    loadOsAguardandoPecasForUpdate: jest.fn(),
+    syncPecasPendentesAposReposicao: jest.fn(),
+  };
+
+  const transaction: OrdemServicoTransactionPort = {
+    runInTransaction: jest.fn(async (work) => work(txOps)),
   };
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('CreateOrdemServicoUseCase delegates to repository', async () => {
-    repository.criar.mockResolvedValue(osOutput);
-    const useCase = new CreateOrdemServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
-    );
-    const input = { veiculoId: 'v1', descricao: 'Barulho' } as never;
-    await expect(useCase.execute(input, 'user-id')).resolves.toEqual(osOutput);
-    expect(repository.criar).toHaveBeenCalledWith(input, 'user-id');
+  it('CreateOrdemServicoUseCase orchestrates transaction and emits events', async () => {
+    txOps.findClienteIdByDocumento.mockResolvedValue('cli-1');
+    txOps.findVeiculoIdForCliente.mockResolvedValue('vei-1');
+    txOps.buildItensServico.mockResolvedValue([]);
+    txOps.buildItensPecaWithReserva.mockResolvedValue({
+      itens: [],
+      pecaPrecisaObservacaoCompra: false,
+    });
+    txOps.insertNewOs.mockResolvedValue(osOutput);
+    const useCase = new CreateOrdemServicoUseCase(transaction, events);
+    await expect(
+      useCase.execute(validCreateInput, 'user-id'),
+    ).resolves.toEqual(osOutput);
+    expect(events.emitOsCriada).toHaveBeenCalledWith('os-id');
+    expect(events.emitStatusAlterado).toHaveBeenCalled();
   });
 
-  it('FindAllOrdensServicoUseCase delegates to repository', async () => {
-    repository.findAll.mockResolvedValue({ data: [osOutput], meta: {} });
+  it('CreateOrdemServicoUseCase mescla observação de compra e aceita usuarioId nulo', async () => {
+    txOps.findClienteIdByDocumento.mockResolvedValue('cli-1');
+    txOps.findVeiculoIdForCliente.mockResolvedValue('vei-1');
+    txOps.buildItensServico.mockResolvedValue([]);
+    txOps.buildItensPecaWithReserva.mockResolvedValue({
+      itens: [{ estoqueId: 1, quantidade: 1, precoAplicado: 10, disponivelNoDiagnostico: false }],
+      pecaPrecisaObservacaoCompra: true,
+    });
+    txOps.insertNewOs.mockResolvedValue(osOutput);
+
+    const useCase = new CreateOrdemServicoUseCase(transaction, events);
+    await useCase.execute(
+      { ...validCreateInput, observacao: 'Urgente', itensPeca: [{ estoqueId: 1, quantidade: 1 }] },
+      null,
+    );
+
+    expect(txOps.insertNewOs).toHaveBeenCalledWith(
+      expect.objectContaining({
+        observacao: expect.stringContaining('compra'),
+      }),
+    );
+    expect(events.emitStatusAlterado).toHaveBeenCalledWith(
+      'os-id',
+      null,
+      StatusOrdemServico.Recebida,
+      null,
+    );
+  });
+
+  it('FindAllOrdensServicoUseCase delegates to query port', async () => {
+    query.findAll.mockResolvedValue({ data: [osOutput], meta: {} });
     const useCase = new FindAllOrdensServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
+      query as unknown as OrdemServicoQueryPort,
     );
     const input = { page: 1, take: 10 } as never;
     await expect(useCase.execute(input)).resolves.toEqual({
@@ -54,129 +145,237 @@ describe('Ordem servico use cases', () => {
     });
   });
 
-  it('FindOrdemServicoByIdUseCase delegates to repository', async () => {
-    repository.findById.mockResolvedValue(osOutput);
+  it('FindOrdemServicoByIdUseCase delegates to query port', async () => {
+    query.findById.mockResolvedValue(osOutput);
     const useCase = new FindOrdemServicoByIdUseCase(
-      repository as unknown as OrdemServicoRepository,
+      query as unknown as OrdemServicoQueryPort,
     );
     await expect(useCase.execute('os-id')).resolves.toEqual(osOutput);
   });
 
-  it('FindOrdemServicoHistoricoUseCase delegates to repository', async () => {
-    repository.findHistorico.mockResolvedValue([]);
+  it('FindOrdemServicoHistoricoUseCase delegates to query port', async () => {
+    query.findHistorico.mockResolvedValue([]);
     const useCase = new FindOrdemServicoHistoricoUseCase(
-      repository as unknown as OrdemServicoRepository,
+      query as unknown as OrdemServicoQueryPort,
     );
     await expect(useCase.execute('os-id')).resolves.toEqual([]);
   });
 
-  it('TransicionarOrdemServicoUseCase delegates to repository', async () => {
-    repository.transicionar.mockResolvedValue(osOutput);
-    const useCase = new TransicionarOrdemServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
-    );
+  it('TransicionarOrdemServicoUseCase loads OS, transitions and emits', async () => {
+    const handle = makeOsHandle();
+    txOps.loadOs.mockResolvedValue(handle);
+    txOps.saveOs.mockResolvedValue(osOutput);
+    const useCase = new TransicionarOrdemServicoUseCase(transaction, events);
     await expect(
       useCase.execute('os-id', StatusOrdemServico.EmDiagnostico, 'user-id'),
     ).resolves.toEqual(osOutput);
+    expect(handle.avancarStatus).toHaveBeenCalledWith(
+      StatusOrdemServico.EmDiagnostico,
+    );
+    expect(events.emitStatusAlterado).toHaveBeenCalled();
   });
 
-  it('SubstituirItensOrdemServicoUseCase delegates to repository', async () => {
-    repository.substituirItensEmDiagnostico.mockResolvedValue(osOutput);
+  it('SubstituirItensOrdemServicoUseCase validates status and replaces in tx', async () => {
+    query.findById
+      .mockResolvedValueOnce({
+        ...osOutput,
+        status: StatusOrdemServico.EmDiagnostico,
+      })
+      .mockResolvedValueOnce(osOutput);
     const useCase = new SubstituirItensOrdemServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
+      query as unknown as OrdemServicoQueryPort,
+      transaction,
     );
-    const input = { servicos: [], estoque: [] } as never;
+    const input = {
+      itensServico: [{ servicoId: 1 }],
+      itensPeca: [],
+    };
     await expect(useCase.execute('os-id', input, 'user-id')).resolves.toEqual(
       osOutput,
     );
-    expect(repository.substituirItensEmDiagnostico).toHaveBeenCalledWith(
+    expect(txOps.replaceItensInDiagnostico).toHaveBeenCalledWith(
       'os-id',
       input,
-      'user-id',
     );
   });
 
-  it('GerarOrcamentoOrdemServicoUseCase delegates to repository', async () => {
-    repository.gerarOrcamento.mockResolvedValue(osOutput);
-    const useCase = new GerarOrcamentoOrdemServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
-    );
+  it('GerarOrcamentoOrdemServicoUseCase transitions and emits orcamento', async () => {
+    const handle = makeOsHandle();
+    txOps.loadOs.mockResolvedValue(handle);
+    txOps.saveOs.mockResolvedValue(osOutput);
+    const useCase = new GerarOrcamentoOrdemServicoUseCase(transaction, events);
     await expect(useCase.execute('os-id', 'user-id')).resolves.toEqual(
       osOutput,
     );
+    expect(events.emitOrcamentoGerado).toHaveBeenCalledWith('os-id');
   });
 
-  it('AprovarOrcamentoOrdemServicoUseCase delegates to repository', async () => {
-    repository.aprovarOrcamento.mockResolvedValue(osOutput);
+  it('AprovarOrcamentoOrdemServicoUseCase syncs pecas and emits', async () => {
+    const handle = makeOsHandle();
+    txOps.loadOs.mockResolvedValue(handle);
+    txOps.saveOs.mockResolvedValue(osOutput);
     const useCase = new AprovarOrcamentoOrdemServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
+      transaction,
+      events,
     );
     await expect(useCase.execute('os-id', 'user-id')).resolves.toEqual(
       osOutput,
     );
+    expect(txOps.syncPecaDisponibilidadeAposAprovacao).toHaveBeenCalled();
+    expect(events.emitOrcamentoAprovado).toHaveBeenCalledWith('os-id');
   });
 
-  it('ReprovarOrcamentoOrdemServicoUseCase delegates to repository', async () => {
-    repository.reprovarOrcamento.mockResolvedValue(osOutput);
+  it('AprovarOrcamentoOrdemServicoUseCase vai para AguardandoPecasInsumos quando faltam peças', async () => {
+    const handle = makeOsHandle({
+      todasPecasDisponiveis: jest.fn().mockReturnValue(false),
+      avancarStatus: jest
+        .fn()
+        .mockReturnValueOnce({
+          anterior: StatusOrdemServico.AguardandoAprovacao,
+          novo: StatusOrdemServico.Aprovada,
+        })
+        .mockReturnValueOnce({
+          anterior: StatusOrdemServico.Aprovada,
+          novo: StatusOrdemServico.AguardandoPecasInsumos,
+        }),
+    });
+    txOps.loadOs.mockResolvedValue(handle);
+    txOps.saveOs.mockResolvedValue(osOutput);
+
+    const useCase = new AprovarOrcamentoOrdemServicoUseCase(transaction, events);
+    await useCase.execute('os-id', null);
+
+    expect(handle.avancarStatus).toHaveBeenLastCalledWith(
+      StatusOrdemServico.AguardandoPecasInsumos,
+    );
+    expect(events.emitStatusAlterado).toHaveBeenCalledTimes(2);
+  });
+
+  it('ReprovarOrcamentoOrdemServicoUseCase estorna reservas and emits', async () => {
+    const handle = makeOsHandle();
+    txOps.loadOs.mockResolvedValue(handle);
+    txOps.saveOs.mockResolvedValue(osOutput);
     const useCase = new ReprovarOrcamentoOrdemServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
+      transaction,
+      events,
     );
     await expect(useCase.execute('os-id', 'user-id')).resolves.toEqual(
       osOutput,
     );
+    expect(txOps.estornarReservasAoReprovar).toHaveBeenCalledWith(handle);
+    expect(events.emitOrcamentoReprovado).toHaveBeenCalledWith('os-id');
   });
 
-  it('IniciarExecucaoOrdemServicoUseCase delegates to repository', async () => {
-    repository.iniciarExecucao.mockResolvedValue(osOutput);
-    const useCase = new IniciarExecucaoOrdemServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
-    );
+  it('IniciarExecucaoOrdemServicoUseCase gives baixa and emits', async () => {
+    const handle = makeOsHandle();
+    txOps.loadOs.mockResolvedValue(handle);
+    txOps.saveOs.mockResolvedValue(osOutput);
+    const useCase = new IniciarExecucaoOrdemServicoUseCase(transaction, events);
     await expect(useCase.execute('os-id', 'user-id')).resolves.toEqual(
       osOutput,
     );
+    expect(txOps.darBaixaPecasEmExecucao).toHaveBeenCalledWith(handle);
+    expect(events.emitOsEmExecucao).toHaveBeenCalledWith('os-id');
   });
 
-  it('TentarLiberarOsAposReposicaoEstoqueUseCase delegates to repository', async () => {
-    repository.tentarLiberarOsAposReposicaoEstoque.mockResolvedValue(undefined);
+  it('TentarLiberarOsAposReposicaoEstoqueUseCase processes OS ids from query', async () => {
+    query.findIdsAguardandoPecasPorEstoque.mockResolvedValue(['os-1']);
+    txOps.loadOsAguardandoPecasForUpdate.mockResolvedValue(null);
     const useCase = new TentarLiberarOsAposReposicaoEstoqueUseCase(
-      repository as unknown as OrdemServicoRepository,
+      query as unknown as OrdemServicoQueryPort,
+      transaction,
+      events,
     );
     await useCase.execute([1], 'user-id');
-    expect(
-      repository.tentarLiberarOsAposReposicaoEstoque,
-    ).toHaveBeenCalledWith([1], 'user-id');
+    expect(query.findIdsAguardandoPecasPorEstoque).toHaveBeenCalledWith([1]);
+    expect(txOps.loadOsAguardandoPecasForUpdate).toHaveBeenCalledWith('os-1');
+  });
+
+  it('TentarLiberarOsAposReposicaoEstoqueUseCase salva sem avançar quando faltam peças', async () => {
+    const handle = makeOsHandle({
+      todasPecasDisponiveis: jest.fn().mockReturnValue(false),
+    });
+    query.findIdsAguardandoPecasPorEstoque.mockResolvedValue(['os-1']);
+    txOps.loadOsAguardandoPecasForUpdate.mockResolvedValue(handle);
+
+    const useCase = new TentarLiberarOsAposReposicaoEstoqueUseCase(
+      query as unknown as OrdemServicoQueryPort,
+      transaction,
+      events,
+    );
+
+    await useCase.execute([1], 'user-id');
+
+    expect(txOps.syncPecasPendentesAposReposicao).toHaveBeenCalledWith(handle);
+    expect(txOps.saveOs).toHaveBeenCalledWith(handle);
+    expect(handle.avancarStatus).not.toHaveBeenCalled();
+    expect(events.emitStatusAlterado).not.toHaveBeenCalled();
+  });
+
+  it('TentarLiberarOsAposReposicaoEstoqueUseCase avança status quando todas peças disponíveis', async () => {
+    const handle = makeOsHandle({
+      status: StatusOrdemServico.AguardandoPecasInsumos,
+    });
+    handle.avancarStatus = jest.fn().mockReturnValue({
+      anterior: StatusOrdemServico.AguardandoPecasInsumos,
+      novo: StatusOrdemServico.AguardandoServico,
+    });
+    query.findIdsAguardandoPecasPorEstoque.mockResolvedValue(['os-1']);
+    txOps.loadOsAguardandoPecasForUpdate.mockResolvedValue(handle);
+
+    const useCase = new TentarLiberarOsAposReposicaoEstoqueUseCase(
+      query as unknown as OrdemServicoQueryPort,
+      transaction,
+      events,
+    );
+
+    await useCase.execute([1], null);
+
+    expect(handle.avancarStatus).toHaveBeenCalledWith(
+      StatusOrdemServico.AguardandoServico,
+    );
+    expect(events.emitStatusAlterado).toHaveBeenCalledWith(
+      'os-id',
+      StatusOrdemServico.AguardandoPecasInsumos,
+      StatusOrdemServico.AguardandoServico,
+      null,
+    );
   });
 
   describe('AvancarStatusOrdemServicoUseCase', () => {
+    const aprovar = { execute: jest.fn() };
+    const reprovar = { execute: jest.fn() };
+    const iniciar = { execute: jest.fn() };
+    const transicionar = { execute: jest.fn() };
     const useCase = new AvancarStatusOrdemServicoUseCase(
-      repository as unknown as OrdemServicoRepository,
+      aprovar as never,
+      reprovar as never,
+      iniciar as never,
+      transicionar as never,
     );
 
     it('routes aprovada to aprovarOrcamento', async () => {
-      repository.aprovarOrcamento.mockResolvedValue(osOutput);
+      aprovar.execute.mockResolvedValue(osOutput);
       await useCase.execute('os-id', StatusOrdemServico.Aprovada, 'user-id');
-      expect(repository.aprovarOrcamento).toHaveBeenCalledWith(
-        'os-id',
-        'user-id',
-      );
+      expect(aprovar.execute).toHaveBeenCalledWith('os-id', 'user-id');
     });
 
     it('routes reprovada to reprovarOrcamento', async () => {
-      repository.reprovarOrcamento.mockResolvedValue(osOutput);
+      reprovar.execute.mockResolvedValue(osOutput);
       await useCase.execute('os-id', StatusOrdemServico.Reprovada, 'user-id');
-      expect(repository.reprovarOrcamento).toHaveBeenCalled();
+      expect(reprovar.execute).toHaveBeenCalled();
     });
 
     it('routes em execucao to iniciarExecucao', async () => {
-      repository.iniciarExecucao.mockResolvedValue(osOutput);
+      iniciar.execute.mockResolvedValue(osOutput);
       await useCase.execute('os-id', StatusOrdemServico.EmExecucao, 'user-id');
-      expect(repository.iniciarExecucao).toHaveBeenCalled();
+      expect(iniciar.execute).toHaveBeenCalled();
     });
 
     it('falls back to transicionar', async () => {
-      repository.transicionar.mockResolvedValue(osOutput);
+      transicionar.execute.mockResolvedValue(osOutput);
       await useCase.execute('os-id', StatusOrdemServico.Finalizada, 'user-id');
-      expect(repository.transicionar).toHaveBeenCalledWith(
+      expect(transicionar.execute).toHaveBeenCalledWith(
         'os-id',
         StatusOrdemServico.Finalizada,
         'user-id',

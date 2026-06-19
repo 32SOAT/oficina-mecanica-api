@@ -1,26 +1,31 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { UpdateEstoqueUseCase } from './update-estoque.use-case';
 import type { EstoqueRepository } from '../ports/estoque.repository';
-import type { EstoqueOutput } from '../dto/estoque.output';
 import type { UpdateEstoqueInput } from '../dto/update-estoque.input';
+import { Estoque } from '../../domain/estoque';
 
 type EstoqueRepositoryMock = jest.Mocked<
   Pick<EstoqueRepository, 'findById' | 'existsByCodigo' | 'save'>
 >;
 
-const makeEstoqueOutput = (overrides: Partial<EstoqueOutput> = {}): EstoqueOutput => ({
-  id: 1,
-  codigo: 'PCA-001',
-  pecasInsumos: 'Pastilha de freio',
-  quantidadeFisica: 10,
-  quantidadeReservada: 0,
-  quantidadeDisponivel: 10,
-  precoUnitario: 89.9,
-  createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
-  deletedAt: null,
-  ...overrides,
-});
+const makeEstoque = (
+  overrides: Partial<ConstructorParameters<typeof Estoque>[0]> = {},
+): Estoque =>
+  new Estoque({
+    id: 1,
+    codigo: 'PCA-001',
+    pecasInsumos: 'Pastilha de freio',
+    quantidadeFisica: 10,
+    quantidadeReservada: 0,
+    precoUnitario: 89.9,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    deletedAt: null,
+    ...overrides,
+  });
 
 describe('UpdateEstoqueUseCase', () => {
   let useCase: UpdateEstoqueUseCase;
@@ -39,7 +44,7 @@ describe('UpdateEstoqueUseCase', () => {
   });
 
   it('updates cadastro when codigo is unique', async () => {
-    const existing = makeEstoqueOutput({ id: 7, codigo: 'PCA-007' });
+    const existing = makeEstoque({ id: 7, codigo: 'PCA-007' });
     const input: UpdateEstoqueInput = {
       codigo: 'PCA-010',
       precoUnitario: 99.9,
@@ -47,13 +52,7 @@ describe('UpdateEstoqueUseCase', () => {
 
     estoqueRepository.findById.mockResolvedValue(existing);
     estoqueRepository.existsByCodigo.mockResolvedValue(false);
-    estoqueRepository.save.mockImplementation(async (estoque) => ({
-      ...existing,
-      codigo: estoque.codigo,
-      pecasInsumos: estoque.pecasInsumos,
-      precoUnitario: estoque.precoUnitario,
-      updatedAt: estoque.updatedAt,
-    }));
+    estoqueRepository.save.mockImplementation(async (estoque) => estoque);
 
     const result = await useCase.execute(7, input);
 
@@ -63,37 +62,34 @@ describe('UpdateEstoqueUseCase', () => {
   });
 
   it('skips codigo check when codigo is unchanged', async () => {
-    const existing = makeEstoqueOutput({ id: 7 });
+    const existing = makeEstoque({ id: 7 });
     const input: UpdateEstoqueInput = { precoUnitario: 75 };
 
     estoqueRepository.findById.mockResolvedValue(existing);
-    estoqueRepository.save.mockImplementation(async (estoque) => ({
-      ...existing,
-      precoUnitario: estoque.precoUnitario,
-    }));
+    estoqueRepository.save.mockImplementation(async (estoque) => estoque);
 
     await useCase.execute(7, input);
 
     expect(estoqueRepository.existsByCodigo).not.toHaveBeenCalled();
   });
 
-  it('throws ConflictException when codigo is already in use', async () => {
-    const existing = makeEstoqueOutput({ id: 7, codigo: 'PCA-007' });
+  it('throws ConflictError when codigo is already in use', async () => {
+    const existing = makeEstoque({ id: 7, codigo: 'PCA-007' });
 
     estoqueRepository.findById.mockResolvedValue(existing);
     estoqueRepository.existsByCodigo.mockResolvedValue(true);
 
     await expect(
       useCase.execute(7, { codigo: 'PCA-003' }),
-    ).rejects.toBeInstanceOf(ConflictException);
+    ).rejects.toBeInstanceOf(ConflictError);
     expect(estoqueRepository.save).not.toHaveBeenCalled();
   });
 
-  it('throws NotFoundException when item does not exist', async () => {
+  it('throws NotFoundError when item does not exist', async () => {
     estoqueRepository.findById.mockResolvedValue(null);
 
     await expect(
       useCase.execute(99, { codigo: 'PCA-003' }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(NotFoundError);
   });
 });

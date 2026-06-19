@@ -1,4 +1,4 @@
-import { HttpException } from '@nestjs/common';
+import { BadRequestError } from '../../../common/application/errors/application.errors';
 import { VeiculoController } from './veiculo.controller';
 import { CreateVeiculoUseCase } from '../../application/use-cases/create-veiculo.use-case';
 import { FindAllVeiculosUseCase } from '../../application/use-cases/find-all-veiculos.use-case';
@@ -6,18 +6,17 @@ import { FindVeiculoByPlacaUseCase } from '../../application/use-cases/find-veic
 import { UpdateVeiculoUseCase } from '../../application/use-cases/update-veiculo.use-case';
 import { RemoveVeiculoUseCase } from '../../application/use-cases/remove-veiculo.use-case';
 import { VeiculoPresentationMapper } from '../mappers/veiculo-presentation.mapper';
+import { Veiculo } from '../../domain/veiculo';
 
-const output = {
-  id: 'veiculo-id',
-  placa: 'ABC1234',
-  marca: 'Toyota',
-  modelo: 'Corolla',
-  ano: 2020,
-  cliente_id: 'cliente-id',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  deletedAt: null,
-};
+const makeVeiculo = () =>
+  Veiculo.create({
+    id: 'veiculo-id',
+    placa: 'ABC1234',
+    marca: 'Toyota',
+    modelo: 'Corolla',
+    ano: 2020,
+    clienteId: 'cliente-id',
+  });
 
 describe('VeiculoController', () => {
   let controller: VeiculoController;
@@ -38,7 +37,8 @@ describe('VeiculoController', () => {
   });
 
   it('creates a vehicle', async () => {
-    createVeiculoUseCase.execute.mockResolvedValue(output);
+    const veiculo = makeVeiculo();
+    createVeiculoUseCase.execute.mockResolvedValue(veiculo);
     const dto = {
       placa: 'ABC1234',
       marca: 'Toyota',
@@ -47,14 +47,14 @@ describe('VeiculoController', () => {
       documentoCliente: '39053344705',
     };
     const result = await controller.create(dto);
-    expect(result.id).toBe(output.id);
+    expect(result.id).toBe(veiculo.id);
     expect(createVeiculoUseCase.execute).toHaveBeenCalledWith(
       VeiculoPresentationMapper.toCreateInput(dto),
     );
   });
 
-  it('propagates create errors', async () => {
-    const error = new HttpException('Invalid', 400);
+  it('propagates create BadRequestError from use case', async () => {
+    const error = new BadRequestError('Invalid');
     createVeiculoUseCase.execute.mockRejectedValue(error);
     await expect(
       controller.create({
@@ -68,9 +68,10 @@ describe('VeiculoController', () => {
   });
 
   it('lists vehicles', async () => {
+    const veiculo = makeVeiculo();
     const paginationDto = { page: 1, take: 10 };
     findAllVeiculosUseCase.execute.mockResolvedValue({
-      data: [output],
+      data: [veiculo],
       meta: { currentPage: 1 },
     });
     const result = await controller.findAll(paginationDto);
@@ -81,30 +82,33 @@ describe('VeiculoController', () => {
   });
 
   it('finds by placa', async () => {
-    findVeiculoByPlacaUseCase.execute.mockResolvedValue(output);
+    const veiculo = makeVeiculo();
+    findVeiculoByPlacaUseCase.execute.mockResolvedValue(veiculo);
     const result = await controller.findByPlaca('ABC1234');
     expect(result.success).toBe(true);
-    expect(result.data.id).toBe(output.id);
+    expect(result.data.id).toBe(veiculo.id);
   });
 
   it('updates a vehicle', async () => {
+    const veiculo = makeVeiculo();
     const updateDto = { marca: 'Honda' };
-    updateVeiculoUseCase.execute.mockResolvedValue(output);
+    updateVeiculoUseCase.execute.mockResolvedValue(veiculo);
     await expect(
-      controller.update(output.id, updateDto),
+      controller.update(veiculo.id!, updateDto),
     ).resolves.toEqual({
       success: true,
       message: 'Veículo atualizado com sucesso.',
     });
     expect(updateVeiculoUseCase.execute).toHaveBeenCalledWith(
-      output.id,
+      veiculo.id,
       VeiculoPresentationMapper.toUpdateInput(updateDto),
     );
   });
 
   it('removes a vehicle', async () => {
-    removeVeiculoUseCase.execute.mockResolvedValue(output);
-    await expect(controller.remove(output.id)).resolves.toEqual({
+    const veiculo = makeVeiculo();
+    removeVeiculoUseCase.execute.mockResolvedValue(veiculo);
+    await expect(controller.remove(veiculo.id!)).resolves.toEqual({
       success: true,
       message: 'Veículo removido com sucesso.',
     });

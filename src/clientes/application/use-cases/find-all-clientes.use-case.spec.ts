@@ -3,7 +3,6 @@ import { DEFAULT_PAGE_SIZE } from '../constants';
 import type { ClienteRepository } from '../ports/cliente.repository';
 import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
-import { ClienteOutputMapper } from '../dto/cliente.output';
 
 type ClienteRepositoryMock = jest.Mocked<Pick<ClienteRepository, 'findAll'>>;
 
@@ -29,7 +28,7 @@ describe('FindAllClientesUseCase', () => {
       email: 'jane@example.com',
       celularNumero: '11999999999',
     });
-    const output = ClienteOutputMapper.fromDomain(cliente);
+    const output = cliente;
 
     clienteRepository.findAll.mockResolvedValue([[cliente], 1]);
 
@@ -65,7 +64,7 @@ describe('FindAllClientesUseCase', () => {
     const result = await useCase.execute({ page: 3, take: 10 });
 
     expect(clienteRepository.findAll).toHaveBeenCalledWith(20, 10);
-    expect(result.data[0]).toEqual(ClienteOutputMapper.fromDomain(cliente));
+    expect(result.data[0]).toEqual(cliente);
     expect(result.meta?.currentPage).toBe(3);
   });
 

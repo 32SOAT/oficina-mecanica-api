@@ -27,4 +27,17 @@ describe('User', () => {
     expect(updated.username).toBe('jane');
     expect(updated.password).toBe('secret');
   });
+
+  it('updates username preserving demais campos', () => {
+    const user = new User({
+      id: 'user-id',
+      username: 'jane',
+      email: 'jane@example.com',
+    });
+
+    const updated = user.update({ username: 'janet' });
+
+    expect(updated.username).toBe('janet');
+    expect(updated.email).toBe('jane@example.com');
+  });
 });

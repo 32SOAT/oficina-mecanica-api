@@ -1,11 +1,9 @@
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  BadRequestException,
-  ConflictException,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+} from '../../../common/application/errors/application.errors';
 import { CreateClienteInput } from '../dto/create-cliente.input';
-import { ClienteOutput, ClienteOutputMapper } from '../dto/cliente.output';
 import { Cliente } from '../../domain/cliente';
 import {
   ClienteDocumento,
@@ -23,7 +21,7 @@ export class CreateClienteUseCase {
     private readonly clienteRepository: ClienteRepository,
   ) {}
 
-  async execute(input: CreateClienteInput): Promise<ClienteOutput> {
+  async execute(input: CreateClienteInput): Promise<Cliente> {
     const documento = this.buildDocumento(input.documento);
 
     const exists = await this.clienteRepository.existsByDocumento(
@@ -31,7 +29,7 @@ export class CreateClienteUseCase {
     );
 
     if (exists) {
-      throw new ConflictException('CPF/CNPJ vinculado a outro cliente.');
+      throw new ConflictError('CPF/CNPJ vinculado a outro cliente.');
     }
 
     const cliente = Cliente.create({
@@ -41,8 +39,7 @@ export class CreateClienteUseCase {
       celularNumero: input.celularNumero,
     });
 
-    const saved = await this.clienteRepository.save(cliente);
-    return ClienteOutputMapper.fromDomain(saved);
+    return this.clienteRepository.save(cliente);
   }
 
   private buildDocumento(documento: string): ClienteDocumento {
@@ -50,7 +47,7 @@ export class CreateClienteUseCase {
       return ClienteDocumento.create(documento);
     } catch (error) {
       if (error instanceof InvalidClienteDocumentoError) {
-        throw new BadRequestException(error.message);
+        throw new BadRequestError(error.message);
       }
       throw error;
     }

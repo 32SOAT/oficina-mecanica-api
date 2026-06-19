@@ -75,6 +75,18 @@ export class ServicoTypeormEntity {
     entity.deletedAt = servico.deletedAt;
     return entity;
   }
+
+  toDomain(): Servico {
+    return Servico.create({
+      id: this.id,
+      nome: this.servico,
+      descricao: this.descricao,
+      precoMaoDeObra: Number(this.precoMaoDeObra),
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      deletedAt: this.deletedAt,
+    });
+  }
 }
 
 /** @deprecated Use ServicoTypeormEntity */

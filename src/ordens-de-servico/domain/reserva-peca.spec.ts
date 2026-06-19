@@ -1,4 +1,4 @@
-import { EstoqueOperacaoInvalidaError } from '../../estoque/domain/errors/estoque-operacao-invalida.error';
+import { ReservaPecaInvalidaError } from './errors/reserva-peca-invalida.error';
 import {
   calcularReservaComprometida,
   quantidadeComprometidaParaEstorno,
@@ -22,7 +22,7 @@ describe('reserva-peca', () => {
 
   it('rejects non-positive quantity', () => {
     expect(() => calcularReservaComprometida(10, 0)).toThrow(
-      EstoqueOperacaoInvalidaError,
+      ReservaPecaInvalidaError,
     );
   });
 

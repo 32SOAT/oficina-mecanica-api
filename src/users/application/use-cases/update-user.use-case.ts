@@ -1,20 +1,23 @@
-import { Inject, NotFoundException } from '@nestjs/common';
-import { UpdateUserInput, UserOutput } from '../dto/user.dto';
-import { UserOutputMapper } from '../mappers/user-output.mapper';
+import { Injectable, Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
+import { UpdateUserInput } from '../dto/user.dto';
+import { User } from '../../domain/user';
 import { USER_REPOSITORY, UserRepository } from '../ports/user.repository';
 
+@Injectable()
 export class UpdateUserUseCase {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepository,
   ) {}
 
-  async execute(id: string, input: UpdateUserInput): Promise<UserOutput> {
+  async execute(id: string, input: UpdateUserInput): Promise<User> {
     const existing = await this.userRepository.findById(id);
     if (!existing) {
-      throw new NotFoundException('Usuário não encontrado.');
+      throw new NotFoundError('Usuário não encontrado.');
     }
-    const user = UserOutputMapper.toDomain(existing).update(input);
+
+    const user = existing.update(input);
     return this.userRepository.save(user);
   }
 }

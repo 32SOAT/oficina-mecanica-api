@@ -1,28 +1,30 @@
-import { Inject, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { UnauthorizedError } from '../../../common/application/errors/application.errors';
 import { ChangePasswordInput } from '../dto/auth.dto';
 import {
-  AUTH_USER_REPOSITORY,
-  AuthUserRepository,
-} from '../ports/auth-user.repository';
+  USER_CREDENTIAL_PORT,
+  UserCredentialPort,
+} from '../../../users/application/ports/user-credential.port';
 import {
   PASSWORD_HASHER,
   PasswordHasher,
 } from '../ports/password-hasher.port';
 
+@Injectable()
 export class ChangePasswordUseCase {
   constructor(
-    @Inject(AUTH_USER_REPOSITORY)
-    private readonly authUserRepository: AuthUserRepository,
+    @Inject(USER_CREDENTIAL_PORT)
+    private readonly userCredentialPort: UserCredentialPort,
     @Inject(PASSWORD_HASHER)
     private readonly passwordHasher: PasswordHasher,
   ) {}
 
   async execute(input: ChangePasswordInput): Promise<void> {
-    const user = await this.authUserRepository.findByIdWithPassword(
+    const user = await this.userCredentialPort.findByIdWithPassword(
       input.userId,
     );
     if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado.');
+      throw new UnauthorizedError('Usuário não encontrado.');
     }
 
     const isValid = await this.passwordHasher.compare(
@@ -30,10 +32,10 @@ export class ChangePasswordUseCase {
       user.passwordHash,
     );
     if (!isValid) {
-      throw new UnauthorizedException('Senha atual incorreta.');
+      throw new UnauthorizedError('Senha atual incorreta.');
     }
 
     const passwordHash = await this.passwordHasher.hash(input.newPassword);
-    await this.authUserRepository.updatePassword(input.userId, passwordHash);
+    await this.userCredentialPort.updatePassword(input.userId, passwordHash);
   }
 }

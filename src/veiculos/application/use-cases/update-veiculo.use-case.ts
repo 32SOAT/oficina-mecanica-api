@@ -1,16 +1,16 @@
-import { HttpException, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
 import { UpdateVeiculoInput } from '../dto/update-veiculo.input';
-import { VeiculoOutput } from '../dto/veiculo.output';
-import { Veiculo } from '../../domain/veiculo';
-import {
+import { Veiculo } from '../../domain/veiculo';import {
   CLIENTE_LOOKUP_PORT,
   ClienteLookupPort,
-} from '../ports/cliente-lookup.port';
+} from '../../../clientes/application/ports/cliente-lookup.port';
 import {
   VEICULO_REPOSITORY,
   VeiculoRepository,
 } from '../ports/veiculo.repository';
 
+@Injectable()
 export class UpdateVeiculoUseCase {
   constructor(
     @Inject(VEICULO_REPOSITORY)
@@ -22,32 +22,20 @@ export class UpdateVeiculoUseCase {
   async execute(
     id: string,
     input: UpdateVeiculoInput,
-  ): Promise<VeiculoOutput> {
+  ): Promise<Veiculo> {
     const existing = await this.veiculoRepository.findById(id);
     if (!existing) {
-      throw new HttpException('Veiculo não encontrado.', 404);
+      throw new NotFoundError('Veiculo não encontrado.');
     }
 
-    let clienteId = existing.cliente_id;
+    let clienteId = existing.clienteId;
     if (input.documentoCliente !== undefined) {
       clienteId = await this.clienteLookup.resolveClienteIdByDocumento(
         input.documentoCliente,
       );
     }
 
-    const veiculo = Veiculo.create({
-      id: existing.id,
-      placa: existing.placa,
-      marca: existing.marca,
-      modelo: existing.modelo,
-      ano: existing.ano,
-      clienteId: existing.cliente_id,
-      createdAt: existing.createdAt,
-      updatedAt: existing.updatedAt,
-      deletedAt: existing.deletedAt,
-    });
-
-    const updated = veiculo.update({
+    const updated = existing.update({
       marca: input.marca,
       modelo: input.modelo,
       ano: input.ano,

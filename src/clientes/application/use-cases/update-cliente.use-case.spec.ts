@@ -1,8 +1,8 @@
 import {
-  ConflictException,
-  BadRequestException,
-  HttpException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 
 import { UpdateClienteUseCase } from './update-cliente.use-case';
 import type { ClienteRepository } from '../ports/cliente.repository';
@@ -61,7 +61,7 @@ describe('UpdateClienteUseCase', () => {
     const result = await useCase.execute(existingCliente.id!, input);
 
     expect(result.nome).toBe(input.nome);
-    expect(result.documento).toBe(input.documento);
+    expect(result.documento.toString()).toBe(input.documento);
     expect(clienteRepository.existsByDocumento).toHaveBeenCalledWith(
       input.documento,
       existingCliente.id!,
@@ -89,18 +89,18 @@ describe('UpdateClienteUseCase', () => {
     expect(clienteRepository.existsByDocumento).not.toHaveBeenCalled();
   });
 
-  it('throws http exception when client is not found', async () => {
+  it('throws NotFoundError when client is not found', async () => {
     clienteRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('missing-id', {})).rejects.toBeInstanceOf(
-      HttpException,
+      NotFoundError,
     );
 
     expect(clienteRepository.existsByDocumento).not.toHaveBeenCalled();
     expect(clienteRepository.save).not.toHaveBeenCalled();
   });
 
-  it('throws conflict when documento is used by another client', async () => {
+  it('throws ConflictError when documento is used by another client', async () => {
     const existingCliente = makeCliente();
 
     clienteRepository.findById.mockResolvedValue(existingCliente);
@@ -110,12 +110,12 @@ describe('UpdateClienteUseCase', () => {
       useCase.execute(existingCliente.id!, {
         documento: '04252011000110', // ✔ válido CNPJ
       }),
-    ).rejects.toBeInstanceOf(ConflictException);
+    ).rejects.toBeInstanceOf(ConflictError);
 
     expect(clienteRepository.save).not.toHaveBeenCalled();
   });
 
-  it('throws bad request when documento is invalid', async () => {
+  it('throws BadRequestError when documento is invalid', async () => {
     const existingCliente = makeCliente();
 
     clienteRepository.findById.mockResolvedValue(existingCliente);
@@ -124,7 +124,7 @@ describe('UpdateClienteUseCase', () => {
       useCase.execute(existingCliente.id!, {
         documento: '11111111111',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(BadRequestError);
 
     expect(clienteRepository.existsByDocumento).not.toHaveBeenCalled();
     expect(clienteRepository.save).not.toHaveBeenCalled();

@@ -52,7 +52,7 @@ export class UserController {
     const output = await this.createUserUseCase.execute(
       UserPresentationMapper.toCreateInput(dto),
     );
-    return UserResponseDto.fromOutput(output);
+    return UserResponseDto.fromDomain(output);
   }
 
   @Get()
@@ -63,7 +63,7 @@ export class UserController {
       UserPresentationMapper.toFindAllInput(paginationDto),
     );
     return {
-      data: result.data.map(UserResponseDto.fromOutput),
+      data: result.data.map(UserResponseDto.fromDomain),
       meta: result.meta,
     };
   }
@@ -77,7 +77,7 @@ export class UserController {
     const data = await this.findUserByIdUseCase.execute(id);
     return {
       success: true,
-      data: UserResponseDto.fromOutput(data),
+      data: UserResponseDto.fromDomain(data),
       message: 'Usuário obtido com sucesso.',
     };
   }

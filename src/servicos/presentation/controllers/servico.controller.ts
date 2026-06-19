@@ -58,7 +58,7 @@ export class ServicoController {
     const output = await this.createServicoUseCase.execute(
       ServicoPresentationMapper.toCreateInput(dto),
     );
-    return ServicoResponseDto.fromOutput(output);
+    return ServicoResponseDto.fromDomain(output);
   }
 
   @Get()
@@ -72,7 +72,7 @@ export class ServicoController {
       ServicoPresentationMapper.toFindAllInput(paginationDto),
     );
     return {
-      data: result.data.map(ServicoResponseDto.fromOutput),
+      data: result.data.map(ServicoResponseDto.fromDomain),
       meta: result.meta,
     };
   }
@@ -94,7 +94,7 @@ export class ServicoController {
     const data = await this.findServicoByIdUseCase.execute(id);
     return {
       success: true,
-      data: ServicoResponseDto.fromOutput(data),
+      data: ServicoResponseDto.fromDomain(data),
       message: 'Serviço encontrado com sucesso.',
     };
   }

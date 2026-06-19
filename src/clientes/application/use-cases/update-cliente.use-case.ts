@@ -1,12 +1,11 @@
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  ConflictException,
-  HttpException,
-  BadRequestException,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { UpdateClienteInput } from '../dto/update-cliente.input';
-import { ClienteOutput, ClienteOutputMapper } from '../dto/cliente.output';
+import { Cliente } from '../../domain/cliente';
 import {
   ClienteDocumento,
   InvalidClienteDocumentoError,
@@ -26,10 +25,10 @@ export class UpdateClienteUseCase {
   async execute(
     id: string,
     input: UpdateClienteInput,
-  ): Promise<ClienteOutput> {
+  ): Promise<Cliente> {
     const existingCliente = await this.clienteRepository.findById(id);
     if (!existingCliente) {
-      throw new HttpException('Cliente não encontrado.', 404);
+      throw new NotFoundError('Cliente não encontrado.');
     }
 
     let documento = existingCliente.documento;
@@ -40,7 +39,7 @@ export class UpdateClienteUseCase {
         id,
       );
       if (duplicate) {
-        throw new ConflictException('CPF/CNPJ vinculado a outro cliente.');
+        throw new ConflictError('CPF/CNPJ vinculado a outro cliente.');
       }
     }
 
@@ -51,8 +50,7 @@ export class UpdateClienteUseCase {
       documento: documento.toString(),
     });
 
-    const saved = await this.clienteRepository.save(updatedCliente);
-    return ClienteOutputMapper.fromDomain(saved);
+    return this.clienteRepository.save(updatedCliente);
   }
 
   private buildDocumento(documento: string): ClienteDocumento {
@@ -60,7 +58,7 @@ export class UpdateClienteUseCase {
       return ClienteDocumento.create(documento);
     } catch (error) {
       if (error instanceof InvalidClienteDocumentoError) {
-        throw new BadRequestException(error.message);
+        throw new BadRequestError(error.message);
       }
       throw error;
     }

@@ -1,10 +1,12 @@
-import { BadRequestException, HttpException } from '@nestjs/common';
+import {
+  BadRequestError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 
 import { FindClienteByDocumentoUseCase } from './find-cliente-by-documento.use-case';
 import type { ClienteRepository } from '../ports/cliente.repository';
 import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
-import { ClienteOutputMapper } from '../dto/cliente.output';
 
 type ClienteRepositoryMock = jest.Mocked<
   Pick<ClienteRepository, 'findByDocumento'>
@@ -45,24 +47,24 @@ describe('FindClienteByDocumentoUseCase', () => {
 
     expect(clienteRepository.findByDocumento).toHaveBeenCalledWith(documento);
 
-    expect(result).toEqual(ClienteOutputMapper.fromDomain(cliente));
+    expect(result).toEqual(cliente);
   });
 
-  it('should throw HttpException when cliente is not found', async () => {
+  it('should throw NotFoundError when cliente is not found', async () => {
     clienteRepository.findByDocumento.mockResolvedValue(null);
 
     await expect(useCase.execute('39053344705')).rejects.toBeInstanceOf(
-      HttpException,
+      NotFoundError,
     );
 
     expect(clienteRepository.findByDocumento).toHaveBeenCalled();
   });
 
-  it('should throw BadRequestException when documento is invalid', async () => {
+  it('should throw BadRequestError when documento is invalid', async () => {
     const invalidDocumento = '11111111111';
 
     await expect(useCase.execute(invalidDocumento)).rejects.toBeInstanceOf(
-      BadRequestException,
+      BadRequestError,
     );
 
     expect(clienteRepository.findByDocumento).not.toHaveBeenCalled();
@@ -72,7 +74,7 @@ describe('FindClienteByDocumentoUseCase', () => {
     const malformed = 'abc';
 
     await expect(useCase.execute(malformed)).rejects.toBeInstanceOf(
-      BadRequestException,
+      BadRequestError,
     );
 
     expect(clienteRepository.findByDocumento).not.toHaveBeenCalled();

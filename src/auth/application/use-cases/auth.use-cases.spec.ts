@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedError } from '../../../common/application/errors/application.errors';
 import { ValidateCredentialsUseCase } from './validate-credentials.use-case';
 import { ChangePasswordUseCase } from './change-password.use-case';
 import { IssueAuthTokenUseCase } from './issue-auth-token.use-case';
@@ -134,7 +134,7 @@ describe('ChangePasswordUseCase', () => {
     );
   });
 
-  it('throws UnauthorizedException when user is not found', async () => {
+  it('throws UnauthorizedError when user is not found', async () => {
     authUserRepository.findByIdWithPassword.mockResolvedValue(null);
 
     await expect(
@@ -143,10 +143,10 @@ describe('ChangePasswordUseCase', () => {
         currentPassword: 'admin123',
         newPassword: 'newPassword',
       }),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toBeInstanceOf(UnauthorizedError);
   });
 
-  it('throws UnauthorizedException when current password is incorrect', async () => {
+  it('throws UnauthorizedError when current password is incorrect', async () => {
     authUserRepository.findByIdWithPassword.mockResolvedValue(mockUser);
     passwordHasher.compare.mockResolvedValue(false);
 
@@ -156,6 +156,6 @@ describe('ChangePasswordUseCase', () => {
         currentPassword: 'wrong-password',
         newPassword: 'newPassword',
       }),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toBeInstanceOf(UnauthorizedError);
   });
 });

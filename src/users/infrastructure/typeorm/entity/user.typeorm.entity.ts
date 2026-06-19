@@ -36,6 +36,14 @@ export class UserTypeormEntity {
     }
     return entity;
   }
+
+  toDomain(): User {
+    return new User({
+      id: this.id,
+      username: this.username,
+      email: this.email,
+    });
+  }
 }
 
 /** @deprecated Use UserTypeormEntity */

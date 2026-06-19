@@ -1,4 +1,8 @@
-import { ConflictException } from '@nestjs/common';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { CreateEstoqueUseCase } from './create-estoque.use-case';
 import { FindAllEstoquesUseCase } from './find-all-estoques.use-case';
 import { FindEstoqueByIdUseCase } from './find-estoque-by-id.use-case';
@@ -8,20 +12,23 @@ import type { EstoqueRepository } from '../ports/estoque.repository';
 import type { OrdemServicoReposicaoPort } from '../ports/ordem-servico-reposicao.port';
 import { DEFAULT_PAGE_SIZE } from '../constants';
 import { TipoOperacaoEstoque } from '../dto/tipo-operacao-estoque';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Estoque } from '../../domain/estoque';
 
-const output = {
-  id: 1,
-  codigo: 'PCA-001',
-  pecasInsumos: 'Pastilha',
-  quantidadeFisica: 10,
-  quantidadeReservada: 0,
-  quantidadeDisponivel: 10,
-  precoUnitario: 89.9,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  deletedAt: null,
-};
+const makeEstoque = (
+  overrides: Partial<ConstructorParameters<typeof Estoque>[0]> = {},
+): Estoque =>
+  new Estoque({
+    id: 1,
+    codigo: 'PCA-001',
+    pecasInsumos: 'Pastilha',
+    quantidadeFisica: 10,
+    quantidadeReservada: 0,
+    precoUnitario: 89.9,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    ...overrides,
+  });
 
 describe('Estoque use cases', () => {
   describe('CreateEstoqueUseCase', () => {
@@ -38,8 +45,9 @@ describe('Estoque use cases', () => {
     );
 
     it('creates estoque when codigo is unique', async () => {
+      const saved = makeEstoque();
       estoqueRepository.existsByCodigo.mockResolvedValue(false);
-      estoqueRepository.save.mockResolvedValue(output);
+      estoqueRepository.save.mockResolvedValue(saved);
       ordemServicoReposicaoPort.tentarLiberarOsAposReposicao.mockResolvedValue(
         undefined,
       );
@@ -51,10 +59,10 @@ describe('Estoque use cases', () => {
         precoUnitario: 89.9,
       });
 
-      expect(result).toEqual(output);
+      expect(result).toEqual(saved);
       expect(
         ordemServicoReposicaoPort.tentarLiberarOsAposReposicao,
-      ).toHaveBeenCalledWith([output.id], null);
+      ).toHaveBeenCalledWith([saved.id], null);
     });
 
     it('throws when codigo exists', async () => {
@@ -66,7 +74,7 @@ describe('Estoque use cases', () => {
           quantidadeFisica: 10,
           precoUnitario: 89.9,
         }),
-      ).rejects.toBeInstanceOf(ConflictException);
+      ).rejects.toBeInstanceOf(ConflictError);
     });
   });
 
@@ -77,7 +85,8 @@ describe('Estoque use cases', () => {
     );
 
     it('returns paginated estoque', async () => {
-      estoqueRepository.findAll.mockResolvedValue([[output], 1]);
+      const item = makeEstoque();
+      estoqueRepository.findAll.mockResolvedValue([[item], 1]);
       const result = await useCase.execute({ page: 1, take: 10 });
       expect(estoqueRepository.findAll).toHaveBeenCalledWith(0, 10, undefined);
       expect(result.data).toHaveLength(1);
@@ -101,14 +110,15 @@ describe('Estoque use cases', () => {
     );
 
     it('returns item when found', async () => {
-      estoqueRepository.findById.mockResolvedValue(output);
-      await expect(useCase.execute(1)).resolves.toEqual(output);
+      const item = makeEstoque();
+      estoqueRepository.findById.mockResolvedValue(item);
+      await expect(useCase.execute(1)).resolves.toEqual(item);
     });
 
     it('throws when not found', async () => {
       estoqueRepository.findById.mockResolvedValue(null);
       await expect(useCase.execute(99)).rejects.toBeInstanceOf(
-        NotFoundException,
+        NotFoundError,
       );
     });
   });
@@ -125,7 +135,7 @@ describe('Estoque use cases', () => {
           operacao: TipoOperacaoEstoque.REPOSICAO,
           quantidade: 1,
         }),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      ).rejects.toBeInstanceOf(BadRequestError);
     });
 
     it('throws when item not found', async () => {
@@ -135,15 +145,13 @@ describe('Estoque use cases', () => {
           operacao: TipoOperacaoEstoque.RESERVAR,
           quantidade: 1,
         }),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
 
     it('reserves stock', async () => {
-      estoqueRepository.findById.mockResolvedValue(output);
-      estoqueRepository.save.mockImplementation(async (item) => ({
-        ...output,
-        quantidadeReservada: item.quantidadeReservada,
-      }));
+      const existing = makeEstoque();
+      estoqueRepository.findById.mockResolvedValue(existing);
+      estoqueRepository.save.mockImplementation(async (item) => item);
 
       const result = await useCase.execute(1, {
         operacao: TipoOperacaoEstoque.RESERVAR,
@@ -154,11 +162,9 @@ describe('Estoque use cases', () => {
     });
 
     it('performs baixa operation', async () => {
-      estoqueRepository.findById.mockResolvedValue(output);
-      estoqueRepository.save.mockImplementation(async (item) => ({
-        ...output,
-        quantidadeFisica: item.quantidadeFisica,
-      }));
+      const existing = makeEstoque();
+      estoqueRepository.findById.mockResolvedValue(existing);
+      estoqueRepository.save.mockImplementation(async (item) => item);
 
       const result = await useCase.execute(1, {
         operacao: TipoOperacaoEstoque.BAIXA,
@@ -169,29 +175,29 @@ describe('Estoque use cases', () => {
     });
 
     it('rejects invalid operation', async () => {
-      estoqueRepository.findById.mockResolvedValue(output);
+      estoqueRepository.findById.mockResolvedValue(makeEstoque());
       await expect(
         useCase.execute(1, {
           operacao: 'invalid' as TipoOperacaoEstoque,
           quantidade: 1,
         }),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      ).rejects.toBeInstanceOf(BadRequestError);
     });
 
     it('maps domain errors to bad request', async () => {
-      estoqueRepository.findById.mockResolvedValue({
-        ...output,
-        quantidadeFisica: 1,
-        quantidadeReservada: 1,
-        quantidadeDisponivel: 0,
-      });
+      estoqueRepository.findById.mockResolvedValue(
+        makeEstoque({
+          quantidadeFisica: 1,
+          quantidadeReservada: 1,
+        }),
+      );
 
       await expect(
         useCase.execute(1, {
           operacao: TipoOperacaoEstoque.RESERVAR,
           quantidade: 5,
         }),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      ).rejects.toBeInstanceOf(BadRequestError);
     });
   });
 
@@ -209,15 +215,14 @@ describe('Estoque use cases', () => {
       estoqueRepository.findById.mockResolvedValue(null);
       await expect(
         useCase.execute(99, { quantidade: 5, usuarioId: 'user-id' }),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
 
     it('registers reposicao', async () => {
-      estoqueRepository.findById.mockResolvedValue(output);
-      estoqueRepository.save.mockResolvedValue({
-        ...output,
-        quantidadeFisica: 15,
-      });
+      const existing = makeEstoque();
+      const updated = makeEstoque({ quantidadeFisica: 15 });
+      estoqueRepository.findById.mockResolvedValue(existing);
+      estoqueRepository.save.mockResolvedValue(updated);
       ordemServicoReposicaoPort.tentarLiberarOsAposReposicao.mockResolvedValue(
         undefined,
       );
@@ -231,6 +236,19 @@ describe('Estoque use cases', () => {
       expect(
         ordemServicoReposicaoPort.tentarLiberarOsAposReposicao,
       ).toHaveBeenCalledWith([1], 'user-id');
+    });
+
+    it('registers reposicao with null usuarioId', async () => {
+      const existing = makeEstoque();
+      const updated = makeEstoque({ quantidadeFisica: 15 });
+      estoqueRepository.findById.mockResolvedValue(existing);
+      estoqueRepository.save.mockResolvedValue(updated);
+
+      await useCase.execute(1, { quantidade: 5, usuarioId: undefined });
+
+      expect(
+        ordemServicoReposicaoPort.tentarLiberarOsAposReposicao,
+      ).toHaveBeenCalledWith([1], null);
     });
   });
 });

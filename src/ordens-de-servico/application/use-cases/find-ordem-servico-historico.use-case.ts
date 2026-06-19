@@ -1,17 +1,18 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { HistoricoStatusOutput } from '../dto/ordem-servico.dto';
 import {
-  ORDEM_SERVICO_REPOSITORY,
-  OrdemServicoRepository,
-} from '../ports/ordem-servico.repository';
+  ORDEM_SERVICO_QUERY_PORT,
+  OrdemServicoQueryPort,
+} from '../ports/ordem-servico-query.port';
 
+@Injectable()
 export class FindOrdemServicoHistoricoUseCase {
   constructor(
-    @Inject(ORDEM_SERVICO_REPOSITORY)
-    private readonly repository: OrdemServicoRepository,
+    @Inject(ORDEM_SERVICO_QUERY_PORT)
+    private readonly query: OrdemServicoQueryPort,
   ) {}
 
   execute(id: string): Promise<HistoricoStatusOutput[]> {
-    return this.repository.findHistorico(id);
+    return this.query.findHistorico(id);
   }
 }

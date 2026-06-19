@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
 import { DEFAULT_PAGE_SIZE } from '../constants';
 import { FindAllUsersUseCase } from './find-all-users.use-case';
 import { FindUserByIdUseCase } from './find-user-by-id.use-case';
@@ -55,12 +55,12 @@ describe('FindAllUsersUseCase', () => {
 describe('FindUserByIdUseCase', () => {
   const userRepository = { findById: jest.fn() };
 
-  it('throws 404 when a user is not found', async () => {
+  it('throws NotFoundError when a user is not found', async () => {
     const useCase = new FindUserByIdUseCase(userRepository as never);
     userRepository.findById.mockResolvedValue(null);
 
     await expect(useCase.execute('missing-user-id')).rejects.toBeInstanceOf(
-      NotFoundException,
+      NotFoundError,
     );
   });
 });

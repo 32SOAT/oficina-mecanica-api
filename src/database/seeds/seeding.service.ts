@@ -1,14 +1,13 @@
 import { Faker, pt_BR } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
+import { hashPassword } from '../../common/security/password-hash';
 import { fake as fakeCpf } from 'validation-br/dist/cpf';
 import { ClienteEntity } from '../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
 import { ServicoEntity } from '../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
 import { EstoqueEntity } from '../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
 import { UserEntity } from '../../users/infrastructure/typeorm/entity/user.typeorm.entity';
 import {
-  BCRYPT_ROUNDS,
   CLIENTES_TO_SEED,
   ESTOQUE_TO_SEED,
   MONTADORAS,
@@ -44,10 +43,7 @@ export class SeedingService {
 
     const userRepository: Repository<UserEntity> =
       this.dataSource.getRepository(UserEntity);
-    const passwordHash = await bcrypt.hash(
-      SEEDED_USER_PLAIN_PASSWORD,
-      BCRYPT_ROUNDS,
-    );
+    const passwordHash = await hashPassword(SEEDED_USER_PLAIN_PASSWORD);
     const users = Array.from({ length: USUARIOS_TO_SEED }, () =>
       userRepository.create(this.createFakeUser(passwordHash)),
     );

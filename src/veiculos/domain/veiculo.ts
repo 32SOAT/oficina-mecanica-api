@@ -1,3 +1,4 @@
+import { ClienteResumo } from './cliente-resumo';
 import { Placa } from './value-objects/placa';
 
 export type VeiculoProps = {
@@ -6,6 +7,7 @@ export type VeiculoProps = {
   modelo: string;
   ano: number;
   clienteId: string;
+  cliente?: ClienteResumo;
   createdAt?: Date;
   updatedAt?: Date;
   deletedAt?: Date | null;
@@ -18,6 +20,7 @@ export class Veiculo {
   public readonly modelo: string;
   public readonly ano: number;
   public readonly clienteId: string;
+  public readonly cliente?: ClienteResumo;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
   public readonly deletedAt: Date | null;
@@ -29,6 +32,7 @@ export class Veiculo {
     this.modelo = props.modelo;
     this.ano = props.ano;
     this.clienteId = props.clienteId;
+    this.cliente = props.cliente;
     this.createdAt = props.createdAt ?? new Date();
     this.updatedAt = props.updatedAt ?? this.createdAt;
     this.deletedAt = props.deletedAt ?? null;
@@ -62,6 +66,7 @@ export class Veiculo {
       modelo: props.modelo ?? this.modelo,
       ano: props.ano ?? this.ano,
       clienteId: props.clienteId ?? this.clienteId,
+      cliente: this.cliente,
       createdAt: this.createdAt,
       updatedAt: new Date(),
       deletedAt: this.deletedAt,
@@ -79,6 +84,7 @@ export class Veiculo {
       modelo: this.modelo,
       ano: this.ano,
       clienteId: this.clienteId,
+      cliente: this.cliente,
       createdAt: this.createdAt,
       updatedAt: new Date(),
       deletedAt: new Date(),

@@ -3,12 +3,10 @@ import {
   calculateOffset,
   createPaginationMeta,
 } from '../../../common/pagination/pagination.util';
+import { PaginationMeta } from '../../../common/pagination/pagination';
 import { DEFAULT_PAGE_SIZE } from '../constants';
 import { FindAllClientesInput } from '../dto/find-all-clientes.input';
-import {
-  ClienteOutputMapper,
-  FindAllClientesOutput,
-} from '../dto/cliente.output';
+import { Cliente } from '../../domain/cliente';
 import {
   CLIENTE_REPOSITORY,
   ClienteRepository,
@@ -21,14 +19,19 @@ export class FindAllClientesUseCase {
     private readonly clienteRepository: ClienteRepository,
   ) {}
 
-  async execute(input: FindAllClientesInput): Promise<FindAllClientesOutput> {
+  async execute(input: FindAllClientesInput): Promise<FindAllClientesResult> {
     const page = Number(input.page ?? 1);
     const take = Number(input.take ?? DEFAULT_PAGE_SIZE);
     const skip = calculateOffset(take, page);
     const [data, count] = await this.clienteRepository.findAll(skip, take);
     return {
-      data: data.map(ClienteOutputMapper.fromDomain),
+      data,
       meta: createPaginationMeta(take, page, count),
     };
   }
 }
+
+export type FindAllClientesResult = {
+  data: Cliente[];
+  meta: PaginationMeta | undefined;
+};

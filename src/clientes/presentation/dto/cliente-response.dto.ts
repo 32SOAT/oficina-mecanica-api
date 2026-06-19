@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ClienteOutput } from '../../application/dto/cliente.output';
+import { Cliente } from '../../domain/cliente';
 
 export class ClienteResponseDto {
   @ApiProperty({ description: 'ID único do cliente', example: 'uuid-string' })
@@ -47,7 +47,16 @@ export class ClienteResponseDto {
   })
   deletedAt: Date | null;
 
-  static fromOutput(output: ClienteOutput): ClienteResponseDto {
-    return Object.assign(new ClienteResponseDto(), output);
+  static fromDomain(cliente: Cliente): ClienteResponseDto {
+    return Object.assign(new ClienteResponseDto(), {
+      id: cliente.id!,
+      documento: cliente.documento.toString(),
+      nome: cliente.nome,
+      email: cliente.email,
+      celularNumero: cliente.celularNumero,
+      createdAt: cliente.createdAt,
+      updatedAt: cliente.updatedAt,
+      deletedAt: cliente.deletedAt,
+    });
   }
 }

@@ -1,4 +1,3 @@
-import * as bcrypt from 'bcryptjs';
 import { BcryptPasswordHasher } from './bcrypt-password.hasher';
 
 describe('BcryptPasswordHasher', () => {

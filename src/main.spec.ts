@@ -43,6 +43,34 @@ describe('main bootstrap', () => {
     expect(appMock.listen).toHaveBeenCalledWith(3333);
   });
 
+  it('uses default port when config is undefined', async () => {
+    const appMock = {
+      get: jest.fn().mockReturnValue({ get: jest.fn().mockReturnValue(undefined) }),
+      listen: jest.fn().mockResolvedValue(undefined),
+    };
+    const create = jest.fn().mockResolvedValue(appMock);
+
+    jest.doMock('@nestjs/core', () => ({
+      NestFactory: { create },
+    }));
+    jest.doMock('./app.module', () => ({
+      AppModule: class AppModule {},
+    }));
+    jest.doMock('./common/bootstrap/configure-app', () => ({
+      configureApp: jest.fn(),
+    }));
+    jest.doMock('./common/bootstrap/configure-swagger', () => ({
+      configureSwagger: jest.fn(),
+    }));
+
+    jest.isolateModules(() => {
+      jest.requireActual('./main');
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(appMock.listen).toHaveBeenCalledWith(3000);
+  });
+
   it('logs and exits on bootstrap error', async () => {
     const error = new Error('boom');
     const create = jest.fn().mockRejectedValue(error);

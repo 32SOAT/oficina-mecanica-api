@@ -1,6 +1,8 @@
-import { ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestError,
+  ConflictError,
+} from '../../../common/application/errors/application.errors';
 import { CreateClienteInput } from '../dto/create-cliente.input';
-import { ClienteOutputMapper } from '../dto/cliente.output';
 import { Cliente } from '../../domain/cliente';
 import { ClienteDocumento } from '../../domain/cliente-documento';
 import { CreateClienteUseCase } from './create-cliente.use-case';
@@ -46,16 +48,14 @@ describe('CreateClienteUseCase', () => {
     clienteRepository.existsByDocumento.mockResolvedValue(false);
     clienteRepository.save.mockResolvedValue(savedCliente);
 
-    await expect(useCase.execute(input)).resolves.toEqual(
-      ClienteOutputMapper.fromDomain(savedCliente),
-    );
+    await expect(useCase.execute(input)).resolves.toEqual(savedCliente);
     expect(clienteRepository.existsByDocumento).toHaveBeenCalledWith(
       input.documento,
     );
     expect(clienteRepository.save).toHaveBeenCalled();
   });
 
-  it('throws conflict when documento is already in use', async () => {
+  it('throws ConflictError when documento is already in use', async () => {
     const input: CreateClienteInput = {
       documento: '39053344705',
       nome: 'Jane Doe',
@@ -65,13 +65,11 @@ describe('CreateClienteUseCase', () => {
 
     clienteRepository.existsByDocumento.mockResolvedValue(true);
 
-    await expect(useCase.execute(input)).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(useCase.execute(input)).rejects.toBeInstanceOf(ConflictError);
     expect(clienteRepository.save).not.toHaveBeenCalled();
   });
 
-  it('throws bad request when documento is invalid', async () => {
+  it('throws BadRequestError when documento is invalid', async () => {
     const input: CreateClienteInput = {
       documento: '11111111111',
       nome: 'Jane Doe',
@@ -80,7 +78,7 @@ describe('CreateClienteUseCase', () => {
     };
 
     await expect(useCase.execute(input)).rejects.toBeInstanceOf(
-      BadRequestException,
+      BadRequestError,
     );
     expect(clienteRepository.existsByDocumento).not.toHaveBeenCalled();
     expect(clienteRepository.save).not.toHaveBeenCalled();

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { HealthOutput } from '../../application/dto/health.output';
+import type { HealthReadModel } from '../../application/read-models/health-read-model';
 
 export class HealthResponseDto {
   @ApiProperty({ example: 'ok' })
@@ -11,7 +11,7 @@ export class HealthResponseDto {
   })
   timestamp: string;
 
-  static fromOutput(output: HealthOutput): HealthResponseDto {
-    return Object.assign(new HealthResponseDto(), output);
+  static fromReadModel(readModel: HealthReadModel): HealthResponseDto {
+    return Object.assign(new HealthResponseDto(), readModel);
   }
 }

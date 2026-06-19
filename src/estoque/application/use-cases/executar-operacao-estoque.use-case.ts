@@ -1,14 +1,12 @@
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  BadRequestError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { OperacaoEstoqueInput } from '../dto/operacao-estoque.input';
 import { TipoOperacaoEstoque } from '../dto/tipo-operacao-estoque';
-import { EstoqueOutput } from '../dto/estoque.output';
+import { Estoque } from '../../domain/estoque';
 import { EstoqueOperacaoInvalidaError } from '../../domain/errors/estoque-operacao-invalida.error';
-import { EstoqueOutputMapper } from '../mappers/estoque-output.mapper';
 import {
   ESTOQUE_REPOSITORY,
   EstoqueRepository,
@@ -21,22 +19,19 @@ export class ExecutarOperacaoEstoqueUseCase {
     private readonly estoqueRepository: EstoqueRepository,
   ) {}
 
-  async execute(
-    id: number,
-    input: OperacaoEstoqueInput,
-  ): Promise<EstoqueOutput> {
+  async execute(id: number, input: OperacaoEstoqueInput): Promise<Estoque> {
     if (input.operacao === TipoOperacaoEstoque.REPOSICAO) {
-      throw new BadRequestException(
+      throw new BadRequestError(
         'Operação "reposicao" é tratada no controller.',
       );
     }
 
     const existing = await this.estoqueRepository.findById(id);
     if (!existing) {
-      throw new NotFoundException('Item de estoque não encontrado.');
+      throw new NotFoundError('Item de estoque não encontrado.');
     }
 
-    let estoque = EstoqueOutputMapper.toDomain(existing);
+    let estoque = existing;
 
     try {
       if (input.operacao === TipoOperacaoEstoque.RESERVAR) {
@@ -44,11 +39,11 @@ export class ExecutarOperacaoEstoqueUseCase {
       } else if (input.operacao === TipoOperacaoEstoque.BAIXA) {
         estoque = estoque.darBaixaSomenteDisponivel(input.quantidade);
       } else {
-        throw new BadRequestException('Operação de estoque inválida.');
+        throw new BadRequestError('Operação de estoque inválida.');
       }
     } catch (error) {
       if (error instanceof EstoqueOperacaoInvalidaError) {
-        throw new BadRequestException(error.message);
+        throw new BadRequestError(error.message);
       }
       throw error;
     }

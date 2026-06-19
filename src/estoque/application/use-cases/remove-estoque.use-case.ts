@@ -1,12 +1,10 @@
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { EstoqueOutput } from '../dto/estoque.output';
+  BadRequestError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
+import { Estoque } from '../../domain/estoque';
 import { EstoqueOperacaoInvalidaError } from '../../domain/errors/estoque-operacao-invalida.error';
-import { EstoqueOutputMapper } from '../mappers/estoque-output.mapper';
 import {
   ESTOQUE_REPOSITORY,
   EstoqueRepository,
@@ -19,23 +17,21 @@ export class RemoveEstoqueUseCase {
     private readonly estoqueRepository: EstoqueRepository,
   ) {}
 
-  async execute(id: number): Promise<EstoqueOutput> {
+  async execute(id: number): Promise<Estoque> {
     const existing = await this.estoqueRepository.findById(id);
     if (!existing) {
-      throw new NotFoundException('Item de estoque não encontrado.');
+      throw new NotFoundError('Item de estoque não encontrado.');
     }
 
-    const estoque = EstoqueOutputMapper.toDomain(existing);
-
     try {
-      estoque.assertRemovivel();
+      existing.assertRemovivel();
     } catch (error) {
       if (error instanceof EstoqueOperacaoInvalidaError) {
-        throw new BadRequestException(error.message);
+        throw new BadRequestError(error.message);
       }
       throw error;
     }
 
-    return this.estoqueRepository.softRemove(estoque);
+    return this.estoqueRepository.softRemove(existing);
   }
 }

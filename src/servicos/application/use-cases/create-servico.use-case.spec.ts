@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
-  ConflictException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+} from '../../../common/application/errors/application.errors';
 import { CreateServicoUseCase } from './create-servico.use-case';
 import type { ServicoRepository } from '../ports/servico.repository';
 
@@ -44,23 +44,23 @@ describe('CreateServicoUseCase', () => {
     ).resolves.toBe(output);
   });
 
-  it('throws conflict for duplicate nome', async () => {
+  it('throws ConflictError for duplicate nome', async () => {
     servicoRepository.existsByNome.mockResolvedValue(true);
     await expect(
       useCase.execute({
         servico: 'Troca de óleo',
         precoMaoDeObra: 150.5,
       }),
-    ).rejects.toBeInstanceOf(ConflictException);
+    ).rejects.toBeInstanceOf(ConflictError);
   });
 
-  it('throws bad request for negative price', async () => {
+  it('throws BadRequestError for negative price', async () => {
     servicoRepository.existsByNome.mockResolvedValue(false);
     await expect(
       useCase.execute({
         servico: 'Troca de óleo',
         precoMaoDeObra: -50,
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toBeInstanceOf(BadRequestError);
   });
 });

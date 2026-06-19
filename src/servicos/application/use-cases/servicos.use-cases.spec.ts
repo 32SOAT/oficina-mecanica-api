@@ -1,24 +1,26 @@
 import {
-  BadRequestException,
-  ConflictException,
-  HttpException,
-} from '@nestjs/common';
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { FindAllServicosUseCase } from './find-all-servicos.use-case';
 import { FindServicoByIdUseCase } from './find-servico-by-id.use-case';
 import { UpdateServicoUseCase } from './update-servico.use-case';
 import { RemoveServicoUseCase } from './remove-servico.use-case';
 import type { ServicoRepository } from '../ports/servico.repository';
 import { DEFAULT_PAGE_SIZE } from '../constants';
+import { Servico } from '../../domain/servico';
 
-const output = {
-  id: 1,
-  servico: 'Troca de óleo',
-  descricao: 'Completa',
-  precoMaoDeObra: 150,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  deletedAt: null,
-};
+const makeServico = (
+  overrides: Partial<ConstructorParameters<typeof Servico.create>[0]> = {},
+): Servico =>
+  Servico.create({
+    id: 1,
+    nome: 'Troca de óleo',
+    descricao: 'Completa',
+    precoMaoDeObra: 150,
+    ...overrides,
+  });
 
 describe('Servico use cases', () => {
   describe('FindAllServicosUseCase', () => {
@@ -28,7 +30,8 @@ describe('Servico use cases', () => {
     );
 
     it('returns paginated servicos', async () => {
-      servicoRepository.findAll.mockResolvedValue([[output], 1]);
+      const servico = makeServico();
+      servicoRepository.findAll.mockResolvedValue([[servico], 1]);
       const result = await useCase.execute({ page: 1, take: 10 });
       expect(servicoRepository.findAll).toHaveBeenCalledWith(0, 10);
       expect(result.data).toHaveLength(1);
@@ -51,13 +54,14 @@ describe('Servico use cases', () => {
     );
 
     it('returns servico', async () => {
-      servicoRepository.findById.mockResolvedValue(output);
-      await expect(useCase.execute(1)).resolves.toEqual(output);
+      const servico = makeServico();
+      servicoRepository.findById.mockResolvedValue(servico);
+      await expect(useCase.execute(1)).resolves.toEqual(servico);
     });
 
-    it('throws when not found', async () => {
+    it('throws NotFoundError when not found', async () => {
       servicoRepository.findById.mockResolvedValue(null);
-      await expect(useCase.execute(99)).rejects.toBeInstanceOf(HttpException);
+      await expect(useCase.execute(99)).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 
@@ -72,30 +76,29 @@ describe('Servico use cases', () => {
     );
 
     it('updates servico', async () => {
-      servicoRepository.findById.mockResolvedValue(output);
+      const existing = makeServico();
+      const updated = makeServico({ descricao: 'Nova' });
+      servicoRepository.findById.mockResolvedValue(existing);
       servicoRepository.existsByNome.mockResolvedValue(false);
-      servicoRepository.save.mockResolvedValue({
-        ...output,
-        descricao: 'Nova',
-      });
+      servicoRepository.save.mockResolvedValue(updated);
 
       const result = await useCase.execute(1, { descricao: 'Nova' });
       expect(result.descricao).toBe('Nova');
     });
 
-    it('throws conflict for duplicate nome', async () => {
-      servicoRepository.findById.mockResolvedValue(output);
+    it('throws ConflictError for duplicate nome', async () => {
+      servicoRepository.findById.mockResolvedValue(makeServico());
       servicoRepository.existsByNome.mockResolvedValue(true);
       await expect(
         useCase.execute(1, { servico: 'Outro' }),
-      ).rejects.toBeInstanceOf(ConflictException);
+      ).rejects.toBeInstanceOf(ConflictError);
     });
 
-    it('throws bad request for invalid preco', async () => {
-      servicoRepository.findById.mockResolvedValue(output);
+    it('throws BadRequestError for invalid preco', async () => {
+      servicoRepository.findById.mockResolvedValue(makeServico());
       await expect(
         useCase.execute(1, { precoMaoDeObra: -1 }),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      ).rejects.toBeInstanceOf(BadRequestError);
     });
   });
 
@@ -106,18 +109,17 @@ describe('Servico use cases', () => {
     );
 
     it('removes servico', async () => {
-      servicoRepository.findById.mockResolvedValue(output);
-      servicoRepository.softRemove.mockResolvedValue({
-        ...output,
-        deletedAt: new Date(),
-      });
+      const existing = makeServico();
+      const removed = makeServico({ deletedAt: new Date() });
+      servicoRepository.findById.mockResolvedValue(existing);
+      servicoRepository.softRemove.mockResolvedValue(removed);
       const result = await useCase.execute(1);
       expect(result.deletedAt).toBeInstanceOf(Date);
     });
 
-    it('throws when not found', async () => {
+    it('throws NotFoundError when not found', async () => {
       servicoRepository.findById.mockResolvedValue(null);
-      await expect(useCase.execute(99)).rejects.toBeInstanceOf(HttpException);
+      await expect(useCase.execute(99)).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 });

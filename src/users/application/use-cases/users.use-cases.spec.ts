@@ -1,15 +1,18 @@
-import { HttpException, NotFoundException } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
 import { CreateUserUseCase } from './create-user.use-case';
 import { FindUserByIdUseCase } from './find-user-by-id.use-case';
 import { UpdateUserUseCase } from './update-user.use-case';
 import { RemoveUserUseCase } from './remove-user.use-case';
 import type { UserRepository } from '../ports/user.repository';
+import { User } from '../../domain/user';
 
-const output = {
-  id: 'user-id',
-  username: 'jane',
-  email: 'jane@example.com',
-};
+const makeUser = (overrides: Partial<ConstructorParameters<typeof User>[0]> = {}) =>
+  User.create({
+    id: 'user-id',
+    username: 'jane',
+    email: 'jane@example.com',
+    ...overrides,
+  });
 
 describe('User use cases', () => {
   describe('CreateUserUseCase', () => {
@@ -19,13 +22,14 @@ describe('User use cases', () => {
     );
 
     it('creates user', async () => {
-      userRepository.save.mockResolvedValue(output);
+      const saved = makeUser();
+      userRepository.save.mockResolvedValue(saved);
       const result = await useCase.execute({
         username: 'jane',
         email: 'jane@example.com',
         password: 'secret',
       });
-      expect(result).toEqual(output);
+      expect(result).toEqual(saved);
     });
   });
 
@@ -36,14 +40,15 @@ describe('User use cases', () => {
     );
 
     it('returns user', async () => {
-      userRepository.findById.mockResolvedValue(output);
-      await expect(useCase.execute('user-id')).resolves.toEqual(output);
+      const user = makeUser();
+      userRepository.findById.mockResolvedValue(user);
+      await expect(useCase.execute('user-id')).resolves.toEqual(user);
     });
 
-    it('throws when not found', async () => {
+    it('throws NotFoundError when not found', async () => {
       userRepository.findById.mockResolvedValue(null);
       await expect(useCase.execute('missing')).rejects.toBeInstanceOf(
-        NotFoundException,
+        NotFoundError,
       );
     });
   });
@@ -55,11 +60,10 @@ describe('User use cases', () => {
     );
 
     it('updates user', async () => {
-      userRepository.findById.mockResolvedValue(output);
-      userRepository.save.mockResolvedValue({
-        ...output,
-        email: 'new@example.com',
-      });
+      const existing = makeUser();
+      const updated = makeUser({ email: 'new@example.com' });
+      userRepository.findById.mockResolvedValue(existing);
+      userRepository.save.mockResolvedValue(updated);
 
       const result = await useCase.execute('user-id', {
         email: 'new@example.com',
@@ -67,11 +71,11 @@ describe('User use cases', () => {
       expect(result.email).toBe('new@example.com');
     });
 
-    it('throws when not found', async () => {
+    it('throws NotFoundError when not found', async () => {
       userRepository.findById.mockResolvedValue(null);
       await expect(
         useCase.execute('missing', { email: 'x@y.com' }),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 
@@ -82,15 +86,16 @@ describe('User use cases', () => {
     );
 
     it('removes user', async () => {
-      userRepository.findById.mockResolvedValue(output);
-      userRepository.remove.mockResolvedValue(output);
-      await expect(useCase.execute('user-id')).resolves.toEqual(output);
+      const user = makeUser();
+      userRepository.findById.mockResolvedValue(user);
+      userRepository.remove.mockResolvedValue(user);
+      await expect(useCase.execute('user-id')).resolves.toEqual(user);
     });
 
-    it('throws when not found', async () => {
+    it('throws NotFoundError when not found', async () => {
       userRepository.findById.mockResolvedValue(null);
       await expect(useCase.execute('missing')).rejects.toBeInstanceOf(
-        NotFoundException,
+        NotFoundError,
       );
     });
   });

@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { EstoqueOperacaoInvalidaError } from '../../../domain/errors/estoque-operacao-invalida.error';
 import { EstoqueTypeormEntity } from './estoque.typeorm.entity';
 import { Estoque } from '../../../domain/estoque';
 
@@ -31,8 +31,15 @@ describe('EstoqueTypeormEntity', () => {
     expect(entity.quantidadeReservada).toBe(5);
   });
 
-  it('maps domain errors to bad request', () => {
+  it('rethrows domain errors', () => {
     const entity = EstoqueTypeormEntity.fromDomain(domain);
-    expect(() => entity.reservar(100)).toThrow(BadRequestException);
+    expect(() => entity.reservar(100)).toThrow(EstoqueOperacaoInvalidaError);
+  });
+
+  it('darBaixaSomenteDisponivel reduz apenas quantidade física', () => {
+    const entity = EstoqueTypeormEntity.fromDomain(domain);
+    entity.darBaixaSomenteDisponivel(2);
+    expect(entity.quantidadeFisica).toBe(8);
+    expect(entity.quantidadeReservada).toBe(2);
   });
 });

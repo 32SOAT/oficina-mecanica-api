@@ -1,4 +1,4 @@
-import { EstoqueOperacaoInvalidaError } from '../../estoque/domain/errors/estoque-operacao-invalida.error';
+import { ReservaPecaInvalidaError } from './errors/reserva-peca-invalida.error';
 
 export type ReservaPecaSnapshot = {
   disponivelNoDiagnostico: boolean;
@@ -10,7 +10,7 @@ export function calcularReservaComprometida(
   quantidadeSolicitada: number,
 ): ReservaPecaSnapshot {
   if (quantidadeSolicitada <= 0) {
-    throw new EstoqueOperacaoInvalidaError('Quantidade deve ser maior que zero.');
+    throw new ReservaPecaInvalidaError('Quantidade deve ser maior que zero.');
   }
   const cobertoNoMomento = disponivelAntesReserva >= quantidadeSolicitada;
   return {

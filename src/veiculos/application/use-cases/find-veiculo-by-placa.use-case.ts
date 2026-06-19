@@ -1,23 +1,28 @@
-import { BadRequestException, HttpException, Inject } from '@nestjs/common';
-import { VeiculoOutput } from '../dto/veiculo.output';
+import { Injectable, Inject } from '@nestjs/common';
+import {
+  BadRequestError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
+import { Veiculo } from '../../domain/veiculo';
 import { InvalidPlacaError, Placa } from '../../domain/value-objects/placa';
 import {
   VEICULO_REPOSITORY,
   VeiculoRepository,
 } from '../ports/veiculo.repository';
 
+@Injectable()
 export class FindVeiculoByPlacaUseCase {
   constructor(
     @Inject(VEICULO_REPOSITORY)
     private readonly veiculoRepository: VeiculoRepository,
   ) {}
 
-  async execute(placaRaw: string): Promise<VeiculoOutput> {
+  async execute(placaRaw: string): Promise<Veiculo> {
     const placa = this.buildPlaca(placaRaw);
     const veiculo = await this.veiculoRepository.findByPlaca(placa.toString());
 
     if (!veiculo) {
-      throw new HttpException('Veiculo não encontrado.', 404);
+      throw new NotFoundError('Veiculo não encontrado.');
     }
 
     return veiculo;
@@ -28,7 +33,7 @@ export class FindVeiculoByPlacaUseCase {
       return Placa.create(placa);
     } catch (error) {
       if (error instanceof InvalidPlacaError) {
-        throw new BadRequestException(error.message);
+        throw new BadRequestError(error.message);
       }
       throw error;
     }

@@ -1,12 +1,10 @@
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+  ConflictError,
+  NotFoundError,
+} from '../../../common/application/errors/application.errors';
 import { UpdateEstoqueInput } from '../dto/update-estoque.input';
-import { EstoqueOutput } from '../dto/estoque.output';
-import { EstoqueOutputMapper } from '../mappers/estoque-output.mapper';
+import { Estoque } from '../../domain/estoque';
 import {
   ESTOQUE_REPOSITORY,
   EstoqueRepository,
@@ -19,23 +17,21 @@ export class UpdateEstoqueUseCase {
     private readonly estoqueRepository: EstoqueRepository,
   ) {}
 
-  async execute(id: number, input: UpdateEstoqueInput): Promise<EstoqueOutput> {
+  async execute(id: number, input: UpdateEstoqueInput): Promise<Estoque> {
     const existing = await this.estoqueRepository.findById(id);
     if (!existing) {
-      throw new NotFoundException('Item de estoque não encontrado.');
+      throw new NotFoundError('Item de estoque não encontrado.');
     }
 
     if (input.codigo && input.codigo !== existing.codigo) {
       if (await this.estoqueRepository.existsByCodigo(input.codigo, id)) {
-        throw new ConflictException(
+        throw new ConflictError(
           'Código já está em uso por outro item de estoque.',
         );
       }
     }
 
-    const estoque = EstoqueOutputMapper.toDomain(existing).atualizarCadastro(
-      input,
-    );
+    const estoque = existing.atualizarCadastro(input);
     return this.estoqueRepository.save(estoque);
   }
 }

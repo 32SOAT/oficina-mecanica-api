@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './database/database.module';
 import { shouldEnableSeedingModule } from './database/seeds/seeding-environment';
@@ -17,6 +18,7 @@ import { OrdemServicoModule } from './ordens-de-servico/module';
   imports: [
     ConfigModule,
     CoreModule,
+    EventEmitterModule.forRoot(),
     DatabaseModule,
     HealthModule,
     ClienteModule,

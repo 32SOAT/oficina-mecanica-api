@@ -34,6 +34,8 @@ import { AvancarStatusDto } from '../dto/avancar-status.dto';
 import { CriarOrdemServicoDto } from '../dto/criar-ordem-servico.dto';
 import { EditarItensOsDto } from '../dto/editar-itens-os.dto';
 import { FiltrosOrdemServicoDto } from '../dto/filtros-ordem-servico.dto';
+import { HistoricoStatusResponseDto } from '../dto/historico-status-response.dto';
+import { OrdemServicoResponseDto } from '../dto/ordem-servico-response.dto';
 import { OrdemServicoPresentationMapper } from '../mappers/ordem-servico-presentation.mapper';
 
 @ApiBearerAuth('JWT-auth')
@@ -55,133 +57,162 @@ export class OrdemServicoController {
   ) {}
 
   @Post()
-  criar(@Req() req: AuthenticatedRequest, @Body() dto: CriarOrdemServicoDto) {
-    return this.createOrdemServicoUseCase.execute(
+  async criar(@Req() req: AuthenticatedRequest, @Body() dto: CriarOrdemServicoDto) {
+    const os = await this.createOrdemServicoUseCase.execute(
       OrdemServicoPresentationMapper.toCreateInput(dto),
       req.user.sub,
     );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Get()
-  listar(@Query() filtros: FiltrosOrdemServicoDto) {
-    return this.findAllOrdensServicoUseCase.execute(
+  async listar(@Query() filtros: FiltrosOrdemServicoDto) {
+    const result = await this.findAllOrdensServicoUseCase.execute(
       OrdemServicoPresentationMapper.toFiltrosInput(filtros),
     );
+    return {
+      data: result.data.map(OrdemServicoResponseDto.fromReadModel),
+      meta: result.meta,
+    };
   }
 
   @Get(':id')
-  detalhar(@Param('id', ParseUUIDPipe) id: string) {
-    return this.findOrdemServicoByIdUseCase.execute(id);
+  async detalhar(@Param('id', ParseUUIDPipe) id: string) {
+    const os = await this.findOrdemServicoByIdUseCase.execute(id);
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Get(':id/historico')
-  historico(@Param('id', ParseUUIDPipe) id: string) {
-    return this.findOrdemServicoHistoricoUseCase.execute(id);
+  async historico(@Param('id', ParseUUIDPipe) id: string) {
+    const historico = await this.findOrdemServicoHistoricoUseCase.execute(id);
+    return historico.map(HistoricoStatusResponseDto.fromReadModel);
   }
 
   @Post(':id/iniciar-diagnostico')
-  iniciarDiagnostico(
+  async iniciarDiagnostico(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.transicionarOrdemServicoUseCase.execute(
+    const os = await this.transicionarOrdemServicoUseCase.execute(
       id,
       StatusOrdemServico.EmDiagnostico,
       req.user.sub,
     );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Patch(':id/itens')
-  substituirItensEmDiagnostico(
+  async substituirItensEmDiagnostico(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: EditarItensOsDto,
   ) {
-    return this.substituirItensOrdemServicoUseCase.execute(
+    const os = await this.substituirItensOrdemServicoUseCase.execute(
       id,
       OrdemServicoPresentationMapper.toEditarItensInput(dto),
       req.user.sub,
     );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Post(':id/gerar-orcamento')
-  gerarOrcamento(
+  async gerarOrcamento(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.gerarOrcamentoOrdemServicoUseCase.execute(id, req.user.sub);
+    const os = await this.gerarOrcamentoOrdemServicoUseCase.execute(
+      id,
+      req.user.sub,
+    );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Post(':id/aprovar-orcamento')
-  aprovarOrcamento(
+  async aprovarOrcamento(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.aprovarOrcamentoOrdemServicoUseCase.execute(id, req.user.sub);
+    const os = await this.aprovarOrcamentoOrdemServicoUseCase.execute(
+      id,
+      req.user.sub,
+    );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Post(':id/reprovar-orcamento')
-  reprovarOrcamento(
+  async reprovarOrcamento(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.reprovarOrcamentoOrdemServicoUseCase.execute(id, req.user.sub);
+    const os = await this.reprovarOrcamentoOrdemServicoUseCase.execute(
+      id,
+      req.user.sub,
+    );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Post(':id/iniciar-execucao')
-  iniciarExecucao(
+  async iniciarExecucao(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.iniciarExecucaoOrdemServicoUseCase.execute(id, req.user.sub);
+    const os = await this.iniciarExecucaoOrdemServicoUseCase.execute(
+      id,
+      req.user.sub,
+    );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Post(':id/finalizar')
-  finalizar(
+  async finalizar(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.transicionarOrdemServicoUseCase.execute(
+    const os = await this.transicionarOrdemServicoUseCase.execute(
       id,
       StatusOrdemServico.Finalizada,
       req.user.sub,
     );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Post(':id/entregar')
-  entregar(
+  async entregar(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.transicionarOrdemServicoUseCase.execute(
+    const os = await this.transicionarOrdemServicoUseCase.execute(
       id,
       StatusOrdemServico.Entregue,
       req.user.sub,
     );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Post(':id/cancelar')
-  cancelar(
+  async cancelar(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.transicionarOrdemServicoUseCase.execute(
+    const os = await this.transicionarOrdemServicoUseCase.execute(
       id,
       StatusOrdemServico.Cancelada,
       req.user.sub,
     );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 
   @Post(':id/avancar-status')
-  avancar(
+  async avancar(
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: AvancarStatusDto,
   ) {
-    return this.avancarStatusOrdemServicoUseCase.execute(
+    const os = await this.avancarStatusOrdemServicoUseCase.execute(
       id,
       body.novoStatus,
       req.user.sub,
     );
+    return OrdemServicoResponseDto.fromReadModel(os);
   }
 }

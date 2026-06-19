@@ -1,5 +1,6 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { EstoqueOutput } from '../dto/estoque.output';
+import { Inject, Injectable } from '@nestjs/common';
+import { NotFoundError } from '../../../common/application/errors/application.errors';
+import { Estoque } from '../../domain/estoque';
 import {
   ESTOQUE_REPOSITORY,
   EstoqueRepository,
@@ -12,10 +13,10 @@ export class FindEstoqueByIdUseCase {
     private readonly estoqueRepository: EstoqueRepository,
   ) {}
 
-  async execute(id: number): Promise<EstoqueOutput> {
+  async execute(id: number): Promise<Estoque> {
     const estoque = await this.estoqueRepository.findById(id);
     if (!estoque) {
-      throw new NotFoundException('Item de estoque não encontrado.');
+      throw new NotFoundError('Item de estoque não encontrado.');
     }
     return estoque;
   }

@@ -61,7 +61,7 @@ export class ClienteController {
     const output = await this.createClienteUseCase.execute(
       ClientePresentationMapper.toCreateInput(createClienteDto),
     );
-    return ClienteResponseDto.fromOutput(output);
+    return ClienteResponseDto.fromDomain(output);
   }
 
   @Get()
@@ -75,7 +75,7 @@ export class ClienteController {
       ClientePresentationMapper.toFindAllInput(paginationDto),
     );
     return {
-      data: result.data.map((cliente) => ClienteResponseDto.fromOutput(cliente)),
+      data: result.data.map((cliente) => ClienteResponseDto.fromDomain(cliente)),
       meta: result.meta,
     };
   }
@@ -96,7 +96,7 @@ export class ClienteController {
     );
     return {
       success: true,
-      data: ClienteResponseDto.fromOutput(cliente),
+      data: ClienteResponseDto.fromDomain(cliente),
       message: 'Cliente encontrado com sucesso.',
     };
   }
