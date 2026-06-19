@@ -1,8 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  EditarItensOsInput,
-  OrdemServicoOutput,
-} from '../dto/ordem-servico.dto';
+import { EditarItensOsInput } from '../dto/ordem-servico.dto';
+import { OrdemServicoReadModel } from '../read-models/ordem-servico-read-model';
 import {
   ORDEM_SERVICO_QUERY_PORT,
   OrdemServicoQueryPort,
@@ -29,7 +27,7 @@ export class SubstituirItensOrdemServicoUseCase {
     id: string,
     input: EditarItensOsInput,
     usuarioId?: string | null,
-  ): Promise<OrdemServicoOutput> {
+  ): Promise<OrdemServicoReadModel> {
     void usuarioId;
     assertOrdemServicoPossuiItens(input.itensServico, input.itensPeca);
     const os = await this.query.findById(id);

@@ -6,6 +6,3 @@ export type TempoMedioReadModel = {
   totalOSConsideradas: number;
   janela: JanelaTempoInput | null;
 };
-
-/** @deprecated Prefer TempoMedioReadModel */
-export type TempoMedioOutput = TempoMedioReadModel;

@@ -1,8 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
-import {
-  AuthenticatedUserOutput,
-  ValidateCredentialsInput,
-} from '../dto/auth.dto';
+import { UnauthorizedError } from '../../../common/application/errors/application.errors';
+import { ValidateCredentialsInput } from '../dto/auth.dto';
+import { AuthenticatedUserReadModel } from '../read-models/auth-read-model';
 import {
   USER_CREDENTIAL_PORT,
   UserCredentialPort,
@@ -23,12 +22,12 @@ export class ValidateCredentialsUseCase {
 
   async execute(
     input: ValidateCredentialsInput,
-  ): Promise<AuthenticatedUserOutput | null> {
+  ): Promise<AuthenticatedUserReadModel> {
     const user = await this.userCredentialPort.findByEmailWithPassword(
       input.email,
     );
     if (!user) {
-      return null;
+      throw new UnauthorizedError('Credenciais inválidas.');
     }
 
     const isValid = await this.passwordHasher.compare(
@@ -36,7 +35,7 @@ export class ValidateCredentialsUseCase {
       user.passwordHash,
     );
     if (!isValid) {
-      return null;
+      throw new UnauthorizedError('Credenciais inválidas.');
     }
 
     return {

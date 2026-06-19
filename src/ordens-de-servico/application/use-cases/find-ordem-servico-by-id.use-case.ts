@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { OrdemServicoOutput } from '../dto/ordem-servico.dto';
+import { OrdemServicoReadModel } from '../read-models/ordem-servico-read-model';
 import {
   ORDEM_SERVICO_QUERY_PORT,
   OrdemServicoQueryPort,
@@ -12,7 +12,7 @@ export class FindOrdemServicoByIdUseCase {
     private readonly query: OrdemServicoQueryPort,
   ) {}
 
-  execute(id: string): Promise<OrdemServicoOutput> {
+  execute(id: string): Promise<OrdemServicoReadModel> {
     return this.query.findById(id);
   }
 }

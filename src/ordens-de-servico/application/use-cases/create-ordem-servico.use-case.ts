@@ -5,8 +5,8 @@ import { mergeObservacaoAvisoCompra } from '../../domain/observacao-compra';
 import { StatusOrdemServico } from '../../domain/status-ordem-servico.enum';
 import {
   CriarOrdemServicoInput,
-  OrdemServicoOutput,
 } from '../dto/ordem-servico.dto';
+import { OrdemServicoReadModel } from '../read-models/ordem-servico-read-model';
 import { OrdemServicoEventsPort, ORDEM_SERVICO_EVENTS_PORT } from '../ports/ordem-servico-events.port';
 import {
   ORDEM_SERVICO_TRANSACTION_PORT,
@@ -30,7 +30,7 @@ export class CreateOrdemServicoUseCase {
   execute(
     input: CriarOrdemServicoInput,
     usuarioId?: string | null,
-  ): Promise<OrdemServicoOutput> {
+  ): Promise<OrdemServicoReadModel> {
     assertOrdemServicoPossuiItens(input.itensServico, input.itensPeca);
     assertDocumentoClienteValido(input.documentoCliente);
     assertPlacaValida(input.placa);

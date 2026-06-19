@@ -45,27 +45,27 @@ describe('ValidateCredentialsUseCase', () => {
     expect(result).not.toHaveProperty('password');
   });
 
-  it('returns null when user is not found', async () => {
+  it('throws UnauthorizedError when user is not found', async () => {
     authUserRepository.findByEmailWithPassword.mockResolvedValue(null);
 
-    const result = await useCase.execute({
-      email: 'notfound@example.com',
-      password: 'password',
-    });
-
-    expect(result).toBeNull();
+    await expect(
+      useCase.execute({
+        email: 'notfound@example.com',
+        password: 'password',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedError);
   });
 
-  it('returns null when password is incorrect', async () => {
+  it('throws UnauthorizedError when password is incorrect', async () => {
     authUserRepository.findByEmailWithPassword.mockResolvedValue(mockUser);
     passwordHasher.compare.mockResolvedValue(false);
 
-    const result = await useCase.execute({
-      email: 'admin@oficina.com',
-      password: 'wrong-password',
-    });
-
-    expect(result).toBeNull();
+    await expect(
+      useCase.execute({
+        email: 'admin@oficina.com',
+        password: 'wrong-password',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedError);
   });
 });
 

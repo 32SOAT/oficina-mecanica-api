@@ -1,9 +1,7 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
-  ValidationPipe,
   Get,
   HttpStatus,
   Param,
@@ -13,6 +11,8 @@ import {
   Query,
   Req,
   Res,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import {
@@ -128,6 +128,13 @@ export class EstoqueController {
   }
 
   @Patch(':id')
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  )
   @ApiOperation({
     summary: 'Atualizar parcialmente item de estoque',
     description:
@@ -149,27 +156,8 @@ export class EstoqueController {
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: Record<string, unknown>,
+    @Body() updateEstoqueDto: UpdateEstoqueDto,
   ) {
-    if (
-      'quantidadeFisica' in body ||
-      'quantidadeReservada' in body ||
-      'quantidadeResrvada' in body
-    ) {
-      throw new BadRequestException(
-        'quantidadeFisica/quantidadeReservada não podem ser alteradas neste endpoint. Use PATCH /estoque/:id/operacao.',
-      );
-    }
-
-    const updateEstoqueDto = (await new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }).transform(body, {
-      type: 'body',
-      metatype: UpdateEstoqueDto,
-    })) as UpdateEstoqueDto;
-
     await this.updateEstoqueUseCase.execute(
       id,
       EstoquePresentationMapper.toUpdateInput(updateEstoqueDto),

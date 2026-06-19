@@ -9,6 +9,7 @@ import {
   EstoqueReservaSnapshot,
   EstoqueTransactionalPort,
 } from '../../application/ports/estoque-transactional.port';
+import { applyEstoqueDomainMutation } from '../helpers/estoque-domain-mutation.helper';
 import { EstoqueTypeormEntity } from '../typeorm/entity/estoque.typeorm.entity';
 
 @Injectable()
@@ -29,7 +30,9 @@ export class EstoqueTransactionalAdapter implements EstoqueTransactionalPort {
       est.quantidadeDisponivel,
       quantidade,
     );
-    est.reservarComprometidoParaOrdemServico(quantidade);
+    applyEstoqueDomainMutation(est, (domain) =>
+      domain.reservarComprometidoParaOrdemServico(quantidade),
+    );
     await em.save(EstoqueTypeormEntity, est);
     return {
       estoqueId: est.id,
@@ -78,7 +81,7 @@ export class EstoqueTransactionalAdapter implements EstoqueTransactionalPort {
       lock: { mode: 'pessimistic_write' },
     });
     if (!est) return;
-    est.darBaixa(quantidade);
+    applyEstoqueDomainMutation(est, (domain) => domain.darBaixa(quantidade));
     await em.save(EstoqueTypeormEntity, est);
   }
 }

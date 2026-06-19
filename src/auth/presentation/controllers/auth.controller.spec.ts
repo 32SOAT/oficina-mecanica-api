@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedError } from '../../../common/application/errors/application.errors';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { AuthController } from './auth.controller';
@@ -42,12 +42,14 @@ describe('AuthController', () => {
       expect(issueAuthTokenUseCase.execute).toHaveBeenCalledWith(user);
     });
 
-    it('throws UnauthorizedException on invalid credentials', async () => {
-      validateCredentialsUseCase.execute.mockResolvedValue(null);
+    it('propagates UnauthorizedError on invalid credentials', async () => {
+      validateCredentialsUseCase.execute.mockRejectedValue(
+        new UnauthorizedError('Credenciais inválidas.'),
+      );
 
       await expect(
         controller.login({ email: 'admin@oficina.com', password: 'wrong' }),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toBeInstanceOf(UnauthorizedError);
     });
   });
 
@@ -111,8 +113,8 @@ describe('JwtAuthGuard', () => {
 
   it('throws when no token is provided', async () => {
     const context = createExecutionContext({});
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      UnauthorizedException,
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedError,
     );
   });
 
@@ -121,8 +123,8 @@ describe('JwtAuthGuard', () => {
     const context = createExecutionContext({
       authorization: 'Bearer invalid-token',
     });
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      UnauthorizedException,
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedError,
     );
   });
 

@@ -31,6 +31,4 @@ export type {
   ItemPecaOsReadModel,
   OrdemServicoReadModel,
   HistoricoStatusReadModel,
-  OrdemServicoOutput,
-  HistoricoStatusOutput,
 } from '../read-models/ordem-servico-read-model';

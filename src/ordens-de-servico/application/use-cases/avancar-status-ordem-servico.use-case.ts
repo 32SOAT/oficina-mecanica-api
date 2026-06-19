@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StatusOrdemServico } from '../../domain/status-ordem-servico.enum';
-import { OrdemServicoOutput } from '../dto/ordem-servico.dto';
+import { OrdemServicoReadModel } from '../read-models/ordem-servico-read-model';
 import { AprovarOrcamentoOrdemServicoUseCase } from './aprovar-orcamento-ordem-servico.use-case';
 import { IniciarExecucaoOrdemServicoUseCase } from './iniciar-execucao-ordem-servico.use-case';
 import { ReprovarOrcamentoOrdemServicoUseCase } from './reprovar-orcamento-ordem-servico.use-case';
@@ -19,7 +19,7 @@ export class AvancarStatusOrdemServicoUseCase {
     id: string,
     novo: StatusOrdemServico,
     usuarioId?: string | null,
-  ): Promise<OrdemServicoOutput> {
+  ): Promise<OrdemServicoReadModel> {
     if (novo === StatusOrdemServico.Aprovada) {
       return this.aprovarOrcamento.execute(id, usuarioId);
     }

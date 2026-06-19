@@ -89,9 +89,3 @@ export type HistoricoStatusReadModel = {
   updatedAt: Date;
   deletedAt: Date | null;
 };
-
-/** @deprecated Prefer OrdemServicoReadModel */
-export type OrdemServicoOutput = OrdemServicoReadModel;
-
-/** @deprecated Prefer HistoricoStatusReadModel */
-export type HistoricoStatusOutput = HistoricoStatusReadModel;

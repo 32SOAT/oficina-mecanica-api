@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { HistoricoStatusOutput } from '../dto/ordem-servico.dto';
+import { HistoricoStatusReadModel } from '../read-models/ordem-servico-read-model';
 import {
   ORDEM_SERVICO_QUERY_PORT,
   OrdemServicoQueryPort,
@@ -12,7 +12,7 @@ export class FindOrdemServicoHistoricoUseCase {
     private readonly query: OrdemServicoQueryPort,
   ) {}
 
-  execute(id: string): Promise<HistoricoStatusOutput[]> {
+  execute(id: string): Promise<HistoricoStatusReadModel[]> {
     return this.query.findHistorico(id);
   }
 }

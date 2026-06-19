@@ -2,10 +2,10 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { UnauthorizedError } from '../../../common/application/errors/application.errors';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import {
   AuthenticatedRequest,
@@ -33,7 +33,7 @@ export class JwtAuthGuard implements CanActivate {
     const authHeader = request.headers.authorization;
 
     if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Token não fornecido.');
+      throw new UnauthorizedError('Token não fornecido.');
     }
 
     const token = authHeader.split(' ')[1];
@@ -44,7 +44,7 @@ export class JwtAuthGuard implements CanActivate {
       request.user = payload;
       return true;
     } catch {
-      throw new UnauthorizedException('Token inválido ou expirado.');
+      throw new UnauthorizedError('Token inválido ou expirado.');
     }
   }
 }

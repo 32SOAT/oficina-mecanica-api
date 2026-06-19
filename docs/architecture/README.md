@@ -230,7 +230,7 @@ A **application e a infra** lançam erros de aplicação (`NotFoundError`, `BadR
 
 
 
-O **`ApplicationExceptionFilter`** (`common/presentation/filters/`) traduz erros de aplicação e de domínio conhecidos para JSON HTTP. Exceções Nest (`HttpException` de `ValidationPipe`, guards JWT, validações locais de controller) também passam pelo filter. Erros não mapeados retornam **500** genérico.
+O **`ApplicationExceptionFilter`** (`common/presentation/filters/`) traduz erros de aplicação e de domínio conhecidos para JSON HTTP. Exceções Nest (`HttpException` do `ValidationPipe`) também passam pelo filter. Auth (`ValidateCredentialsUseCase`, `ChangePasswordUseCase`, `JwtAuthGuard`) usa `UnauthorizedError` — controllers não traduzem erro manualmente. Erros não mapeados retornam **500** genérico.
 
 
 
@@ -600,7 +600,7 @@ src/**/*.spec.ts       # unitários por camada/módulo
 
 
 
-Estado atual: **100 suites / 521 testes** passando, com cobertura global ≥ thresholds do `package.json` (branches 80%, functions/lines/statements 90%).
+Estado atual: **100 suites / 518 testes** passando, com cobertura global ≥ thresholds do `package.json` (branches 80%, functions/lines/statements 90%).
 
 
 
@@ -628,7 +628,7 @@ Itens priorizados por impacto em **Clean Code**, **Clean Architecture** e **SOLI
 
 | ---- | ---- | -------- | ---------------- |
 
-| **POST `/users` sem senha** | `users` | `CreateUserDto` não tem password; usuário criado via API não consegue logar | exigir senha no DTO ou gerar credencial via port de hash no use case |
+| **POST `/users` sem credencial** | `users` | `CreateUserDto` não tem password; `CreateUserUseCase` grava via `UserRepository` sem passar por `UserCredentialPort` / `PASSWORD_HASHER` — usuário criado via API não consegue logar | exigir senha no DTO e criar credencial hasheada no use case (ou port dedicado) |
 
 | **Sem pipeline CI** | repo | nenhum `.github/workflows`; regressões só localmente | GitHub Actions: lint + `jest` + build |
 
@@ -646,29 +646,25 @@ Itens priorizados por impacto em **Clean Code**, **Clean Architecture** e **SOLI
 
 | **Aliases `*Entity` deprecados** | entidades TypeORM, seeds, `database.module` | duplicidade de nomes (`UserEntity` em `database.module`) | migrar seeds/module para `*TypeormEntity` |
 
-| **Comportamento de domínio na entidade TypeORM (estoque)** | `EstoqueTypeormEntity` | `reservar()`, `darBaixa()` encapsulam domínio na infra | extrair para adapter/handle ou repositório transacional (como OS) |
+| **Consulta pública carrega read model completo** | `ConsultaOrdemServicoController` | usa `FindOrdemServicoByIdUseCase` (inclui dados de cliente) e só depois filtra em `StatusPublicoResponse` | use case ou query de projeção pública na application |
 
-| **Mappers/output obsoletos na application** | `users/application/mappers`, `estoque/application/mappers`, `clientes/application/dto/cliente.output.ts`, `servicos/application/dto/servico.output.ts` | legado pré-refactor de mapeamento; só referenciados por specs próprios | remover arquivos e specs associados |
+| **`ValidationPipe` global sem `forbidNonWhitelisted`** | `configure-app.ts` | campos extras são descartados silenciosamente; só `PATCH /estoque/:id` rejeita explicitamente | habilitar globalmente ou documentar exceções por rota |
 
-
+| **Soft delete inconsistente** | `users` vs demais CRUDs | cliente/veículo/serviço/estoque usam `softRemove`; usuário usa `remove` hard (sem `deletedAt`) | alinhar estratégia (soft delete ou hard delete documentado) |
 
 ### Baixa prioridade (qualidade / cobertura)
 
-
-
 | Item | Onde | Problema | Direção sugerida |
-
 | ---- | ---- | -------- | ---------------- |
-
 | **Specs ausentes** | `ordem-servico.typeorm-transaction` (parcial) | fluxos complexos da transação OS ainda podem ganhar casos extras | ampliar spec existente com edge cases |
-
 | **E2E integrados finos** | `test/` | não exercitam banco nem fluxo OS completo | 1–2 e2e com `AppModule` + Postgres de teste |
-
-| **`Record<string, unknown>` no estoque** | `estoque.controller` operação | body não tipado | DTO dedicado |
-
-| **Swagger na entidade TypeORM** | várias `@ApiProperty` em entities | documentação acoplada à persistência | migrar para response DTOs (OS já iniciou) |
-
-| **Aliases `@deprecated` em read models / outputs** | `OrdemServicoOutput`, `LoginOutput`, `HealthOutput`, etc. | tipos legados ainda usados em assinaturas de use cases | migrar imports para `*ReadModel` e remover aliases |
+| **`eager: true` em relações** | veículo→cliente, itens OS | over-fetch em listagens; trade-off não documentado | revisar por query ou lazy + relations explícitas |
+| **Naming misto na infra** | entidades OS/veículo | `veiculo_id` / `cliente_id` (snake_case) vs camelCase; `ItemOs*Entity` sem sufixo `Typeorm` | padronizar gradualmente (migrations se renomear colunas) |
+| **Swagger sempre ativo** | `main.ts` | `/api` exposto em qualquer ambiente | condicionar a `NODE_ENV !== production` |
+| **Rotas `@Public()` sem rate limit** | login, consulta OS | brute force / enumeração de UUIDs | throttle ou WAF na borda |
+| **Headers de segurança mínimos** | `configure-app.ts` | só desabilita `x-powered-by` | helmet, CORS explícito se houver front-end |
+| **Sonar/ZAP manuais** | `docs/analysis/` | qualidade/segurança dependem de execução local | integrar ao pipeline CI quando existir |
+| **ADR 001 rascunho** | `docs/adr/001-escolha-do-banco-de-dados.md` | decisão de PostgreSQL não formalizada | completar ADR ou remover placeholder |
 
 
 
@@ -686,9 +682,12 @@ Itens priorizados por impacto em **Clean Code**, **Clean Architecture** e **SOLI
 
 - Veículos com `ClienteResumo` no domínio para joins de leitura
 
-- **Exceções de aplicação** (`common/application/errors`) + **`ApplicationExceptionFilter`**
+- **Exceções de aplicação** (`common/application/errors`) + **`ApplicationExceptionFilter`** (inclui auth: login, troca de senha e `JwtAuthGuard` usam `UnauthorizedError`)
 
 - **Workflow de OS:** domínio puro + `OsWorkflowHandle` / `OsTypeormHandle` (entidade TypeORM só persistência)
+- **Estoque transacional:** mutações de domínio via `applyEstoqueDomainMutation` no adapter (entidade TypeORM só persistência)
+- **Swagger** nos response DTOs da presentation (sem `@ApiProperty` nas entidades TypeORM)
+- **Read models** tipados nos use cases (`*ReadModel`; aliases `*Output` removidos)
 
 
 

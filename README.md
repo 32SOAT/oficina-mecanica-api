@@ -21,7 +21,7 @@ Documentação interativa: **Swagger** em [`/api`](http://localhost:3000/api) (c
 **Arquitetura:** monólito modular NestJS com camadas (domain → application → infrastructure → presentation).
 
 - **Respostas:** use cases retornam entidade de domínio ou read model; mapeamento HTTP só na presentation (`fromDomain` / `fromReadModel`).
-- **Erros:** application/infra lançam `NotFoundError`, `BadRequestError`, etc.; o `ApplicationExceptionFilter` traduz para HTTP (validação JWT e `ValidationPipe` continuam com exceções Nest na borda).
+- **Erros:** application/infra (e auth: use cases + `JwtAuthGuard`) lançam `NotFoundError`, `BadRequestError`, `UnauthorizedError`, etc.; o `ApplicationExceptionFilter` traduz para HTTP (`ValidationPipe` continua com exceções Nest na borda).
 
 Detalhes em [docs/architecture](./docs/architecture/README.md).
 

@@ -4,7 +4,6 @@ import {
   Patch,
   Post,
   Req,
-  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -49,10 +48,6 @@ export class AuthController {
     const user = await this.validateCredentialsUseCase.execute(
       AuthPresentationMapper.toValidateCredentialsInput(loginDto),
     );
-
-    if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas.');
-    }
 
     return LoginResponseDto.fromReadModel(this.issueAuthTokenUseCase.execute(user));
   }

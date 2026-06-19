@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { StatusOrdemServico } from '../../domain/status-ordem-servico.enum';
-import { OrdemServicoOutput } from '../dto/ordem-servico.dto';
+import { OrdemServicoReadModel } from '../read-models/ordem-servico-read-model';
 import {
   ORDEM_SERVICO_EVENTS_PORT,
   OrdemServicoEventsPort,
@@ -22,7 +22,7 @@ export class GerarOrcamentoOrdemServicoUseCase {
   execute(
     id: string,
     usuarioId?: string | null,
-  ): Promise<OrdemServicoOutput> {
+  ): Promise<OrdemServicoReadModel> {
     return this.transaction.runInTransaction(async (tx) => {
       const os = await tx.loadOs(id, {
         itensServico: true,

@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { EstoqueController } from './estoque.controller';
 import { CreateEstoqueUseCase } from '../../application/use-cases/create-estoque.use-case';
 import { FindAllEstoquesUseCase } from '../../application/use-cases/find-all-estoques.use-case';
@@ -80,18 +80,6 @@ describe('EstoqueController', () => {
     updateEstoqueUseCase.execute.mockResolvedValue(output);
     const result = await controller.update(1, { codigo: 'PCA-002' });
     expect(result.success).toBe(true);
-  });
-
-  it('rejects quantity fields on update', async () => {
-    await expect(
-      controller.update(1, { quantidadeFisica: 5 }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    await expect(
-      controller.update(1, { quantidadeReservada: 1 }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    await expect(
-      controller.update(1, { quantidadeResrvada: 1 }),
-    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('executes reposicao with 201', async () => {

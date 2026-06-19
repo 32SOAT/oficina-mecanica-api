@@ -18,6 +18,4 @@ export type TokenPayload = {
 export type {
   AuthenticatedUserReadModel,
   LoginReadModel,
-  AuthenticatedUserOutput,
-  LoginOutput,
 } from '../read-models/auth-read-model';
