@@ -11,8 +11,6 @@ import {
   Query,
   Req,
   Res,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import {
@@ -128,13 +126,6 @@ export class EstoqueController {
   }
 
   @Patch(':id')
-  @UsePipes(
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }),
-  )
   @ApiOperation({
     summary: 'Atualizar parcialmente item de estoque',
     description:

@@ -1,5 +1,15 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
+import { ApiHideProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  ValidateIf,
+} from 'class-validator';
+
+const QUANTIDADE_NESTE_ENDPOINT =
+  ' não pode ser alterada neste endpoint. Use PATCH /estoque/:id/operacao.';
 
 export class UpdateEstoqueDto {
   @ApiPropertyOptional({
@@ -29,4 +39,20 @@ export class UpdateEstoqueDto {
   )
   @IsPositive({ message: 'Preço unitário deve ser positivo.' })
   precoUnitario?: number;
+
+  /** Bloqueado nesta rota — validação explícita porque o pipe global só faz whitelist. */
+  @ApiHideProperty()
+  @ValidateIf((dto: UpdateEstoqueDto) => dto.quantidadeFisica !== undefined)
+  @IsEmpty({ message: `quantidadeFisica${QUANTIDADE_NESTE_ENDPOINT}` })
+  quantidadeFisica?: number;
+
+  @ApiHideProperty()
+  @ValidateIf((dto: UpdateEstoqueDto) => dto.quantidadeReservada !== undefined)
+  @IsEmpty({ message: `quantidadeReservada${QUANTIDADE_NESTE_ENDPOINT}` })
+  quantidadeReservada?: number;
+
+  @ApiHideProperty()
+  @ValidateIf((dto: UpdateEstoqueDto) => dto.quantidadeResrvada !== undefined)
+  @IsEmpty({ message: `quantidadeResrvada${QUANTIDADE_NESTE_ENDPOINT}` })
+  quantidadeResrvada?: number;
 }
