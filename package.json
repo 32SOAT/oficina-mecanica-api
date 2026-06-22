@@ -21,10 +21,10 @@
     "sonar": "npm run test:cov && sonar-scanner",
     "migration:create": "npx typeorm migration:create",
     "premigration:generate": "npm run build",
-    "migration:generate": "npx typeorm migration:generate -d dist/config/app-data-source -p",
+    "migration:generate": "npx typeorm migration:generate -d dist/database/data-source -p",
     "premigration:run": "npm run build",
-    "migration:run": "npx typeorm migration:run -d dist/config/app-data-source",
-    "migration:revert": "npx typeorm migration:revert -d dist/config/app-data-source"
+    "migration:run": "npx typeorm migration:run -d dist/database/data-source",
+    "migration:revert": "npx typeorm migration:revert -d dist/database/data-source"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
@@ -58,7 +58,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
-    "@types/supertest": "^6.0.2",
+    "@types/supertest": "^7.2.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
@@ -68,7 +68,7 @@
     "sonar-scanner": "^3.1.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
-    "ts-jest": "^29.4.9",
+    "ts-jest": "^29.4.11",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
@@ -81,7 +81,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -90,20 +90,25 @@
       "^src/(.*)$": "<rootDir>/$1"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.ts",
+      "!src/**/*.spec.ts",
+      "!src/database/migrations/**"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "coverage",
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/database/migrations/",
-      "/ordens-de-servico/entities/.*\\.entity\\.ts$",
-      "/ordens-de-servico/ordem-servico\\.entity\\.ts$",
-      "/ordens-de-servico/ordem-servico\\.module\\.ts$",
-      "/ordens-de-servico/dtos/status-publico\\.response\\.ts$",
-      "/ordens-de-servico/events/listeners/.*\\.listener\\.ts$",
-      "/ordens-de-servico/dtos/avancar-status\\.dto\\.ts$",
-      "/ordens-de-servico/dtos/filtros-ordem-servico\\.dto\\.ts$"
+      "/dist/",
+      "/test/",
+      "/coverage/"
     ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
+      }
+    },
     "maxWorkers": 4,
     "testEnvironment": "node"
   }

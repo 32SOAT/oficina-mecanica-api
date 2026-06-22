@@ -2,10 +2,21 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { OrdemServicoController } from '../src/ordens-de-servico/ordem-servico.controller';
-import { ConsultaOrdemServicoController } from '../src/ordens-de-servico/consulta-ordem-servico.controller';
-import { OrdemServicoService } from '../src/ordens-de-servico/ordem-servico.service';
-import { StatusOrdemServico as S } from '../src/ordens-de-servico/state-machine/status-ordem-servico.enum';
+import { AprovarOrcamentoOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/aprovar-orcamento-ordem-servico.use-case';
+import { AvancarStatusOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/avancar-status-ordem-servico.use-case';
+import { CreateOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/create-ordem-servico.use-case';
+import { FindAllOrdensServicoUseCase } from '../src/ordens-de-servico/application/use-cases/find-all-ordens-servico.use-case';
+import { FindOrdemServicoByIdUseCase } from '../src/ordens-de-servico/application/use-cases/find-ordem-servico-by-id.use-case';
+import { FindOrdemServicoHistoricoUseCase } from '../src/ordens-de-servico/application/use-cases/find-ordem-servico-historico.use-case';
+import { GerarOrcamentoOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/gerar-orcamento-ordem-servico.use-case';
+import { IniciarExecucaoOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/iniciar-execucao-ordem-servico.use-case';
+import { ReprovarOrcamentoOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/reprovar-orcamento-ordem-servico.use-case';
+import { SubstituirItensOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/substituir-itens-ordem-servico.use-case';
+import { TransicionarOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/transicionar-ordem-servico.use-case';
+import { StatusOrdemServico as S } from '../src/ordens-de-servico/domain/status-ordem-servico.enum';
+import { ConsultaOrdemServicoController } from '../src/ordens-de-servico/presentation/controllers/consulta-ordem-servico.controller';
+import { OrdemServicoController } from '../src/ordens-de-servico/presentation/controllers/ordem-servico.controller';
+import { OrdemServicoPresentationMapper } from '../src/ordens-de-servico/presentation/mappers/ordem-servico-presentation.mapper';
 import {
   E2E_AUTH_USER_STUB,
   FakeJwtAuthGuard,
@@ -15,28 +26,66 @@ const OS_ID = 'aaaa1111-1111-1111-1111-111111111111';
 
 describe('Ordens de Serviço (e2e)', () => {
   let app: INestApplication;
-  const serviceMock = {
-    criar: jest.fn(),
-    findAll: jest.fn(),
-    findOne: jest.fn(),
-    findHistorico: jest.fn(),
-    iniciarDiagnostico: jest.fn(),
-    substituirItensEmDiagnostico: jest.fn(),
-    gerarOrcamento: jest.fn(),
-    aprovarOrcamento: jest.fn(),
-    reprovarOrcamento: jest.fn(),
-    iniciarExecucao: jest.fn(),
-    finalizar: jest.fn(),
-    entregar: jest.fn(),
-    cancelar: jest.fn(),
-    avancarStatus: jest.fn(),
-  };
+  const createOrdemServicoUseCase = { execute: jest.fn() };
+  const findAllOrdensServicoUseCase = { execute: jest.fn() };
+  const findOrdemServicoByIdUseCase = { execute: jest.fn() };
+  const findOrdemServicoHistoricoUseCase = { execute: jest.fn() };
+  const transicionarOrdemServicoUseCase = { execute: jest.fn() };
+  const substituirItensOrdemServicoUseCase = { execute: jest.fn() };
+  const gerarOrcamentoOrdemServicoUseCase = { execute: jest.fn() };
+  const aprovarOrcamentoOrdemServicoUseCase = { execute: jest.fn() };
+  const reprovarOrcamentoOrdemServicoUseCase = { execute: jest.fn() };
+  const iniciarExecucaoOrdemServicoUseCase = { execute: jest.fn() };
+  const avancarStatusOrdemServicoUseCase = { execute: jest.fn() };
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
       controllers: [OrdemServicoController, ConsultaOrdemServicoController],
       providers: [
-        { provide: OrdemServicoService, useValue: serviceMock },
+        {
+          provide: CreateOrdemServicoUseCase,
+          useValue: createOrdemServicoUseCase,
+        },
+        {
+          provide: FindAllOrdensServicoUseCase,
+          useValue: findAllOrdensServicoUseCase,
+        },
+        {
+          provide: FindOrdemServicoByIdUseCase,
+          useValue: findOrdemServicoByIdUseCase,
+        },
+        {
+          provide: FindOrdemServicoHistoricoUseCase,
+          useValue: findOrdemServicoHistoricoUseCase,
+        },
+        {
+          provide: TransicionarOrdemServicoUseCase,
+          useValue: transicionarOrdemServicoUseCase,
+        },
+        {
+          provide: SubstituirItensOrdemServicoUseCase,
+          useValue: substituirItensOrdemServicoUseCase,
+        },
+        {
+          provide: GerarOrcamentoOrdemServicoUseCase,
+          useValue: gerarOrcamentoOrdemServicoUseCase,
+        },
+        {
+          provide: AprovarOrcamentoOrdemServicoUseCase,
+          useValue: aprovarOrcamentoOrdemServicoUseCase,
+        },
+        {
+          provide: ReprovarOrcamentoOrdemServicoUseCase,
+          useValue: reprovarOrcamentoOrdemServicoUseCase,
+        },
+        {
+          provide: IniciarExecucaoOrdemServicoUseCase,
+          useValue: iniciarExecucaoOrdemServicoUseCase,
+        },
+        {
+          provide: AvancarStatusOrdemServicoUseCase,
+          useValue: avancarStatusOrdemServicoUseCase,
+        },
         Reflector,
         { provide: APP_GUARD, useClass: FakeJwtAuthGuard },
       ],
@@ -56,19 +105,18 @@ describe('Ordens de Serviço (e2e)', () => {
     jest.clearAllMocks();
   });
 
-  it('POST /ordens responde 201 quando o service resolve', async () => {
-    serviceMock.criar.mockResolvedValueOnce({ id: 'os-1' });
-    const res = await request(app.getHttpServer())
-      .post('/ordens')
-      .send({
-        documentoCliente: '12345678901',
-        placa: 'ABC1D23',
-        itensServico: [{ servicoId: 1 }],
-        itensPeca: [],
-      });
+  it('POST /ordens responde 201 quando o use case resolve', async () => {
+    createOrdemServicoUseCase.execute.mockResolvedValueOnce({ id: 'os-1' });
+    const body = {
+      documentoCliente: '12345678901',
+      placa: 'ABC1D23',
+      itensServico: [{ servicoId: 1 }],
+      itensPeca: [],
+    };
+    const res = await request(app.getHttpServer()).post('/ordens').send(body);
     expect(res.status).toBe(201);
-    expect(serviceMock.criar).toHaveBeenCalledWith(
-      expect.objectContaining({ documentoCliente: '12345678901' }),
+    expect(createOrdemServicoUseCase.execute).toHaveBeenCalledWith(
+      OrdemServicoPresentationMapper.toCreateInput(body),
       E2E_AUTH_USER_STUB.sub,
     );
   });
@@ -79,36 +127,39 @@ describe('Ordens de Serviço (e2e)', () => {
       placa: '',
     });
     expect(res.status).toBe(400);
-    expect(serviceMock.criar).not.toHaveBeenCalled();
+    expect(createOrdemServicoUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('GET /ordens lista paginada', async () => {
-    serviceMock.findAll.mockResolvedValueOnce({ data: [], meta: {} });
+    findAllOrdensServicoUseCase.execute.mockResolvedValueOnce({
+      data: [],
+      meta: {},
+    });
     const res = await request(app.getHttpServer()).get(
       '/ordens?page=1&take=10',
     );
     expect(res.status).toBe(200);
-    expect(serviceMock.findAll).toHaveBeenCalled();
+    expect(findAllOrdensServicoUseCase.execute).toHaveBeenCalled();
   });
 
-  it('GET /ordens/:id delega ao service', async () => {
+  it('GET /ordens/:id delega ao use case', async () => {
     const os = { id: OS_ID, status: S.EmDiagnostico, valorTotal: 100 };
-    serviceMock.findOne.mockResolvedValueOnce(os);
+    findOrdemServicoByIdUseCase.execute.mockResolvedValueOnce(os);
 
     const res = await request(app.getHttpServer()).get(`/ordens/${OS_ID}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(os);
-    expect(serviceMock.findOne).toHaveBeenCalledWith(OS_ID);
+    expect(findOrdemServicoByIdUseCase.execute).toHaveBeenCalledWith(OS_ID);
   });
 
-  it('GET /ordens/:id/historico delega ao service', async () => {
+  it('GET /ordens/:id/historico delega ao use case', async () => {
     const linha = {
       id: 1,
       statusAnterior: S.Recebida,
       statusNovo: S.EmDiagnostico,
     };
-    serviceMock.findHistorico.mockResolvedValueOnce([linha]);
+    findOrdemServicoHistoricoUseCase.execute.mockResolvedValueOnce([linha]);
 
     const res = await request(app.getHttpServer()).get(
       `/ordens/${OS_ID}/historico`,
@@ -116,11 +167,13 @@ describe('Ordens de Serviço (e2e)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([linha]);
-    expect(serviceMock.findHistorico).toHaveBeenCalledWith(OS_ID);
+    expect(findOrdemServicoHistoricoUseCase.execute).toHaveBeenCalledWith(
+      OS_ID,
+    );
   });
 
   it('GET /ordens/:id/status retorna apenas campos seguros (sem CPF/email)', async () => {
-    serviceMock.findOne.mockResolvedValueOnce({
+    findOrdemServicoByIdUseCase.execute.mockResolvedValueOnce({
       id: OS_ID,
       status: S.EmExecucao,
       valorTotal: 10,
@@ -128,7 +181,7 @@ describe('Ordens de Serviço (e2e)', () => {
       veiculo: { placa: 'ABC1D23', modelo: 'X' },
       cliente: { documento: '99999999999', email: 'leak@example.com' },
     });
-    serviceMock.findHistorico.mockResolvedValueOnce([]);
+    findOrdemServicoHistoricoUseCase.execute.mockResolvedValueOnce([]);
     const res = await request(app.getHttpServer()).get(
       `/ordens/${OS_ID}/status`,
     );
@@ -140,7 +193,9 @@ describe('Ordens de Serviço (e2e)', () => {
 
   it('PATCH /ordens/:id/itens delega DTO e sub do JWT', async () => {
     const atualizada = { id: OS_ID, status: S.EmDiagnostico };
-    serviceMock.substituirItensEmDiagnostico.mockResolvedValueOnce(atualizada);
+    substituirItensOrdemServicoUseCase.execute.mockResolvedValueOnce(
+      atualizada,
+    );
     const body = {
       itensServico: [{ servicoId: 2 }],
       itensPeca: [{ estoqueId: 5, quantidade: 1 }],
@@ -152,9 +207,9 @@ describe('Ordens de Serviço (e2e)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(atualizada);
-    expect(serviceMock.substituirItensEmDiagnostico).toHaveBeenCalledWith(
+    expect(substituirItensOrdemServicoUseCase.execute).toHaveBeenCalledWith(
       OS_ID,
-      body,
+      OrdemServicoPresentationMapper.toEditarItensInput(body),
       E2E_AUTH_USER_STUB.sub,
     );
   });
@@ -168,23 +223,23 @@ describe('Ordens de Serviço (e2e)', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(serviceMock.substituirItensEmDiagnostico).not.toHaveBeenCalled();
+    expect(substituirItensOrdemServicoUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('GET /ordens/:id com id inválido retorna 400 (ParseUUIDPipe)', async () => {
     const res = await request(app.getHttpServer()).get('/ordens/nao-uuid');
 
     expect(res.status).toBe(400);
-    expect(serviceMock.findOne).not.toHaveBeenCalled();
+    expect(findOrdemServicoByIdUseCase.execute).not.toHaveBeenCalled();
   });
 
-  it('POST /ordens/:id/aprovar-orcamento delega ao service', async () => {
-    serviceMock.aprovarOrcamento.mockResolvedValueOnce({});
+  it('POST /ordens/:id/aprovar-orcamento delega ao use case', async () => {
+    aprovarOrcamentoOrdemServicoUseCase.execute.mockResolvedValueOnce({});
     const res = await request(app.getHttpServer()).post(
       `/ordens/${OS_ID}/aprovar-orcamento`,
     );
     expect(res.status).toBe(201);
-    expect(serviceMock.aprovarOrcamento).toHaveBeenCalledWith(
+    expect(aprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalledWith(
       OS_ID,
       E2E_AUTH_USER_STUB.sub,
     );
@@ -195,6 +250,6 @@ describe('Ordens de Serviço (e2e)', () => {
       .post(`/ordens/${OS_ID}/avancar-status`)
       .send({ novoStatus: 'INVALIDO' });
     expect(res.status).toBe(400);
-    expect(serviceMock.avancarStatus).not.toHaveBeenCalled();
+    expect(avancarStatusOrdemServicoUseCase.execute).not.toHaveBeenCalled();
   });
 });
