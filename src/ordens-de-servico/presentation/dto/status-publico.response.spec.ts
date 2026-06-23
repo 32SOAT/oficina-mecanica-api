@@ -1,3 +1,4 @@
+import { BadRequestError } from '../../../common/application/errors/application.errors';
 import { StatusOrdemServico } from '../../domain/status-ordem-servico.enum';
 import type { OrdemServicoReadModel } from '../../application/read-models/ordem-servico-read-model';
 import { StatusPublicoResponse } from './status-publico.response';
@@ -44,5 +45,24 @@ describe('StatusPublicoResponse.fromReadModel', () => {
     expect(resp.valorTotal).toBe(850);
     expect(resp.linhaDoTempo).toHaveLength(1);
     expect(resp).not.toHaveProperty('cliente');
+  });
+
+  it('lança BadRequestError quando veículo não está no read model', () => {
+    expect(() =>
+      StatusPublicoResponse.fromReadModel(
+        {
+          id: 'os-1',
+          veiculo_id: 'vei-1',
+          cliente_id: 'cli-1',
+          valorTotal: 100,
+          observacao: null,
+          status: StatusOrdemServico.Recebida,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        },
+        [],
+      ),
+    ).toThrow(BadRequestError);
   });
 });

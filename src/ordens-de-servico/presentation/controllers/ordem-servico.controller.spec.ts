@@ -122,16 +122,22 @@ describe('OrdemServicoController', () => {
     );
   });
 
-  it('POST aprovar-orcamento delega', async () => {
+  it('POST aprovar-orcamento delega sem usuarioId (rota pública)', async () => {
     aprovarOrcamentoOrdemServicoUseCase.execute.mockResolvedValue({});
-    await controller.aprovarOrcamento(mockReq, 'os-1');
-    expect(aprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalled();
+    await controller.aprovarOrcamento('os-1');
+    expect(aprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalledWith(
+      'os-1',
+      null,
+    );
   });
 
-  it('POST reprovar-orcamento delega', async () => {
+  it('POST reprovar-orcamento delega sem usuarioId (rota pública)', async () => {
     reprovarOrcamentoOrdemServicoUseCase.execute.mockResolvedValue({});
-    await controller.reprovarOrcamento(mockReq, 'os-1');
-    expect(reprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalled();
+    await controller.reprovarOrcamento('os-1');
+    expect(reprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalledWith(
+      'os-1',
+      null,
+    );
   });
 
   it('POST iniciar-execucao delega', async () => {

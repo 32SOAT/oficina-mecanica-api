@@ -3,6 +3,7 @@ import { Repository, DataSource } from 'typeorm';
 import { OrdemServicoTypeormEntity as OrdemServicoEntity } from '../entity/ordem-servico.typeorm.entity';
 import { OrdemServicoTypeormRepository } from './ordem-servico.repository';
 import { StatusOrdemServico as S } from '../../../domain/status-ordem-servico.enum';
+import { STATUS_EXCLUIDOS_LISTAGEM_PADRAO } from '../../../domain/listagem-ordem-servico';
 
 describe('OrdemServicoTypeormRepository', () => {
   let service: OrdemServicoTypeormRepository;
@@ -28,9 +29,11 @@ describe('OrdemServicoTypeormRepository', () => {
       const qb = {
         andWhere: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       } as unknown as ReturnType<
         Repository<OrdemServicoEntity>['createQueryBuilder']
@@ -48,20 +51,56 @@ describe('OrdemServicoTypeormRepository', () => {
       expect(qb.andWhere).toHaveBeenCalledWith('os.status = :status', {
         status: S.EmExecucao,
       });
+      expect(qb.andWhere).not.toHaveBeenCalledWith(
+        'os.status NOT IN (:...statusExcluidos)',
+        expect.anything(),
+      );
       expect(qb.andWhere).toHaveBeenCalledWith('os.cliente_id = :clienteId', {
         clienteId: 'cli-1',
       });
+      expect(qb.addSelect).toHaveBeenCalled();
+      expect(qb.orderBy).toHaveBeenCalledWith(
+        'os_prioridade_listagem',
+        'ASC',
+      );
+      expect(qb.addOrderBy).toHaveBeenCalledWith('os.createdAt', 'ASC');
       expect(result.meta.currentPage).toBe(1);
       expect(result.meta.itemsPerPage).toBe(5);
+    });
+
+    it('exclui finalizadas, entregues e canceladas quando status não é filtrado', async () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      } as unknown as ReturnType<
+        Repository<OrdemServicoEntity>['createQueryBuilder']
+      >;
+
+      (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+      await service.findAll({ page: 1, take: 10 });
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'os.status NOT IN (:...statusExcluidos)',
+        { statusExcluidos: [...STATUS_EXCLUIDOS_LISTAGEM_PADRAO] },
+      );
     });
 
     it('aplica os filtros de data quando presentes', async () => {
       const qb = {
         andWhere: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       } as unknown as ReturnType<
         Repository<OrdemServicoEntity>['createQueryBuilder']
@@ -88,9 +127,11 @@ describe('OrdemServicoTypeormRepository', () => {
       const qb = {
         andWhere: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       } as unknown as ReturnType<
         Repository<OrdemServicoEntity>['createQueryBuilder']

@@ -13,7 +13,9 @@ import {
   OrdemServicoReadModel,
 } from '../../../application/dto/ordem-servico.dto';
 import { OrdemServicoQueryPort } from '../../../application/ports/ordem-servico-query.port';
+import { STATUS_EXCLUIDOS_LISTAGEM_PADRAO } from '../../../domain/listagem-ordem-servico';
 import { StatusOrdemServico } from '../../../domain/status-ordem-servico.enum';
+import { buildPrioridadeStatusListagemCaseSql } from '../helpers/ordem-servico-listagem-order.helper';
 import { OrdemServicoReadModelMapper } from '../../mappers/ordem-servico-read-model.mapper';
 import { HistoricoStatusOsEntity } from '../entity/historico-status-os.entity';
 import { OrdemServicoTypeormEntity } from '../entity/ordem-servico.typeorm.entity';
@@ -38,6 +40,10 @@ export class OrdemServicoTypeormRepository implements OrdemServicoQueryPort {
 
     if (filtros.status) {
       qb.andWhere('os.status = :status', { status: filtros.status });
+    } else {
+      qb.andWhere('os.status NOT IN (:...statusExcluidos)', {
+        statusExcluidos: [...STATUS_EXCLUIDOS_LISTAGEM_PADRAO],
+      });
     }
     if (filtros.clienteId) {
       qb.andWhere('os.cliente_id = :clienteId', {
@@ -53,7 +59,12 @@ export class OrdemServicoTypeormRepository implements OrdemServicoQueryPort {
       qb.andWhere('os.createdAt <= :dataFim', { dataFim: filtros.dataFim });
     }
 
-    qb.orderBy('os.createdAt', 'DESC').skip(offset).take(take);
+    const prioridadeListagem = buildPrioridadeStatusListagemCaseSql('os.status');
+    qb.addSelect(prioridadeListagem, 'os_prioridade_listagem')
+      .orderBy('os_prioridade_listagem', 'ASC')
+      .addOrderBy('os.createdAt', 'ASC')
+      .skip(offset)
+      .take(take);
 
     const [data, count] = await qb.getManyAndCount();
     const meta = createPaginationMeta(take, page, count) ?? {

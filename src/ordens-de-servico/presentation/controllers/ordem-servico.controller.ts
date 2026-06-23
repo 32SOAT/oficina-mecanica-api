@@ -18,6 +18,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { type AuthenticatedRequest } from '../../../auth/presentation/interfaces/authenticated-request.interface';
+import { Public } from '../../../auth/presentation/decorators/public.decorator';
 import { AprovarOrcamentoOrdemServicoUseCase } from '../../application/use-cases/aprovar-orcamento-ordem-servico.use-case';
 import { AvancarStatusOrdemServicoUseCase } from '../../application/use-cases/avancar-status-ordem-servico.use-case';
 import { CreateOrdemServicoUseCase } from '../../application/use-cases/create-ordem-servico.use-case';
@@ -66,6 +67,12 @@ export class OrdemServicoController {
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'Listar ordens de serviço',
+    description:
+      'Listagem operacional: exclui OS finalizadas, entregues e canceladas (use query `status` para incluí-las). ' +
+      'Ordenação: Em Execução → Aguardando Serviço → Aguardando Peças/Insumos → Aguardando Aprovação → Diagnóstico → Recebida; dentro de cada status, mais antigas primeiro.',
+  })
   async listar(@Query() filtros: FiltrosOrdemServicoDto) {
     const result = await this.findAllOrdensServicoUseCase.execute(
       OrdemServicoPresentationMapper.toFiltrosInput(filtros),
@@ -127,27 +134,27 @@ export class OrdemServicoController {
     return OrdemServicoResponseDto.fromReadModel(os);
   }
 
+  @Public()
   @Post(':id/aprovar-orcamento')
-  async aprovarOrcamento(
-    @Req() req: AuthenticatedRequest,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    const os = await this.aprovarOrcamentoOrdemServicoUseCase.execute(
-      id,
-      req.user.sub,
-    );
+  @ApiOperation({
+    summary: 'Aprovar orçamento (público)',
+    description:
+      'Permite ao cliente aprovar o orçamento sem autenticação JWT. O histórico registra usuário nulo.',
+  })
+  async aprovarOrcamento(@Param('id', ParseUUIDPipe) id: string) {
+    const os = await this.aprovarOrcamentoOrdemServicoUseCase.execute(id, null);
     return OrdemServicoResponseDto.fromReadModel(os);
   }
 
+  @Public()
   @Post(':id/reprovar-orcamento')
-  async reprovarOrcamento(
-    @Req() req: AuthenticatedRequest,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    const os = await this.reprovarOrcamentoOrdemServicoUseCase.execute(
-      id,
-      req.user.sub,
-    );
+  @ApiOperation({
+    summary: 'Reprovar orçamento (público)',
+    description:
+      'Permite ao cliente reprovar o orçamento sem autenticação JWT. O histórico registra usuário nulo.',
+  })
+  async reprovarOrcamento(@Param('id', ParseUUIDPipe) id: string) {
+    const os = await this.reprovarOrcamentoOrdemServicoUseCase.execute(id, null);
     return OrdemServicoResponseDto.fromReadModel(os);
   }
 
