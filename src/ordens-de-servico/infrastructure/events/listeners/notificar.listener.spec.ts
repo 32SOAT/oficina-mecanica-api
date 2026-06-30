@@ -1,5 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
+import { ClienteLookupPort } from '../../../../clientes/application/ports/cliente-lookup.port';
+import { VeiculoLookupPort } from '../../../../veiculos/application/ports/veiculo-lookup.port';
 import { OrdemServicoTypeormEntity as OrdemServicoEntity } from '../../typeorm/entity/ordem-servico.typeorm.entity';
 import { StatusOrdemServico } from '../../../domain/status-ordem-servico.enum';
 import { StatusAlteradoEvent } from '../ordem-servico.events';
@@ -7,14 +9,24 @@ import { NotificarListener } from './notificar.listener';
 
 describe('NotificarListener', () => {
   let osRepo: jest.Mocked<Pick<Repository<OrdemServicoEntity>, 'findOne'>>;
+  let clienteLookup: jest.Mocked<
+    Pick<ClienteLookupPort, 'findSnapshotById'>
+  >;
+  let veiculoLookup: jest.Mocked<
+    Pick<VeiculoLookupPort, 'findSnapshotById'>
+  >;
   let listener: NotificarListener;
   let logSpy: jest.SpyInstance;
   let warnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     osRepo = { findOne: jest.fn() };
+    clienteLookup = { findSnapshotById: jest.fn().mockResolvedValue(null) };
+    veiculoLookup = { findSnapshotById: jest.fn().mockResolvedValue(null) };
     listener = new NotificarListener(
       osRepo as unknown as Repository<OrdemServicoEntity>,
+      clienteLookup as never,
+      veiculoLookup as never,
     );
     logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
     warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
@@ -223,5 +235,63 @@ describe('NotificarListener', () => {
       new StatusAlteradoEvent('os-x', null, StatusOrdemServico.Reprovada, null),
     );
     expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it('resolve placa via lookup quando veículo soft-deleted não vem na relação', async () => {
+    osRepo.findOne.mockResolvedValue({
+      id: 'os-1',
+      veiculo_id: 'vei-1',
+      valorTotal: 500,
+      cliente_id: 'cli-1',
+      cliente: { nome: 'João', email: 'joao@example.com' },
+      veiculo: null,
+    } as OrdemServicoEntity);
+    veiculoLookup.findSnapshotById.mockResolvedValue({
+      id: 'vei-1',
+      placa: 'ABC1D23',
+      marca: 'Toyota',
+      modelo: 'Corolla',
+      ano: 2020,
+      cliente_id: 'cli-1',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: new Date(),
+    });
+
+    await listener.handle(
+      new StatusAlteradoEvent(
+        'os-1',
+        StatusOrdemServico.EmDiagnostico,
+        StatusOrdemServico.AguardandoAprovacao,
+        null,
+      ),
+    );
+
+    expect(veiculoLookup.findSnapshotById).toHaveBeenCalledWith('vei-1', {
+      includeDeleted: true,
+    });
+    expect(firstLogMessage()).toContain('ABC1D23');
+  });
+
+  it('não lança erro quando veículo e lookup estão ausentes', async () => {
+    osRepo.findOne.mockResolvedValue({
+      id: 'os-1',
+      veiculo_id: 'vei-1',
+      valorTotal: 500,
+      cliente_id: 'cli-1',
+      cliente: { nome: 'João', email: 'joao@example.com' },
+      veiculo: null,
+    } as OrdemServicoEntity);
+
+    await listener.handle(
+      new StatusAlteradoEvent(
+        'os-1',
+        StatusOrdemServico.EmDiagnostico,
+        StatusOrdemServico.AguardandoAprovacao,
+        null,
+      ),
+    );
+
+    expect(firstLogMessage()).toContain('placa indisponível');
   });
 });

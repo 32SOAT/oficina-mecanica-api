@@ -58,6 +58,3 @@ export class ServicoTypeormEntity {
     });
   }
 }
-
-/** @deprecated Use ServicoTypeormEntity */
-export { ServicoTypeormEntity as ServicoEntity };

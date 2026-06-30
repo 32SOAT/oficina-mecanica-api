@@ -112,9 +112,9 @@ Quase todos os contextos seguem o mesmo recorte:
 
 │   ├── mappers/                 # (ordens-de-servico) entity → read model
 
-│   ├── transactional/           # leitura dentro de EntityManager (OS)
+│   ├── transactional/           # leitura dentro de EntityManager (cross-módulo)
 
-│   ├── lookup/                  # (clientes — lookup cross-módulo)
+│   ├── lookup/                  # leitura cross-módulo fora de transação (clientes, veículos)
 
 │   ├── credential/              # (users — senha para auth)
 
@@ -124,7 +124,7 @@ Quase todos os contextos seguem o mesmo recorte:
 
 │   ├── events/                  # (OS — event emitter + listeners)
 
-│   └── helpers/
+│   └── helpers/                 # (OS — loader de read model; estoque — mutação de domínio)
 
 │
 
@@ -266,9 +266,11 @@ Pontos verificados na última revisão do código:
 
 | Notificações de OS | **Mock** — `NotificarListener` só registra log |
 
-| Código legado em application | **Parcial** — mappers/output obsoletos ainda no disco (ver dívida) |
+| Código legado em application | **Resolvido** — aliases `*Output` e mappers obsoletos removidos |
 
-| Comportamento de domínio em `EstoqueTypeormEntity` | **Pendente** — `reservar`/`darBaixa` via `runDomainMutation` (mesmo padrão que OS tinha) |
+| Comportamento de domínio em `EstoqueTypeormEntity` | **Resolvido** — mutações via `applyEstoqueDomainMutation` no adapter transacional |
+
+| Nomenclatura entidades TypeORM | **Resolvido** — `*TypeormEntity` único; aliases `@deprecated` removidos |
 
 
 
@@ -436,13 +438,15 @@ Fronteiras entre contextos. Use cases **não** importam infraestrutura alheia di
 
 | `CLIENTE_LOOKUP_PORT` | clientes | veículos | documento → `clienteId` (fora de transação) |
 
-| `CLIENTE_TRANSACTIONAL_PORT` | clientes | OS | cliente dentro do `EntityManager` da transação |
+| `CLIENTE_TRANSACTIONAL_PORT` | clientes | OS (write) | cliente dentro do `EntityManager` da transação |
 
-| `VEICULO_TRANSACTIONAL_PORT` | veículos | OS | veículo na transação |
+| `VEICULO_LOOKUP_PORT` | veículos | OS (query) | snapshot de veículo (incl. soft-deleted) fora de transação |
 
-| `SERVICO_TRANSACTIONAL_PORT` | servicos | OS | serviço/preço na transação |
+| `VEICULO_TRANSACTIONAL_PORT` | veículos | OS (write) | placa + cliente → `veiculoId` na transação |
 
-| `ESTOQUE_TRANSACTIONAL_PORT` | estoque | OS | reserva/baixa na transação |
+| `SERVICO_TRANSACTIONAL_PORT` | servicos | OS (write) | serviço/preço na transação |
+
+| `ESTOQUE_TRANSACTIONAL_PORT` | estoque | OS (write) | reserva/baixa na transação |
 
 | `ORDEM_SERVICO_QUERY_PORT` | ordens-de-servico | use cases OS | leituras → read models |
 
@@ -466,29 +470,35 @@ Fronteiras entre contextos. Use cases **não** importam infraestrutura alheia di
 
 
 
-### Lookup vs transactional (clientes)
+### Lookup vs transactional
 
 
 
-Dois adapters resolvem documento → `clienteId`, em contextos diferentes:
+Dois padrões de integração cross-módulo, usados conforme o **contexto de execução**:
 
 
 
-| | `ClienteLookupAdapter` | `ClienteTransactionalAdapter` |
+| | Lookup | Transactional |
 
 | --- | --- | --- |
 
-| Port | `CLIENTE_LOOKUP_PORT` | `CLIENTE_TRANSACTIONAL_PORT` |
+| Quando | leitura auxiliar **fora** de transação | coordenação **dentro** de `runInTransaction` |
 
-| Consumidor | veículos | transação de OS |
+| Acesso | repositório ou `Repository` do dono | `EntityManager` compartilhado |
 
-| Acesso | `CLIENTE_REPOSITORY` | `EntityManager` da transação aberta |
-
-| Valida documento | sim | não (já validado antes na OS) |
+| Exemplos | `ClienteLookupPort` (veículos), `VeiculoLookupPort` (OS query) | `ClienteTransactionalPort`, `VeiculoTransactionalPort`, estoque/serviço na OS |
 
 
 
-A OS não usa lookup porque todas as leituras auxiliares (cliente, veículo, serviço, estoque) precisam participar da **mesma transação**.
+**Clientes** expõem os dois: lookup valida documento (CPF/CNPJ) na application; transactional resolve id dentro da transação de OS (documento já validado no fluxo de criação).
+
+
+
+**Veículos** expõem os dois: lookup retorna `VeiculoSnapshot` (consulta pública / `findById` quando a relação TypeORM não carrega soft-deleted); transactional valida placa + cliente ao abrir OS.
+
+
+
+Na **transação de OS**, cliente, veículo, serviço e estoque usam ports **transactional** — mesma unidade ACID. Na **query** (`OrdemServicoQueryPort`), o enriquecimento de veículo soft-deleted usa `VeiculoLookupPort` via `buildOrdemServicoReadModel` (`infrastructure/helpers/ordem-servico-read-model.loader.ts`).
 
 
 
@@ -512,9 +522,11 @@ infrastructure/
 
 ├── mappers/ordem-servico-read-model.mapper.ts        # entity → read model (sem cast)
 
-├── persistence/ordem-servico.typeorm-transaction.ts  # transação multi-agregado
+├── helpers/ordem-servico-read-model.loader.ts          # mapper + VeiculoLookupPort (soft-deleted)
 
-├── typeorm/repository/                               # query + relatório
+├── persistence/ordem-servico.typeorm-transaction.ts  # transação multi-agregado (writes)
+
+├── typeorm/repository/                               # query (OrdemServicoQueryPort) + relatório
 
 ├── events/                                           # StatusAlterado + listeners
 
@@ -529,6 +541,10 @@ presentation/dto/ordem-servico-response.dto.ts        # fromReadModel() tipado
 
 
 Use cases orquestram `ORDEM_SERVICO_TRANSACTION_PORT` + `ORDEM_SERVICO_EVENTS_PORT`. Domain é **funcional** (transições, reserva, observação) — não há classe `OrdemServico`; writes usam `OsWorkflowHandle`.
+
+
+
+**Query vs write na infra:** `OrdemServicoTypeormRepository` (leituras) e `OrdemServicoTypeormTransaction` (escritas) permanecem separados (CQRS light). Não centralizar num único adapter — papéis distintos.
 
 
 
@@ -554,7 +570,11 @@ Estrutura padrão de camadas. Repositórios retornam entidades de domínio (`toD
 
 
 
-Onde a OS precisa ler dentro de transação, existe pasta `transactional/` com adapter dedicado.
+**Veículos** expõem `VEICULO_LOOKUP_PORT` (leitura de snapshot) e `VEICULO_TRANSACTIONAL_PORT` (validação na transação de OS). **Clientes** expõem lookup + transactional no mesmo espírito.
+
+
+
+Demais módulos usados na transação de OS (`servicos`, `estoque`) expõem apenas port **transactional** com adapter em `infrastructure/transactional/`.
 
 
 
@@ -572,7 +592,7 @@ Onde a OS precisa ler dentro de transação, existe pasta `transactional/` com a
 
 | FK TypeORM entre entidades | OS ↔ cliente/veículo/serviço/estoque | joins e integridade referencial |
 
-| `database.module` registra todas entidades | `database/` | centralização típica TypeORM |
+| `database.module` registra entidades `*TypeormEntity` | `database/` | centralização típica TypeORM; nomes legados `*Entity` removidos |
 
 | `seeding.service` grava via `DataSource` | `database/seeds` | fora dos use cases; ok para seed |
 
@@ -600,7 +620,7 @@ src/**/*.spec.ts       # unitários por camada/módulo
 
 
 
-Estado atual: **100 suites / 518 testes** passando, com cobertura global ≥ thresholds do `package.json` (branches 80%, functions/lines/statements 90%).
+Estado atual: **104 suites / 531 testes** passando, com cobertura global ≥ thresholds do `package.json` (branches 80%, functions/lines/statements 90%).
 
 
 
@@ -644,8 +664,6 @@ Itens priorizados por impacto em **Clean Code**, **Clean Architecture** e **SOLI
 
 | ---- | ---- | -------- | ---------------- |
 
-| **Aliases `*Entity` deprecados** | entidades TypeORM, seeds, `database.module` | duplicidade de nomes (`UserEntity` em `database.module`) | migrar seeds/module para `*TypeormEntity` |
-
 | **Consulta pública carrega read model completo** | `ConsultaOrdemServicoController` | usa `FindOrdemServicoByIdUseCase` (inclui dados de cliente) e só depois filtra em `StatusPublicoResponse` | use case ou query de projeção pública na application |
 
 | **`ValidationPipe` global sem `forbidNonWhitelisted`** | `configure-app.ts` | campos extras são descartados silenciosamente; só `PATCH /estoque/:id` rejeita explicitamente | habilitar globalmente ou documentar exceções por rota |
@@ -674,6 +692,8 @@ Itens priorizados por impacto em **Clean Code**, **Clean Architecture** e **SOLI
 
 - Ports cross-módulo (lookup vs transactional, reposição invertida)
 
+- Nomenclatura única de entidades TypeORM (`*TypeormEntity`; aliases `*Entity` removidos de seeds e `database.module`)
+
 - Hash centralizado em `common/security/password-hash.ts`
 
 - CRUDs retornam domínio; presentation faz `fromDomain()`
@@ -686,6 +706,7 @@ Itens priorizados por impacto em **Clean Code**, **Clean Architecture** e **SOLI
 
 - **Workflow de OS:** domínio puro + `OsWorkflowHandle` / `OsTypeormHandle` (entidade TypeORM só persistência)
 - **Estoque transacional:** mutações de domínio via `applyEstoqueDomainMutation` no adapter (entidade TypeORM só persistência)
+- **OS query:** `buildOrdemServicoReadModel` + `VeiculoLookupPort` para veículo soft-deleted (ex.: consulta pública de status)
 - **Swagger** nos response DTOs da presentation (sem `@ApiProperty` nas entidades TypeORM)
 - **Read models** tipados nos use cases (`*ReadModel`; aliases `*Output` removidos)
 

@@ -1,4 +1,5 @@
 import { Repository } from 'typeorm';
+import type { ClienteLookupPort } from '../../../../clientes/application/ports/cliente-lookup.port';
 import { VeiculoTypeormRepository } from './veiculo.repository';
 import { VeiculoTypeormEntity } from '../entity/veiculo.typeorm.entity';
 import { Veiculo } from '../../../domain/veiculo';
@@ -36,6 +37,7 @@ describe('VeiculoTypeormRepository', () => {
       'save' | 'findAndCount' | 'findOne' | 'softRemove'
     >
   >;
+  let clienteLookup: jest.Mocked<Pick<ClienteLookupPort, 'findSnapshotById'>>;
 
   beforeEach(() => {
     ormRepository = {
@@ -44,8 +46,10 @@ describe('VeiculoTypeormRepository', () => {
       findOne: jest.fn(),
       softRemove: jest.fn(),
     };
+    clienteLookup = { findSnapshotById: jest.fn().mockResolvedValue(null) };
     repository = new VeiculoTypeormRepository(
       ormRepository as unknown as Repository<VeiculoTypeormEntity>,
+      clienteLookup as unknown as ClienteLookupPort,
     );
   });
 
@@ -120,5 +124,27 @@ describe('VeiculoTypeormRepository', () => {
     const result = await repository.softRemove(makeVeiculo().softRemove());
 
     expect(result.cliente?.nome).toBe('Jane');
+  });
+
+  it('carrega cliente soft-deleted via ClienteLookupPort quando relação não veio', async () => {
+    const entity = makeEntity();
+    ormRepository.findOne.mockResolvedValue(entity);
+    clienteLookup.findSnapshotById.mockResolvedValue({
+      id: 'cliente-id',
+      documento: '39053344705',
+      nome: 'Cliente excluído',
+      email: 'excluido@example.com',
+      celularNumero: '11988887777',
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-01'),
+      deletedAt: new Date('2026-02-01'),
+    });
+
+    const result = await repository.findById('veiculo-id');
+
+    expect(clienteLookup.findSnapshotById).toHaveBeenCalledWith('cliente-id', {
+      includeDeleted: true,
+    });
+    expect(result?.cliente?.nome).toBe('Cliente excluído');
   });
 });

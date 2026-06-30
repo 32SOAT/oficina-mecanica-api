@@ -1,4 +1,8 @@
 import { NotFoundError } from '../../../../common/application/errors/application.errors';
+import type { ClienteLookupPort } from '../../../../clientes/application/ports/cliente-lookup.port';
+import type { EstoqueLookupPort } from '../../../../estoque/application/ports/estoque-lookup.port';
+import type { ServicoLookupPort } from '../../../../servicos/application/ports/servico-lookup.port';
+import type { VeiculoLookupPort } from '../../../../veiculos/application/ports/veiculo-lookup.port';
 import { Repository, DataSource } from 'typeorm';
 import { OrdemServicoTypeormEntity as OrdemServicoEntity } from '../entity/ordem-servico.typeorm.entity';
 import { OrdemServicoTypeormRepository } from './ordem-servico.repository';
@@ -8,10 +12,18 @@ import { STATUS_EXCLUIDOS_LISTAGEM_PADRAO } from '../../../domain/listagem-ordem
 describe('OrdemServicoTypeormRepository', () => {
   let service: OrdemServicoTypeormRepository;
   let osRepo: jest.Mocked<Repository<OrdemServicoEntity>>;
-  let dataSource: { getRepository: jest.Mock };
+  let dataSource: { getRepository: jest.Mock; manager: object };
+  let clienteLookup: jest.Mocked<Pick<ClienteLookupPort, 'findSnapshotById'>>;
+  let veiculoLookup: jest.Mocked<Pick<VeiculoLookupPort, 'findSnapshotById'>>;
+  let servicoLookup: jest.Mocked<Pick<ServicoLookupPort, 'findSnapshotById'>>;
+  let estoqueLookup: jest.Mocked<Pick<EstoqueLookupPort, 'findSnapshotById'>>;
 
   beforeEach(() => {
-    dataSource = { getRepository: jest.fn() };
+    dataSource = { getRepository: jest.fn(), manager: {} };
+    clienteLookup = { findSnapshotById: jest.fn() };
+    veiculoLookup = { findSnapshotById: jest.fn() };
+    servicoLookup = { findSnapshotById: jest.fn() };
+    estoqueLookup = { findSnapshotById: jest.fn() };
     osRepo = {
       findOne: jest.fn(),
       find: jest.fn(),
@@ -21,6 +33,10 @@ describe('OrdemServicoTypeormRepository', () => {
     service = new OrdemServicoTypeormRepository(
       osRepo,
       dataSource as unknown as DataSource,
+      clienteLookup as unknown as ClienteLookupPort,
+      veiculoLookup as unknown as VeiculoLookupPort,
+      servicoLookup as unknown as ServicoLookupPort,
+      estoqueLookup as unknown as EstoqueLookupPort,
     );
   });
 
@@ -143,6 +159,51 @@ describe('OrdemServicoTypeormRepository', () => {
       expect(result.meta.itemsPerPage).toBe(10);
       expect(result.meta.currentPage).toBe(1);
     });
+
+    it('enriquece cada OS da listagem via buildOrdemServicoReadModel', async () => {
+      const os = new OrdemServicoEntity();
+      Object.assign(os, {
+        id: 'os-1',
+        cliente_id: 'cli-1',
+        veiculo_id: 'vei-1',
+        valorTotal: 0,
+        status: S.Recebida,
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+        deletedAt: null,
+      });
+
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[os], 1]),
+      } as unknown as ReturnType<
+        Repository<OrdemServicoEntity>['createQueryBuilder']
+      >;
+
+      (osRepo.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+      clienteLookup.findSnapshotById.mockResolvedValue({
+        id: 'cli-1',
+        documento: '39053344705',
+        nome: 'João',
+        email: 'joao@example.com',
+        celularNumero: '11999999999',
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+        deletedAt: null,
+      });
+
+      const result = await service.findAll({ page: 1, take: 10 });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].cliente?.nome).toBe('João');
+      expect(clienteLookup.findSnapshotById).toHaveBeenCalled();
+    });
   });
 
   describe('findById', () => {
@@ -179,13 +240,56 @@ describe('OrdemServicoTypeormRepository', () => {
       (osRepo.findOne as jest.Mock).mockResolvedValue(null);
       await expect(service.findById('nope')).rejects.toThrow(NotFoundError);
     });
+
+    it('carrega relacionamentos soft-deleted via lookup ports quando não vieram no findOne', async () => {
+      const os = new OrdemServicoEntity();
+      Object.assign(os, { id: 'os-1', veiculo_id: 'vei-1', veiculo: undefined });
+
+      (osRepo.findOne as jest.Mock).mockResolvedValue(os);
+      veiculoLookup.findSnapshotById.mockResolvedValue({
+        id: 'vei-1',
+        placa: 'ABC1D23',
+        marca: 'Toyota',
+        modelo: 'Corolla',
+        ano: 2020,
+        cliente_id: 'cli-1',
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01'),
+        deletedAt: new Date('2026-02-01'),
+      });
+
+      const result = await service.findById('os-1');
+
+      expect(veiculoLookup.findSnapshotById).toHaveBeenCalledWith('vei-1', {
+        includeDeleted: true,
+      });
+      expect(result.veiculo?.placa).toBe('ABC1D23');
+    });
   });
 
   describe('findHistorico', () => {
     it('retorna histórico ordenado e exige OS existente', async () => {
       const histEntries = [
-        { id: 'h1', createdAt: new Date('2026-04-01') },
-        { id: 'h2', createdAt: new Date('2026-04-02') },
+        {
+          id: 'h1',
+          os_id: 'os-1',
+          statusAnterior: null,
+          statusNovo: S.Recebida,
+          usuarioId: 'user-1',
+          createdAt: new Date('2026-04-01'),
+          updatedAt: new Date('2026-04-01'),
+          deletedAt: null,
+        },
+        {
+          id: 'h2',
+          os_id: 'os-1',
+          statusAnterior: S.Recebida,
+          statusNovo: S.EmDiagnostico,
+          usuarioId: null,
+          createdAt: new Date('2026-04-02'),
+          updatedAt: new Date('2026-04-02'),
+          deletedAt: null,
+        },
       ];
       const histRepo = {
         find: jest.fn().mockResolvedValue(histEntries),
