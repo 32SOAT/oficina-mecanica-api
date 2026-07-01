@@ -58,6 +58,8 @@ describe('config env', () => {
     delete process.env.POSTGRES_USER;
     delete process.env.POSTGRES_PASSWORD;
     delete process.env.POSTGRES_DB;
+    delete process.env.POSTGRES_SSL;
+    delete process.env.POSTGRES_SSL_REJECT_UNAUTHORIZED;
     process.env.POSTGRES_SYNC = '0';
 
     const options = getDatabaseOptions();
@@ -71,6 +73,24 @@ describe('config env', () => {
     });
   });
 
+  it('builds database options with ssl enabled', () => {
+    process.env.POSTGRES_HOST = 'db';
+    process.env.POSTGRES_PORT = '5432';
+    process.env.POSTGRES_USER = 'postgres';
+    process.env.POSTGRES_PASSWORD = 'postgres';
+    process.env.POSTGRES_DB = 'oficina';
+    process.env.POSTGRES_SYNC = '0';
+    process.env.POSTGRES_SSL = '1';
+    process.env.POSTGRES_SSL_REJECT_UNAUTHORIZED = '0';
+
+    const options = getDatabaseOptions();
+    expect(options).toMatchObject({
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    });
+  });
+
   it('builds database options and registerAs wrapper', () => {
     process.env.POSTGRES_HOST = 'db';
     process.env.POSTGRES_PORT = '5432';
@@ -78,6 +98,8 @@ describe('config env', () => {
     process.env.POSTGRES_PASSWORD = 'postgres';
     process.env.POSTGRES_DB = 'oficina';
     process.env.POSTGRES_SYNC = '1';
+    delete process.env.POSTGRES_SSL;
+    delete process.env.POSTGRES_SSL_REJECT_UNAUTHORIZED;
 
     const options = getDatabaseOptions();
     expect(options).toMatchObject({
@@ -102,6 +124,8 @@ describe('config env', () => {
       POSTGRES_PASSWORD: 'postgres',
       POSTGRES_DB: 'oficina',
       POSTGRES_SYNC: 1,
+      POSTGRES_SSL: 1,
+      POSTGRES_SSL_REJECT_UNAUTHORIZED: 0,
       JWT_SECRET: 'test-jwt-secret-for-validation',
     });
     const error = validated.error;

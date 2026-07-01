@@ -1,0 +1,23 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: fase2-kubernetes-oficina-mecanica-api
+  namespace: ${KUBERNETES_NAMESPACE}
+  labels:
+    app.kubernetes.io/name: ${API_NAME}
+    app.kubernetes.io/instance: ${APP_INSTANCE}
+    app.kubernetes.io/part-of: ${PROJECT_NAME}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fase2-kubernetes-oficina-mecanica-api
+  minReplicas: ${API_HPA_MIN_REPLICAS}
+  maxReplicas: ${API_HPA_MAX_REPLICAS}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: ${API_HPA_TARGET_CPU_UTILIZATION_PERCENTAGE}

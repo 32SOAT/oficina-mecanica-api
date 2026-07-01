@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${API_NAME}-config
+  namespace: ${KUBERNETES_NAMESPACE}
+  labels:
+    app.kubernetes.io/name: ${API_NAME}
+    app.kubernetes.io/instance: ${APP_INSTANCE}
+    app.kubernetes.io/part-of: ${PROJECT_NAME}
+data:
+  NODE_ENV: "${NODE_ENV}"
+  APP_PORT: "${APP_PORT}"
+  POSTGRES_HOST: "${POSTGRES_HOST}"
+  POSTGRES_PORT: "${POSTGRES_PORT}"
+  POSTGRES_DB: "${POSTGRES_DB}"
+  POSTGRES_SYNC: "${POSTGRES_SYNC}"
+  POSTGRES_SSL: "${POSTGRES_SSL}"
+  POSTGRES_SSL_REJECT_UNAUTHORIZED: "${POSTGRES_SSL_REJECT_UNAUTHORIZED}"
+  JWT_EXPIRES_IN: "${JWT_EXPIRES_IN}"

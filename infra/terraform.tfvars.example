@@ -1,0 +1,46 @@
+aws_region  = "us-east-1"
+environment = "dev"
+
+# Restrinja estes CIDRs para seu IP/VPN em ambientes reais.
+cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
+api_allowed_cidr_blocks              = ["0.0.0.0/0"]
+
+db_name     = "oficina_mecanica"
+db_username = "oficina"
+db_password = "troque-esta-senha"
+
+jwt_secret     = "troque-este-jwt-secret-com-mais-de-16-caracteres"
+jwt_expires_in = "1h"
+
+# Se api_image ficar vazio, o Deployment usara o ECR criado por este Terraform:
+# <ecr_repository_url>:<api_image_tag>
+api_image_tag = "latest"
+api_replicas  = 1
+ecr_force_delete = true
+
+# A API usa prefixo global /api e versionamento URI v1 no NestJS.
+api_healthcheck_path = "/api/v1/health"
+api_hpa_min_replicas = 1
+api_hpa_max_replicas = 3
+api_hpa_target_cpu_utilization_percentage = 70
+
+# Para menor custo em dev, mantenha single_nat_gateway = true.
+# Para maior disponibilidade, use false.
+single_nat_gateway = true
+
+node_instance_types = ["t3.medium"]
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 3
+
+db_instance_class          = "db.t4g.micro"
+db_allocated_storage       = 20
+db_max_allocated_storage   = 100
+db_backup_retention_period = 7
+db_multi_az                = false
+db_deletion_protection     = false
+
+# RDS pode exigir SSL. Em dev, reject unauthorized fica 0 para evitar depender
+# do bundle CA no container.
+postgres_ssl                     = "1"
+postgres_ssl_reject_unauthorized = "0"
