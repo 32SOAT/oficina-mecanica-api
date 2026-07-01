@@ -91,6 +91,83 @@ A rota **não** cria ordens de serviço.
 
 ---
 
+## E-mail (Resend)
+
+A API envia notificações por e-mail quando uma ordem de serviço muda de status. O provedor é o [Resend](https://resend.com); a integração fica no módulo `notificacoes/` (ver [arquitetura](../architecture/README.md#notificacoes-e-mail-transacional)).
+
+### 1. Conta e API key
+
+1. Crie uma conta em [resend.com](https://resend.com).
+2. Em **API Keys**, gere uma chave e copie para o `.env`:
+
+```env
+RESEND_API_KEY=re_sua_api_key
+```
+
+Sem essa variável a API **não sobe** (`ConfigModule` exige a chave).
+
+### 2. Remetente (`RESEND_FROM`)
+
+| Cenário | Valor sugerido | Observação |
+| ------- | -------------- | ---------- |
+| **Testes rápidos (sandbox)** | `onboarding@resend.dev` | Só entrega para o **e-mail da conta Resend** — use `RESEND_DEV_REDIRECT_TO` (abaixo) |
+| **Domínio próprio** | `notificacoes@seu-dominio.com` | Verifique o domínio em **Domains** no painel Resend (registros DNS SPF/DKIM) |
+
+Exemplo com domínio verificado:
+
+```env
+RESEND_FROM=notificacoes@teste-fiap-pos.com
+```
+
+### 3. Destinatários operacionais
+
+Endereços fixos para alertas internos da oficina (não são e-mails de clientes):
+
+```env
+NOTIFICACAO_EMAIL_MECANICOS=equipe-mecanicos@exemplo.com
+NOTIFICACAO_EMAIL_ADMIN=admin@exemplo.com
+```
+
+| Variável | Quando é usada |
+| -------- | -------------- |
+| `NOTIFICACAO_EMAIL_MECANICOS` | OS entra em `RECEBIDA` ou `AGUARDANDO_SERVICO` |
+| `NOTIFICACAO_EMAIL_ADMIN` | OS entra em `AGUARDANDO_PECAS_INSUMOS` |
+
+E-mails ao **cliente** usam o endereço cadastrado no cliente da OS (`AGUARDANDO_APROVACAO`, `FINALIZADA`, `REPROVADA`).
+
+### 4. Redirect em desenvolvimento (`RESEND_DEV_REDIRECT_TO`)
+
+Com o sandbox (`onboarding@resend.dev`) ou para evitar enviar para clientes reais durante testes, redirecione **todos** os e-mails para uma caixa de dev:
+
+```env
+RESEND_DEV_REDIRECT_TO=fiap-api-pos@outlook.com
+```
+
+Com essa variável definida, o adapter reescreve `to`, prefixa o assunto com `[DEV → destinatário-original]` e inclui o destinatário original no corpo. Em produção, **omitir** a variável para enviar ao destinatário real.
+
+### 5. Testar o fluxo
+
+1. Suba a API com Postgres e `.env` configurado.
+2. Crie cliente (com e-mail), veículo e OS via API ou seeding.
+3. Altere o status da OS (ex.: para `AGUARDANDO_APROVACAO`) com um usuário autenticado.
+4. Confira os logs (`ResendNotificacaoAdapter`, `NotificarListener`) e a caixa de entrada (ou a caixa de redirect).
+
+Erro comum no sandbox: *"only send testing emails to your own email"* — configure `RESEND_DEV_REDIRECT_TO` para o e-mail da conta Resend ou use domínio verificado e destinatários permitidos.
+
+### Variáveis (resumo)
+
+| Variável | Obrigatória | Descrição |
+| -------- | ----------- | --------- |
+| `RESEND_API_KEY` | Sim | Chave da API Resend |
+| `RESEND_FROM` | Não | Remetente (padrão: `onboarding@resend.dev`) |
+| `NOTIFICACAO_EMAIL_MECANICOS` | Sim | Alertas para a equipe de mecânicos |
+| `NOTIFICACAO_EMAIL_ADMIN` | Sim | Alertas para administração/estoque |
+| `RESEND_DEV_REDIRECT_TO` | Não | Redireciona todos os e-mails (recomendado em dev com sandbox) |
+
+Referência completa: `.env.example`.
+
+---
+
 ## Docker
 
 O `Dockerfile` usa **multi-stage build**: compila na etapa de build e copia só `dist/` + deps de produção na imagem final.

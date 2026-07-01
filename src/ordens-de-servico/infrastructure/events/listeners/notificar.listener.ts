@@ -1,15 +1,29 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   CLIENTE_LOOKUP_PORT,
   ClienteLookupPort,
 } from '../../../../clientes/application/ports/cliente-lookup.port';
+import { ResendConfig } from '../../../../config/env/resend.config';
+import {
+  NOTIFICACAO_PORT,
+  NotificacaoPort,
+} from '../../../../notificacoes/application/ports/notificacao.port';
+import { getResendErrorHint } from '../../../../notificacoes/infrastructure/resend/resend-email.helper';
 import {
   VEICULO_LOOKUP_PORT,
   VeiculoLookupPort,
 } from '../../../../veiculos/application/ports/veiculo-lookup.port';
+import {
+  buildAdministradorPecasEmFaltaMessage,
+  buildMecanicosStatusMessage,
+  buildOrcamentoAguardandoAprovacaoMessage,
+  buildServicoFinalizadoMessage,
+  buildServicoReprovadoMessage,
+} from '../../../application/notificacao/ordem-servico-notificacao.messages';
 import { StatusOrdemServico } from '../../../domain/status-ordem-servico.enum';
 import { OrdemServicoTypeormEntity } from '../../typeorm/entity/ordem-servico.typeorm.entity';
 import {
@@ -25,6 +39,8 @@ type ClienteContato = {
 @Injectable()
 export class NotificarListener {
   private readonly logger = new Logger(NotificarListener.name);
+  private readonly emailMecanicos: string;
+  private readonly emailAdmin: string;
 
   constructor(
     @InjectRepository(OrdemServicoTypeormEntity)
@@ -33,7 +49,14 @@ export class NotificarListener {
     private readonly clienteLookup: ClienteLookupPort,
     @Inject(VEICULO_LOOKUP_PORT)
     private readonly veiculoLookup: VeiculoLookupPort,
-  ) {}
+    @Inject(NOTIFICACAO_PORT)
+    private readonly notificacaoPort: NotificacaoPort,
+    configService: ConfigService,
+  ) {
+    const resend = configService.getOrThrow<ResendConfig>('resend');
+    this.emailMecanicos = resend.emailMecanicos;
+    this.emailAdmin = resend.emailAdmin;
+  }
 
   @OnEvent(StatusAlteradoEventName)
   async handle(event: StatusAlteradoEvent): Promise<void> {
@@ -84,8 +107,38 @@ export class NotificarListener {
 
     return {
       nome: snapshot?.nome ?? 'Cliente',
-      email: snapshot?.email ?? '—',
+      email: snapshot?.email ?? '',
     };
+  }
+
+  private isEmailValido(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  private async enviarEmailValido(
+    to: string,
+    message: { subject: string; text: string; html: string },
+    contexto: string,
+  ): Promise<void> {
+    if (!this.isEmailValido(to)) {
+      this.logger.warn(
+        `E-mail inválido ou ausente (${to}) ao notificar ${contexto}.`,
+      );
+      return;
+    }
+
+    try {
+      await this.notificacaoPort.enviarEmail({ to, ...message });
+    } catch (error) {
+      this.logger.error(
+        `Falha ao enviar e-mail (${contexto}) para ${to}.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      const hint = getResendErrorHint(error);
+      if (hint) {
+        this.logger.error(hint);
+      }
+    }
   }
 
   private async notificarClienteAguardandoAprovacao(
@@ -104,12 +157,17 @@ export class NotificarListener {
 
     const placa = await this.resolvePlaca(os);
     const cliente = await this.resolveClienteContato(os);
+    const message = buildOrcamentoAguardandoAprovacaoMessage({
+      osId: os.id,
+      placa,
+      valorTotal: Number(os.valorTotal),
+      clienteNome: cliente.nome,
+    });
 
-    // MOCK: integração real (e-mail, WhatsApp, SMS) seria aqui.
-    this.logger.log(
-      `[MOCK NOTIFICAÇÃO CLIENTE] Orçamento da OS ${os.id} ` +
-        `(veículo ${placa}, valor R$ ${Number(os.valorTotal).toFixed(2)}) ` +
-        `enviado a ${cliente.nome} <${cliente.email}> para aprovação.`,
+    await this.enviarEmailValido(
+      cliente.email,
+      message,
+      'orçamento aguardando aprovação',
     );
   }
 
@@ -129,11 +187,16 @@ export class NotificarListener {
     }
 
     const placa = await this.resolvePlaca(os);
+    const message = buildMecanicosStatusMessage({
+      osId: os.id,
+      placa,
+      status,
+    });
 
-    // MOCK: canal dedicado aos mecânicos (app interno, push, etc.).
-    this.logger.log(
-      `[MOCK NOTIFICAÇÃO MECÂNICOS] OS ${os.id} no status ${status} ` +
-        `(veículo ${placa}) — verificar e dar sequência ao atendimento.`,
+    await this.enviarEmailValido(
+      this.emailMecanicos,
+      message,
+      `equipe de mecânicos (${status})`,
     );
   }
 
@@ -152,11 +215,15 @@ export class NotificarListener {
     }
 
     const placa = await this.resolvePlaca(os);
+    const message = buildAdministradorPecasEmFaltaMessage({
+      osId: os.id,
+      placa,
+    });
 
-    // MOCK: e-mail/workflow de compras para o administrador.
-    this.logger.log(
-      `[MOCK NOTIFICAÇÃO ADMINISTRADOR] OS ${os.id} (veículo ${placa}) ` +
-        `em AGUARDANDO_PECAS_INSUMOS — há itens em falta; providenciar encomenda.`,
+    await this.enviarEmailValido(
+      this.emailAdmin,
+      message,
+      'administrador (peças em falta)',
     );
   }
 
@@ -174,11 +241,16 @@ export class NotificarListener {
 
     const placa = await this.resolvePlaca(os);
     const cliente = await this.resolveClienteContato(os);
+    const message = buildServicoFinalizadoMessage({
+      osId: os.id,
+      placa,
+      clienteNome: cliente.nome,
+    });
 
-    this.logger.log(
-      `[MOCK NOTIFICAÇÃO CLIENTE] Serviço da OS ${os.id} finalizado ` +
-        `(veículo ${placa}). Informar ${cliente.nome} ` +
-        `<${cliente.email}> que o veículo pode ser retirado.`,
+    await this.enviarEmailValido(
+      cliente.email,
+      message,
+      'serviço finalizado',
     );
   }
 
@@ -196,11 +268,16 @@ export class NotificarListener {
 
     const placa = await this.resolvePlaca(os);
     const cliente = await this.resolveClienteContato(os);
+    const message = buildServicoReprovadoMessage({
+      osId: os.id,
+      placa,
+      clienteNome: cliente.nome,
+    });
 
-    this.logger.log(
-      `[MOCK NOTIFICAÇÃO CLIENTE] Orçamento da OS ${os.id} recusado ` +
-        `(veículo ${placa}). Informar ${cliente.nome} ` +
-        `<${cliente.email}> que o veículo pode ser retirado.`,
+    await this.enviarEmailValido(
+      cliente.email,
+      message,
+      'orçamento reprovado',
     );
   }
 }

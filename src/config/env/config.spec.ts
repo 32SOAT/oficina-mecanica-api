@@ -1,6 +1,7 @@
 import { appConfig, envValidationSchema } from './app.config';
 import { getDatabaseOptions, typeOrmConfig } from './database.config';
 import { jwtConfig } from './jwt.config';
+import { resendConfig } from './resend.config';
 
 describe('config env', () => {
   it('builds app config with defaults', () => {
@@ -95,6 +96,25 @@ describe('config env', () => {
     expect(fromRegisterAs).toEqual(options);
   });
 
+  it('builds resend config from environment', () => {
+    process.env.RESEND_API_KEY = 're_test_key';
+    process.env.RESEND_FROM = 'onboarding@resend.dev';
+    process.env.NOTIFICACAO_EMAIL_MECANICOS = 'mecanicos@example.com';
+    process.env.NOTIFICACAO_EMAIL_ADMIN = 'admin@example.com';
+
+    const value = (
+      resendConfig as unknown as () => {
+        apiKey: string;
+        from: string;
+        emailAdmin: string;
+      }
+    )();
+
+    expect(value.apiKey).toBe('re_test_key');
+    expect(value.from).toBe('onboarding@resend.dev');
+    expect(value.emailAdmin).toBe('admin@example.com');
+  });
+
   it('validates env with joi schema', () => {
     const validated = envValidationSchema.validate({
       NODE_ENV: 'development',
@@ -103,6 +123,9 @@ describe('config env', () => {
       POSTGRES_DB: 'oficina',
       POSTGRES_SYNC: 1,
       JWT_SECRET: 'test-jwt-secret-for-validation',
+      RESEND_API_KEY: 're_test_key',
+      NOTIFICACAO_EMAIL_MECANICOS: 'mecanicos@example.com',
+      NOTIFICACAO_EMAIL_ADMIN: 'admin@example.com',
     });
     const error = validated.error;
     const value = validated.value as {

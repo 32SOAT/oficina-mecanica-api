@@ -5,7 +5,7 @@
 | Documento | Descrição |
 | --------- | --------- |
 | [Arquitetura](./architecture/README.md) | Estrutura de pastas, camadas, mapeamento, exceções, ports e dívida técnica |
-| [Build e execução](./build/README.md) | Ambiente local, Docker, migrations, seeding e testes |
+| [Build e execução](./build/README.md) | Ambiente local, Docker, migrations, seeding, testes e **e-mail (Resend)** |
 | [Análises](./analysis/README.md) | SonarQube e OWASP ZAP |
 | [ADRs](./adr/README.md) | Architecture Decision Records — decisões técnicas registradas |
 

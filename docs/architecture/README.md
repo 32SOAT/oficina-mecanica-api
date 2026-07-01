@@ -50,6 +50,8 @@ src/
 
 ├── estoque/
 
+├── notificacoes/          # e-mail transacional (Resend) — port + adapter
+
 └── ordens-de-servico/     # núcleo do workflow + relatórios
 
 ```
@@ -264,7 +266,7 @@ Pontos verificados na última revisão do código:
 
 | CI (GitHub Actions) | **Ausente** |
 
-| Notificações de OS | **Mock** — `NotificarListener` só registra log |
+| Notificações de OS | **Resend** — `NotificarListener` + `NOTIFICACAO_PORT` |
 
 | Código legado em application | **Resolvido** — aliases `*Output` e mappers obsoletos removidos |
 
@@ -454,6 +456,8 @@ Fronteiras entre contextos. Use cases **não** importam infraestrutura alheia di
 
 | `ORDEM_SERVICO_EVENTS_PORT` | ordens-de-servico | use cases OS | eventos de mudança de status |
 
+| `NOTIFICACAO_PORT` | notificacoes | `NotificarListener` (OS) | envio de e-mail (Resend) |
+
 | `ORDEM_SERVICO_REPOSICAO_PORT` | estoque (contrato) | estoque | liberar OS após reposição |
 
 
@@ -530,7 +534,7 @@ infrastructure/
 
 ├── events/                                           # StatusAlterado + listeners
 
-│   └── listeners/   (persistir histórico, notificar — mock)
+│   └── listeners/   (persistir histórico, notificar via e-mail)
 
 └── adapters/ordem-servico-reposicao.adapter.ts       # responde ao port do estoque
 
@@ -545,6 +549,58 @@ Use cases orquestram `ORDEM_SERVICO_TRANSACTION_PORT` + `ORDEM_SERVICO_EVENTS_PO
 
 
 **Query vs write na infra:** `OrdemServicoTypeormRepository` (leituras) e `OrdemServicoTypeormTransaction` (escritas) permanecem separados (CQRS light). Não centralizar num único adapter — papéis distintos.
+
+
+
+### `notificacoes/` (e-mail transacional)
+
+
+
+Módulo transversal de envio de e-mail via [Resend](https://resend.com). Segue o mesmo padrão de ports/adapters dos demais contextos.
+
+
+
+```
+
+notificacoes/
+
+├── application/
+
+│   ├── dto/enviar-email.input.ts
+
+│   └── ports/notificacao.port.ts          # NOTIFICACAO_PORT
+
+└── infrastructure/
+
+    ├── resend/resend-notificacao.adapter.ts
+
+    ├── resend/resend-email.helper.ts      # redirect em dev + dicas de erro
+
+    └── infra.module.ts
+
+```
+
+
+
+**Integração com OS:** `OrdemServicoInfraModule` importa `NotificacaoInfraModule`. O `NotificarListener` reage a `StatusAlteradoEvent` e delega o envio à port; os textos/HTML ficam em `ordens-de-servico/application/notificacao/ordem-servico-notificacao.messages.ts` (application da OS, sem acoplar Resend).
+
+
+
+| Status novo | Destinatário |
+
+| ----------- | -------------- |
+
+| `AGUARDANDO_APROVACAO` | e-mail do cliente da OS |
+
+| `RECEBIDA`, `AGUARDANDO_SERVICO` | `NOTIFICACAO_EMAIL_MECANICOS` |
+
+| `AGUARDANDO_PECAS_INSUMOS` | `NOTIFICACAO_EMAIL_ADMIN` |
+
+| `FINALIZADA`, `REPROVADA` | e-mail do cliente da OS |
+
+
+
+Falhas no Resend **não interrompem** a transição de status (erro logado no listener). Setup e variáveis de ambiente: [docs/build/README.md](../build/README.md#e-mail-resend).
 
 
 
@@ -651,8 +707,6 @@ Itens priorizados por impacto em **Clean Code**, **Clean Architecture** e **SOLI
 | **POST `/users` sem credencial** | `users` | `CreateUserDto` não tem password; `CreateUserUseCase` grava via `UserRepository` sem passar por `UserCredentialPort` / `PASSWORD_HASHER` — usuário criado via API não consegue logar | exigir senha no DTO e criar credencial hasheada no use case (ou port dedicado) |
 
 | **Sem pipeline CI** | repo | nenhum `.github/workflows`; regressões só localmente | GitHub Actions: lint + `jest` + build |
-
-| **`NotificarListener` mock** | OS events | só `Logger`; produção precisaria de port `NOTIFICACAO_PORT` | extrair contrato + adapter (e-mail/SMS) |
 
 
 

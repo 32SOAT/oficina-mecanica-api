@@ -13,6 +13,7 @@ Stack: [NestJS](https://nestjs.com/) · TypeORM · PostgreSQL · JWT
 | **Serviços** | Catálogo de serviços da oficina |
 | **Estoque** | Peças/insumos, reposição, operação de saldo |
 | **Ordens de serviço** | Criação, orçamento, aprovação, execução, transições de status, relatórios |
+| **Notificações** | E-mails transacionais (Resend) em mudanças de status da OS |
 | **Usuários** | CRUD de usuários do sistema |
 | **Auth** | Login JWT, troca de senha, guard global |
 
@@ -57,13 +58,19 @@ Use o token retornado nas demais requisições. No Swagger, clique em **Authoriz
 
 Variáveis: `JWT_SECRET` (obrigatória), `JWT_EXPIRES_IN` (opcional, padrão `1h`). Ver `.env.example`.
 
+## Notificações por e-mail (Resend)
+
+Mudanças de status da ordem de serviço disparam e-mails via [Resend](https://resend.com). Configure `RESEND_API_KEY`, `RESEND_FROM`, `NOTIFICACAO_EMAIL_MECANICOS` e `NOTIFICACAO_EMAIL_ADMIN` no `.env`. Em desenvolvimento com o remetente sandbox (`onboarding@resend.dev`), use `RESEND_DEV_REDIRECT_TO` para receber todos os e-mails numa caixa de teste.
+
+Passo a passo (conta, domínio, testes): **[docs/build — E-mail (Resend)](./docs/build/README.md#e-mail-resend)**.
+
 ## Documentação
 
 | Documento | Conteúdo |
 | --------- | -------- |
 | [Índice](./docs/README.md) | Entrada para toda a documentação |
 | [Arquitetura](./docs/architecture/README.md) | Camadas, ports, mapeamento HTTP, exceções, read models, dívida técnica |
-| [Build e execução](./docs/build/README.md) | npm, Docker, migrations, seeding, testes |
+| [Build e execução](./docs/build/README.md) | npm, Docker, migrations, seeding, testes, e-mail (Resend) |
 | [Análises](./docs/analysis/README.md) | SonarQube, OWASP ZAP |
 | [ADRs](./docs/adr/README.md) | Decisões arquiteturais |
 | [ADR 001 — Banco de dados](./docs/adr/001-escolha-do-banco-de-dados.md) | Rascunho |
