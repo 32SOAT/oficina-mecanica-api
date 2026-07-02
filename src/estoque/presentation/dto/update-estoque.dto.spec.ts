@@ -5,6 +5,7 @@ describe('UpdateEstoqueDto (ValidationPipe)', () => {
   const pipe = new ValidationPipe({
     transform: true,
     whitelist: true,
+    forbidNonWhitelisted: true,
   });
 
   it('rejeita quantidadeFisica com mensagem da rota de operação', async () => {
@@ -53,5 +54,28 @@ describe('UpdateEstoqueDto (ValidationPipe)', () => {
         metatype: UpdateEstoqueDto,
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejeita propriedades desconhecidas', async () => {
+    await expect(
+      pipe.transform({ teste: 'teste' }, {
+        type: 'body',
+        metatype: UpdateEstoqueDto,
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        message: expect.arrayContaining(['property teste should not exist']),
+      },
+    });
+  });
+
+  it('rejeita corpo vazio', async () => {
+    await expect(
+      pipe.transform({}, { type: 'body', metatype: UpdateEstoqueDto }),
+    ).rejects.toMatchObject({
+      response: {
+        message: ['Informe ao menos um campo válido para atualização.'],
+      },
+    });
   });
 });

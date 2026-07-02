@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { BadRequestError } from '../../../common/application/errors/application.errors';
 import { StatusOrdemServico } from '../../domain/status-ordem-servico.enum';
 import type {
   HistoricoStatusReadModel,
@@ -45,7 +46,9 @@ export class StatusPublicoResponse {
     historico: HistoricoStatusReadModel[],
   ): StatusPublicoResponse {
     if (!os.veiculo) {
-      throw new Error('Veículo não carregado no read model da OS.');
+      throw new BadRequestError(
+        'Veículo da ordem de serviço não está disponível para consulta.',
+      );
     }
 
     return Object.assign(new StatusPublicoResponse(), {

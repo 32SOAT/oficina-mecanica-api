@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClienteInfraModule } from '../../clientes/infrastructure/infra.module';
 import { EstoqueTransactionalModule } from '../../estoque/infrastructure/estoque-transactional.module';
+import { NotificacaoInfraModule } from '../../notificacoes/infrastructure/infra.module';
 import { ServicoInfraModule } from '../../servicos/infrastructure/infra.module';
 import { VeiculoInfraModule } from '../../veiculos/infrastructure/infra.module';
 import { ORDEM_SERVICO_EVENTS_PORT } from '../application/ports/ordem-servico-events.port';
@@ -31,6 +32,7 @@ import { RelatorioTypeormRepository } from './typeorm/repository/relatorio.repos
     VeiculoInfraModule,
     ServicoInfraModule,
     EstoqueTransactionalModule,
+    NotificacaoInfraModule,
   ],
   providers: [
     OrdemServicoTypeormRepository,

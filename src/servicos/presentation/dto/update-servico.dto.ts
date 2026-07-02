@@ -6,8 +6,12 @@ import {
   Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsImmutable } from '../../../common/decorators/validation.decorators';
+import {
+  AtLeastOneProperty,
+  IsImmutable,
+} from '../../../common/decorators/validation.decorators';
 
+@AtLeastOneProperty()
 export class UpdateServicoDto {
   @ApiProperty({
     description: 'Nome do serviço',

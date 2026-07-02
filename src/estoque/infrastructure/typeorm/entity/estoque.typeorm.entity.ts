@@ -84,6 +84,3 @@ export class EstoqueTypeormEntity {
     return entity;
   }
 }
-
-/** @deprecated Use EstoqueTypeormEntity */
-export { EstoqueTypeormEntity as EstoqueEntity };

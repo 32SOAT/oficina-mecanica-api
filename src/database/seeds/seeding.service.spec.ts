@@ -1,9 +1,9 @@
 import { DataSource } from 'typeorm';
 import { Placa } from '../../veiculos/domain/value-objects/placa';
-import { ClienteEntity } from '../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
-import { ServicoEntity } from '../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
-import { EstoqueEntity } from '../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
-import { UserEntity } from '../../users/infrastructure/typeorm/entity/user.typeorm.entity';
+import { ClienteTypeormEntity } from '../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
+import { ServicoTypeormEntity } from '../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
+import { EstoqueTypeormEntity } from '../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
+import { UserTypeormEntity } from '../../users/infrastructure/typeorm/entity/user.typeorm.entity';
 import { SeedingService } from './seeding.service';
 
 describe('SeedingService', () => {
@@ -85,9 +85,9 @@ describe('SeedingService', () => {
 
     const manager = {
       getRepository: jest.fn((entity: unknown) => {
-        if (entity === ClienteEntity) return clienteRepository;
-        if (entity === ServicoEntity) return servicoRepository;
-        if (entity === EstoqueEntity) return estoqueRepository;
+        if (entity === ClienteTypeormEntity) return clienteRepository;
+        if (entity === ServicoTypeormEntity) return servicoRepository;
+        if (entity === EstoqueTypeormEntity) return estoqueRepository;
         if (entity === 'veiculo') return veiculoRepository;
         return undefined;
       }),
@@ -102,7 +102,7 @@ describe('SeedingService', () => {
 
     dataSource = {
       getRepository: jest.fn((entity) => {
-        if (entity === UserEntity) return userRepository;
+        if (entity === UserTypeormEntity) return userRepository;
         return undefined;
       }),
       transaction: jest.fn((cb: (m: unknown) => unknown) =>

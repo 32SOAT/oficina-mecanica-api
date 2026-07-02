@@ -3,10 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { hashPassword } from '../../common/security/password-hash';
 import { fake as fakeCpf } from 'validation-br/dist/cpf';
-import { ClienteEntity } from '../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
-import { ServicoEntity } from '../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
-import { EstoqueEntity } from '../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
-import { UserEntity } from '../../users/infrastructure/typeorm/entity/user.typeorm.entity';
+import { ClienteTypeormEntity } from '../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
+import { ServicoTypeormEntity } from '../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
+import { EstoqueTypeormEntity } from '../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
+import { UserTypeormEntity } from '../../users/infrastructure/typeorm/entity/user.typeorm.entity';
 import {
   CLIENTES_TO_SEED,
   ESTOQUE_TO_SEED,
@@ -41,8 +41,8 @@ export class SeedingService {
       usuarios: 0,
     };
 
-    const userRepository: Repository<UserEntity> =
-      this.dataSource.getRepository(UserEntity);
+    const userRepository: Repository<UserTypeormEntity> =
+      this.dataSource.getRepository(UserTypeormEntity);
     const passwordHash = await hashPassword(SEEDED_USER_PLAIN_PASSWORD);
     const users = Array.from({ length: USUARIOS_TO_SEED }, () =>
       userRepository.create(this.createFakeUser(passwordHash)),
@@ -50,10 +50,10 @@ export class SeedingService {
     const createdUsers = await userRepository.save(users);
     stats.usuarios = createdUsers.length;
 
-    let createdClientes: ClienteEntity[] = [];
+    let createdClientes: ClienteTypeormEntity[] = [];
 
     await this.dataSource.transaction(async (manager) => {
-      const clienteRepo = manager.getRepository(ClienteEntity);
+      const clienteRepo = manager.getRepository(ClienteTypeormEntity);
 
       const existingClientes = await clienteRepo.find({
         select: { id: true },
@@ -73,7 +73,7 @@ export class SeedingService {
       createdClientes = [...existingClientes, ...newClientes];
       stats.clientes = newClientes.length;
 
-      const servicoRepo = manager.getRepository(ServicoEntity);
+      const servicoRepo = manager.getRepository(ServicoTypeormEntity);
 
       const existingServicos = await servicoRepo.find({
         select: { servico: true },
@@ -98,7 +98,7 @@ export class SeedingService {
       const newServicos = await servicoRepo.save(servicosToCreate);
       stats.servicos = newServicos.length;
 
-      const estoqueRepo = manager.getRepository(EstoqueEntity);
+      const estoqueRepo = manager.getRepository(EstoqueTypeormEntity);
 
       const existingEstoque = await estoqueRepo.find({
         select: { pecasInsumos: true },
@@ -204,7 +204,7 @@ export class SeedingService {
 
   private createFakeUser(
     passwordHash: string,
-  ): Pick<UserEntity, 'username' | 'email' | 'password'> {
+  ): Pick<UserTypeormEntity, 'username' | 'email' | 'password'> {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const suffix = faker.string.alphanumeric(6).toLowerCase();

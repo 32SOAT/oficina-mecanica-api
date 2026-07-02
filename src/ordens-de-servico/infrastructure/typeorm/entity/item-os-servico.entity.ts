@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ServicoEntity } from '../../../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
+import { ServicoTypeormEntity } from '../../../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
 import { OrdemServicoTypeormEntity } from './ordem-servico.typeorm.entity';
 
 @Entity('item_os_servico')
@@ -23,9 +23,9 @@ export class ItemOsServicoEntity {
   os: OrdemServicoTypeormEntity;
   @Column({ name: 'servico_id' })
   servico_id: number;
-  @ManyToOne(() => ServicoEntity, { eager: true })
+  @ManyToOne(() => ServicoTypeormEntity, { eager: true })
   @JoinColumn({ name: 'servico_id' })
-  servico: ServicoEntity;
+  servico: ServicoTypeormEntity;
   @Column({ name: 'preco_aplicado', type: 'numeric', precision: 10, scale: 2 })
   precoAplicado: number;
 
