@@ -14,6 +14,7 @@ cp "${templates_dir}/configmap.yaml" "${generated_dir}/"
 cp "${templates_dir}/deployment-patch.yaml" "${generated_dir}/"
 cp "${templates_dir}/hpa.yaml" "${generated_dir}/"
 cp "${templates_dir}/kustomization.yaml" "${generated_dir}/"
+cp "${templates_dir}/migration-job.yaml" "${generated_dir}/"
 cp "${templates_dir}/namespace.yaml" "${generated_dir}/"
 cp "${templates_dir}/secret.yaml" "${generated_dir}/"
 
