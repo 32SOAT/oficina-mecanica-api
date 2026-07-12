@@ -6,7 +6,7 @@ Este guia mostra como fazer o deploy da infraestrutura AWS e da aplicacao Kubern
 
 - `terraform` 1.6 ou superior
 - `aws` CLI autenticado na conta correta
-- `docker`
+- `docker` com o plugin `buildx`
 - `kubectl`
 - `envsubst` (normalmente fornecido pelo pacote `gettext-base`)
 
@@ -73,6 +73,10 @@ Esse arquivo exporta:
 - `ECR_REPOSITORY_URL`
 - `KUBERNETES_NAMESPACE`
 - `API_SERVICE_NAME`
+- `API_NAME`
+- `PROJECT_NAME`
+- `APP_INSTANCE`
+- `APP_PORT`
 - `POSTGRES_HOST`
 
 Se preferir conferir tudo de uma vez:
@@ -112,24 +116,16 @@ Escolha a tag da imagem:
 export API_IMAGE_TAG="v1.0.0"
 ```
 
-Faça login no ECR:
+Publique a imagem para a arquitetura dos nodes EKS. O script usa
+`linux/amd64` por padrao, autentica no hostname do ECR e faz o build e o push
+em uma unica operacao:
 
 ```bash
-aws ecr get-login-password --region "${AWS_REGION_OUT}" \
-  | docker login --username AWS --password-stdin "${ECR_REPOSITORY_URL}"
+bash ./infra/publish-api-image.sh
 ```
 
-Build da imagem:
-
-```bash
-docker build -t "${ECR_REPOSITORY_URL}:${API_IMAGE_TAG}" .
-```
-
-Push da imagem:
-
-```bash
-docker push "${ECR_REPOSITORY_URL}:${API_IMAGE_TAG}"
-```
+Para publicar intencionalmente para outra arquitetura, defina
+`API_IMAGE_PLATFORM` antes de executar o script.
 
 ## 6. Gerar os manifestos Kubernetes manualmente
 
@@ -164,6 +160,24 @@ Renderize todos os YAMLs:
 ```bash
 bash ./infra/render-k8s-overlay.sh
 ```
+
+Antes de renderizar, o script valida se todas as variaveis obrigatorias estao
+preenchidas e se os valores estruturais, como namespace, replicas e tag da
+imagem, possuem formato valido. Se alguma variavel estiver ausente ou vazia, a
+renderizacao termina com erro antes de alterar os YAMLs.
+
+Os valores do ConfigMap e do Secret nao sao interpolados diretamente no YAML.
+Eles sao gravados com permissao restrita em `k8s/overlays/generated/values/` e
+processados por `configMapGenerator` e `secretGenerator` do Kustomize. Isso
+preserva com seguranca de serializacao valores que contenham aspas, caracteres
+especiais ou quebras de linha. Todo o diretorio gerado fica ignorado pelo Git.
+
+O Deployment usa `oficina-mecanica-api` apenas como nome local da imagem. O
+Kustomize troca esse placeholder por `${ECR_REPOSITORY_URL}:${API_IMAGE_TAG}`.
+Esse nome local e independente de `API_NAME`, que identifica os recursos
+Kubernetes. Isso permite que pipelines validem a imagem com, por exemplo,
+`docker buildx build --platform linux/amd64 --load -t
+oficina-mecanica-api:<tag> .`, sem acoplar o build ao nome do Deployment.
 
 Confira o resultado final do kustomize:
 
@@ -221,8 +235,7 @@ Exemplo com uma nova versao:
 
 ```bash
 export API_IMAGE_TAG="v1.0.1"
-docker build -t "${ECR_REPOSITORY_URL}:${API_IMAGE_TAG}" .
-docker push "${ECR_REPOSITORY_URL}:${API_IMAGE_TAG}"
+bash ./infra/publish-api-image.sh
 ```
 
 Re-renderize os YAMLs com a nova tag. Se voce ainda estiver na mesma sessao do shell e com as variaveis carregadas, basta preparar de novo o overlay:
@@ -329,6 +342,18 @@ Erros comuns:
 - SSL do Postgres desajustado
 - variaveis ausentes no ConfigMap ou Secret
 - container sem memoria suficiente
+
+### `Variaveis obrigatorias ausentes ou vazias`
+
+O overlay nao foi renderizado porque uma ou mais variaveis nao estao disponiveis
+no shell atual. Carregue novamente as entradas e os outputs antes de tentar de
+novo:
+
+```bash
+source infra/.env
+source infra/load-terraform-outputs.sh
+source infra/load-k8s-template-vars.sh
+```
 
 ## 12. Destruir o ambiente manualmente
 

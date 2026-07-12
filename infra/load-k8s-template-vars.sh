@@ -5,10 +5,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   exit 1
 fi
 
-export API_NAME="${TF_VAR_api_name:-fase2-kubernetes-oficina-mecanica-api}"
-export PROJECT_NAME="${TF_VAR_project_name:-oficina-mecanica}"
-export APP_INSTANCE="${PROJECT_NAME}-${TF_VAR_environment:-dev}"
-export APP_PORT="${TF_VAR_api_container_port:-3000}"
+export API_NAME="${API_NAME:-${TF_VAR_api_name:-fase2-kubernetes-oficina-mecanica-api}}"
+export PROJECT_NAME="${PROJECT_NAME:-${TF_VAR_project_name:-oficina-mecanica}}"
+export APP_INSTANCE="${APP_INSTANCE:-${PROJECT_NAME}-${TF_VAR_environment:-dev}}"
+export APP_PORT="${APP_PORT:-${TF_VAR_api_container_port:-3000}}"
 
 export API_REPLICAS="${TF_VAR_api_replicas:-1}"
 export API_HEALTHCHECK_PATH="${TF_VAR_api_healthcheck_path:-/api/v1/health}"

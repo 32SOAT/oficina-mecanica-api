@@ -1,7 +1,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: fase2-kubernetes-oficina-mecanica-api
+  name: ${API_NAME}
   namespace: ${KUBERNETES_NAMESPACE}
   labels:
     app.kubernetes.io/name: ${API_NAME}
@@ -11,7 +11,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: fase2-kubernetes-oficina-mecanica-api
+    name: ${API_NAME}
   minReplicas: ${API_HPA_MIN_REPLICAS}
   maxReplicas: ${API_HPA_MAX_REPLICAS}
   metrics:

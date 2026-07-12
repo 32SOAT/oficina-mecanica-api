@@ -1,9 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fase2-kubernetes-oficina-mecanica-api
+  name: ${API_NAME}
+  labels:
+    app.kubernetes.io/name: ${API_NAME}
+    app.kubernetes.io/instance: ${APP_INSTANCE}
+    app.kubernetes.io/part-of: ${PROJECT_NAME}
 spec:
   replicas: ${API_REPLICAS}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ${API_NAME}
+      app.kubernetes.io/instance: ${APP_INSTANCE}
+      app.kubernetes.io/part-of: ${PROJECT_NAME}
   template:
     metadata:
       labels:
@@ -12,8 +23,18 @@ spec:
         app.kubernetes.io/part-of: ${PROJECT_NAME}
     spec:
       containers:
-        - name: fase2-kubernetes-oficina-mecanica-api
+        - name: api
+          image: oficina-mecanica-api:latest
           imagePullPolicy: ${API_IMAGE_PULL_POLICY}
+          ports:
+            - name: http
+              containerPort: ${APP_PORT}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: ${API_NAME}-config
+            - secretRef:
+                name: ${API_NAME}-secret
           readinessProbe:
             httpGet:
               path: ${API_HEALTHCHECK_PATH}
@@ -37,3 +58,10 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 18
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

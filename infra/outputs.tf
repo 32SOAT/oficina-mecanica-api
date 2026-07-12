@@ -43,6 +43,21 @@ output "api_service_name" {
   value       = var.api_name
 }
 
+output "project_name" {
+  description = "Nome do projeto usado nos labels Kubernetes."
+  value       = var.project_name
+}
+
+output "app_instance" {
+  description = "Identificador da instancia da aplicacao no ambiente."
+  value       = local.name_prefix
+}
+
+output "api_container_port" {
+  description = "Porta HTTP exposta pelo container da API."
+  value       = var.api_container_port
+}
+
 output "postgres_endpoint" {
   description = "Endpoint privado do RDS Postgres."
   value       = aws_db_instance.postgres.endpoint
