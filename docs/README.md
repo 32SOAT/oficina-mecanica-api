@@ -6,6 +6,7 @@
 | --------- | --------- |
 | [Arquitetura](./architecture/README.md) | Estrutura de pastas, camadas, mapeamento, exceções, ports e dívida técnica |
 | [Build e execução](./build/README.md) | Ambiente local, Docker, migrations, seeding, testes e **e-mail (Resend)** |
+| [Kubernetes local](../k8s/README.md) | Minikube, PostgreSQL, autoscaling e simulação de carga |
 | [Análises](./analysis/README.md) | SonarQube e OWASP ZAP |
 | [ADRs](./adr/README.md) | Architecture Decision Records — decisões técnicas registradas |
 
