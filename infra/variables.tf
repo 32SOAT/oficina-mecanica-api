@@ -219,6 +219,11 @@ variable "api_name" {
   type        = string
   description = "Nome do Deployment/Service da API no Kubernetes."
   default     = "fase2-kubernetes-oficina-mecanica-api"
+
+  validation {
+    condition     = length(var.api_name) <= 63 && can(regex("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", var.api_name))
+    error_message = "api_name deve ser um nome DNS Kubernetes valido, com no maximo 63 caracteres."
+  }
 }
 
 variable "api_image" {
@@ -260,6 +265,11 @@ variable "api_container_port" {
   type        = number
   description = "Porta HTTP exposta pelo container da API."
   default     = 3000
+
+  validation {
+    condition     = var.api_container_port >= 1 && var.api_container_port <= 65535 && floor(var.api_container_port) == var.api_container_port
+    error_message = "api_container_port deve ser um inteiro entre 1 e 65535."
+  }
 }
 
 variable "api_healthcheck_path" {
