@@ -7,10 +7,12 @@ import {
   IsString,
   ValidateIf,
 } from 'class-validator';
+import { AtLeastOneProperty } from '../../../common/decorators/validation.decorators';
 
 const QUANTIDADE_NESTE_ENDPOINT =
   ' não pode ser alterada neste endpoint. Use PATCH /estoque/:id/operacao.';
 
+@AtLeastOneProperty()
 export class UpdateEstoqueDto {
   @ApiPropertyOptional({
     description: 'Código único do item de estoque',

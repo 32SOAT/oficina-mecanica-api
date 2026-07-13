@@ -4,7 +4,11 @@ import { PaginationDto } from '../../../common/pagination/pagination.dto';
 import { StatusOrdemServico } from '../../domain/status-ordem-servico.enum';
 
 export class FiltrosOrdemServicoDto extends PaginationDto {
-  @ApiPropertyOptional({ enum: StatusOrdemServico })
+  @ApiPropertyOptional({
+    enum: StatusOrdemServico,
+    description:
+      'Filtra por status. Sem este parâmetro, finalizadas, entregues e canceladas ficam fora da listagem.',
+  })
   @IsOptional()
   @IsEnum(StatusOrdemServico)
   status?: StatusOrdemServico;

@@ -36,6 +36,3 @@ export class UserTypeormEntity {
     });
   }
 }
-
-/** @deprecated Use UserTypeormEntity */
-export { UserTypeormEntity as UserEntity };

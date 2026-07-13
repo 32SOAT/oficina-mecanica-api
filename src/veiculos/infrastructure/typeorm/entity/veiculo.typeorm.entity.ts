@@ -82,6 +82,3 @@ export class VeiculoTypeormEntity {
     return entity;
   }
 }
-
-/** @deprecated Use VeiculoTypeormEntity — mantido para compatibilidade com outros módulos */
-export { VeiculoTypeormEntity as VeiculoEntity };

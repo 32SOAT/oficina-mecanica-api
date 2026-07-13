@@ -1,5 +1,5 @@
 import { validateSync } from 'class-validator';
-import { IsImmutable } from './validation.decorators';
+import { AtLeastOneProperty, IsImmutable } from './validation.decorators';
 
 class DtoComImutavel {
   @IsImmutable()
@@ -19,5 +19,26 @@ describe('IsImmutable', () => {
     const errors = validateSync(dto);
     expect(errors).toHaveLength(1);
     expect(errors[0].constraints?.isImmutable).toBe('id não pode ser alterado');
+  });
+});
+
+@AtLeastOneProperty()
+class DtoPatch {
+  nome?: string;
+  email?: string;
+}
+
+describe('AtLeastOneProperty', () => {
+  it('rejeita corpo vazio', () => {
+    const errors = validateSync(new DtoPatch());
+    expect(errors).toHaveLength(1);
+    expect(errors[0].constraints?.atLeastOneProperty).toBe(
+      'Informe ao menos um campo válido para atualização.',
+    );
+  });
+
+  it('aceita quando ao menos um campo permitido está presente', () => {
+    const errors = validateSync(Object.assign(new DtoPatch(), { nome: 'João' }));
+    expect(errors).toHaveLength(0);
   });
 });

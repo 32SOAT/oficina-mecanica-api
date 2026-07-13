@@ -1,7 +1,10 @@
+import type { ClienteSnapshot } from '../../../clientes/application/ports/cliente-lookup.port';
 import { ClienteTypeormEntity } from '../../../clientes/infrastructure/typeorm/entity/cliente.typeorm.entity';
+import type { EstoqueSnapshot } from '../../../estoque/application/ports/estoque-lookup.port';
 import { EstoqueTypeormEntity } from '../../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
+import type { ServicoSnapshot } from '../../../servicos/application/ports/servico-lookup.port';
 import { ServicoTypeormEntity } from '../../../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
-import { VeiculoTypeormEntity } from '../../../veiculos/infrastructure/typeorm/entity/veiculo.typeorm.entity';
+import type { VeiculoSnapshot } from '../../../veiculos/application/ports/veiculo-lookup.port';import { VeiculoTypeormEntity } from '../../../veiculos/infrastructure/typeorm/entity/veiculo.typeorm.entity';
 import type {
   ClienteOsReadModel,
   EstoqueSnapshotReadModel,
@@ -57,57 +60,75 @@ export class OrdemServicoReadModelMapper {
     };
   }
 
-  private static toCliente(entity: ClienteTypeormEntity): ClienteOsReadModel {
+  static fromClienteSnapshot(snapshot: ClienteSnapshot): ClienteOsReadModel {
     return {
-      id: entity.id,
-      documento: entity.documento,
-      nome: entity.nome,
-      email: entity.email,
-      celularNumero: entity.celularNumero,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-      deletedAt: entity.deletedAt,
+      id: snapshot.id,
+      documento: snapshot.documento,
+      nome: snapshot.nome,
+      email: snapshot.email,
+      celularNumero: snapshot.celularNumero,
+      createdAt: snapshot.createdAt,
+      updatedAt: snapshot.updatedAt,
+      deletedAt: snapshot.deletedAt,
+    };
+  }
+
+  private static toCliente(entity: ClienteTypeormEntity): ClienteOsReadModel {
+    return this.fromClienteSnapshot(entity);
+  }
+  static fromVeiculoSnapshot(snapshot: VeiculoSnapshot): VeiculoOsReadModel {
+    return {
+      id: snapshot.id,
+      placa: snapshot.placa,
+      marca: snapshot.marca,
+      modelo: snapshot.modelo,
+      ano: snapshot.ano,
+      cliente_id: snapshot.cliente_id,
+      createdAt: snapshot.createdAt,
+      updatedAt: snapshot.updatedAt,
+      deletedAt: snapshot.deletedAt,
     };
   }
 
   private static toVeiculo(entity: VeiculoTypeormEntity): VeiculoOsReadModel {
+    return this.fromVeiculoSnapshot(entity);
+  }
+
+  static fromServicoSnapshot(
+    snapshot: ServicoSnapshot,
+  ): ServicoSnapshotReadModel {
     return {
-      id: entity.id,
-      placa: entity.placa,
-      marca: entity.marca,
-      modelo: entity.modelo,
-      ano: entity.ano,
-      cliente_id: entity.cliente_id,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-      deletedAt: entity.deletedAt,
+      id: snapshot.id,
+      servico: snapshot.servico,
+      descricao: snapshot.descricao,
+      precoMaoDeObra: snapshot.precoMaoDeObra,
+    };
+  }
+
+  static fromEstoqueSnapshot(
+    snapshot: EstoqueSnapshot,
+  ): EstoqueSnapshotReadModel {
+    return {
+      id: snapshot.id,
+      codigo: snapshot.codigo,
+      pecasInsumos: snapshot.pecasInsumos,
+      quantidadeFisica: snapshot.quantidadeFisica,
+      quantidadeReservada: snapshot.quantidadeReservada,
+      precoUnitario: snapshot.precoUnitario,
     };
   }
 
   private static toServicoSnapshot(
     entity: ServicoTypeormEntity,
   ): ServicoSnapshotReadModel {
-    return {
-      id: entity.id,
-      servico: entity.servico,
-      descricao: entity.descricao,
-      precoMaoDeObra: Number(entity.precoMaoDeObra),
-    };
+    return this.fromServicoSnapshot(entity);
   }
 
   private static toEstoqueSnapshot(
     entity: EstoqueTypeormEntity,
   ): EstoqueSnapshotReadModel {
-    return {
-      id: entity.id,
-      codigo: entity.codigo,
-      pecasInsumos: entity.pecasInsumos,
-      quantidadeFisica: entity.quantidadeFisica,
-      quantidadeReservada: entity.quantidadeReservada,
-      precoUnitario: Number(entity.precoUnitario),
-    };
+    return this.fromEstoqueSnapshot(entity);
   }
-
   private static toItemServico(
     entity: ItemOsServicoEntity,
   ): ItemServicoOsReadModel {

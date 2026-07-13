@@ -55,6 +55,3 @@ export class OrdemServicoTypeormEntity {
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', precision: 3 })
   deletedAt: Date | null;
 }
-
-/** @deprecated Use OrdemServicoTypeormEntity */
-export { OrdemServicoTypeormEntity as OrdemServicoEntity };

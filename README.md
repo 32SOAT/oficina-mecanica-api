@@ -13,6 +13,7 @@ Stack: [NestJS](https://nestjs.com/) · TypeORM · PostgreSQL · JWT
 | **Serviços** | Catálogo de serviços da oficina |
 | **Estoque** | Peças/insumos, reposição, operação de saldo |
 | **Ordens de serviço** | Criação, orçamento, aprovação, execução, transições de status, relatórios |
+| **Notificações** | E-mails transacionais (Resend) em mudanças de status da OS |
 | **Usuários** | CRUD de usuários do sistema |
 | **Auth** | Login JWT, troca de senha, guard global |
 
@@ -56,6 +57,12 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 Use o token retornado nas demais requisições. No Swagger, clique em **Authorize** e cole o JWT.
 
 Variáveis: `JWT_SECRET` (obrigatória), `JWT_EXPIRES_IN` (opcional, padrão `1h`). Ver `.env.example`.
+
+## Notificações por e-mail (Resend)
+
+Mudanças de status da ordem de serviço disparam e-mails via [Resend](https://resend.com). Configure `RESEND_API_KEY`, `RESEND_FROM`, `NOTIFICACAO_EMAIL_MECANICOS` e `NOTIFICACAO_EMAIL_ADMIN` no `.env`. Em desenvolvimento com o remetente sandbox (`onboarding@resend.dev`), use `RESEND_DEV_REDIRECT_TO` para receber todos os e-mails numa caixa de teste.
+
+Passo a passo (conta, domínio, testes): **[docs/build — E-mail (Resend)](./docs/build/README.md#e-mail-resend)**.
 
 ## Documentação
 

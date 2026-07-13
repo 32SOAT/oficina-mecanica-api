@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { EstoqueEntity } from '../../../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
+import { EstoqueTypeormEntity } from '../../../../estoque/infrastructure/typeorm/entity/estoque.typeorm.entity';
 import { OrdemServicoTypeormEntity } from './ordem-servico.typeorm.entity';
 
 @Entity('item_os_estoque')
@@ -23,9 +23,9 @@ export class ItemOsEstoqueEntity {
   os: OrdemServicoTypeormEntity;
   @Column({ name: 'estoque_id' })
   estoque_id: number;
-  @ManyToOne(() => EstoqueEntity, { eager: true })
+  @ManyToOne(() => EstoqueTypeormEntity, { eager: true })
   @JoinColumn({ name: 'estoque_id' })
-  peca: EstoqueEntity;
+  peca: EstoqueTypeormEntity;
   @Column({ type: 'integer' })
   quantidade: number;
   @Column({ name: 'preco_aplicado', type: 'numeric', precision: 10, scale: 2 })

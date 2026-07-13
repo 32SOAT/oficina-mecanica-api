@@ -1,6 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { NotFoundError } from '../../../../common/application/errors/application.errors';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import {
+  CLIENTE_LOOKUP_PORT,
+  ClienteLookupPort,
+} from '../../../../clientes/application/ports/cliente-lookup.port';
+import {
+  ESTOQUE_LOOKUP_PORT,
+  EstoqueLookupPort,
+} from '../../../../estoque/application/ports/estoque-lookup.port';
+import {
+  SERVICO_LOOKUP_PORT,
+  ServicoLookupPort,
+} from '../../../../servicos/application/ports/servico-lookup.port';
+import {
+  VEICULO_LOOKUP_PORT,
+  VeiculoLookupPort,
+} from '../../../../veiculos/application/ports/veiculo-lookup.port';
 import { DataSource, In, Repository } from 'typeorm';
 import { DEFAULT_PAGE_SIZE } from '../../../application/constants';
 import {
@@ -13,18 +29,41 @@ import {
   OrdemServicoReadModel,
 } from '../../../application/dto/ordem-servico.dto';
 import { OrdemServicoQueryPort } from '../../../application/ports/ordem-servico-query.port';
+import { STATUS_EXCLUIDOS_LISTAGEM_PADRAO } from '../../../domain/listagem-ordem-servico';
 import { StatusOrdemServico } from '../../../domain/status-ordem-servico.enum';
+import {
+  buildOrdemServicoReadModel,
+  OrdemServicoReadModelLookupPorts,
+} from '../../helpers/ordem-servico-read-model.loader';
+import { buildPrioridadeStatusListagemCaseSql } from '../helpers/ordem-servico-listagem-order.helper';
 import { OrdemServicoReadModelMapper } from '../../mappers/ordem-servico-read-model.mapper';
 import { HistoricoStatusOsEntity } from '../entity/historico-status-os.entity';
 import { OrdemServicoTypeormEntity } from '../entity/ordem-servico.typeorm.entity';
 
 @Injectable()
 export class OrdemServicoTypeormRepository implements OrdemServicoQueryPort {
+  private readonly readModelLookups: OrdemServicoReadModelLookupPorts;
+
   constructor(
     @InjectRepository(OrdemServicoTypeormEntity)
     private readonly osRepository: Repository<OrdemServicoTypeormEntity>,
     @InjectDataSource() private readonly dataSource: DataSource,
-  ) {}
+    @Inject(CLIENTE_LOOKUP_PORT)
+    clienteLookup: ClienteLookupPort,
+    @Inject(VEICULO_LOOKUP_PORT)
+    veiculoLookup: VeiculoLookupPort,
+    @Inject(SERVICO_LOOKUP_PORT)
+    servicoLookup: ServicoLookupPort,
+    @Inject(ESTOQUE_LOOKUP_PORT)
+    estoqueLookup: EstoqueLookupPort,
+  ) {
+    this.readModelLookups = {
+      clienteLookup,
+      veiculoLookup,
+      servicoLookup,
+      estoqueLookup,
+    };
+  }
 
   async findAll(filtros: FiltrosOrdemServicoInput) {
     const page = Number(filtros.page ?? 1);
@@ -38,6 +77,10 @@ export class OrdemServicoTypeormRepository implements OrdemServicoQueryPort {
 
     if (filtros.status) {
       qb.andWhere('os.status = :status', { status: filtros.status });
+    } else {
+      qb.andWhere('os.status NOT IN (:...statusExcluidos)', {
+        statusExcluidos: [...STATUS_EXCLUIDOS_LISTAGEM_PADRAO],
+      });
     }
     if (filtros.clienteId) {
       qb.andWhere('os.cliente_id = :clienteId', {
@@ -53,7 +96,12 @@ export class OrdemServicoTypeormRepository implements OrdemServicoQueryPort {
       qb.andWhere('os.createdAt <= :dataFim', { dataFim: filtros.dataFim });
     }
 
-    qb.orderBy('os.createdAt', 'DESC').skip(offset).take(take);
+    const prioridadeListagem = buildPrioridadeStatusListagemCaseSql('os.status');
+    qb.addSelect(prioridadeListagem, 'os_prioridade_listagem')
+      .orderBy('os_prioridade_listagem', 'ASC')
+      .addOrderBy('os.createdAt', 'ASC')
+      .skip(offset)
+      .take(take);
 
     const [data, count] = await qb.getManyAndCount();
     const meta = createPaginationMeta(take, page, count) ?? {
@@ -65,7 +113,9 @@ export class OrdemServicoTypeormRepository implements OrdemServicoQueryPort {
       hasPreviousPage: page > 1,
     };
     return {
-      data: data.map((os) => OrdemServicoReadModelMapper.toReadModel(os)),
+      data: await Promise.all(
+        data.map((os) => buildOrdemServicoReadModel(os, this.readModelLookups)),
+      ),
       meta,
     };
   }
@@ -85,7 +135,8 @@ export class OrdemServicoTypeormRepository implements OrdemServicoQueryPort {
     if (!os) {
       throw new NotFoundError('Ordem de serviço não encontrada.');
     }
-    return OrdemServicoReadModelMapper.toReadModel(os);
+
+    return buildOrdemServicoReadModel(os, this.readModelLookups);
   }
 
   async findHistorico(id: string): Promise<HistoricoStatusReadModel[]> {

@@ -9,7 +9,7 @@ import { ItemOsEstoqueEntity } from '../ordens-de-servico/infrastructure/typeorm
 import { ItemOsServicoEntity } from '../ordens-de-servico/infrastructure/typeorm/entity/item-os-servico.entity';
 import { OrdemServicoTypeormEntity } from '../ordens-de-servico/infrastructure/typeorm/entity/ordem-servico.typeorm.entity';
 import { ServicoTypeormEntity } from '../servicos/infrastructure/typeorm/entity/servico.typeorm.entity';
-import { UserEntity } from '../users/infrastructure/typeorm/entity/user.typeorm.entity';
+import { UserTypeormEntity } from '../users/infrastructure/typeorm/entity/user.typeorm.entity';
 import { VeiculoTypeormEntity } from '../veiculos/infrastructure/typeorm/entity/veiculo.typeorm.entity';
 
 @Module({
@@ -24,7 +24,7 @@ import { VeiculoTypeormEntity } from '../veiculos/infrastructure/typeorm/entity/
         return {
           ...databaseConfig,
           entities: [
-            UserEntity,
+            UserTypeormEntity,
             ClienteTypeormEntity,
             VeiculoTypeormEntity,
             ServicoTypeormEntity,

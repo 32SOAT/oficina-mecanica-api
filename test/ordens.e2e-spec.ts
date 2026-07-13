@@ -241,7 +241,7 @@ describe('Ordens de Serviço (e2e)', () => {
     expect(res.status).toBe(201);
     expect(aprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalledWith(
       OS_ID,
-      E2E_AUTH_USER_STUB.sub,
+      null,
     );
   });
 
