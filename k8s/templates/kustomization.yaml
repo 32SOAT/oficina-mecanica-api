@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ${KUBERNETES_NAMESPACE}
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+configMapGenerator:
+  - name: ${API_NAME}-config
+    files:
+      - NODE_ENV=values/NODE_ENV
+      - APP_PORT=values/APP_PORT
+      - POSTGRES_HOST=values/POSTGRES_HOST
+      - POSTGRES_PORT=values/POSTGRES_PORT
+      - POSTGRES_DB=values/POSTGRES_DB
+      - POSTGRES_SYNC=values/POSTGRES_SYNC
+      - POSTGRES_SSL=values/POSTGRES_SSL
+      - POSTGRES_SSL_REJECT_UNAUTHORIZED=values/POSTGRES_SSL_REJECT_UNAUTHORIZED
+      - JWT_EXPIRES_IN=values/JWT_EXPIRES_IN
+secretGenerator:
+  - name: ${API_NAME}-secret
+    files:
+      - POSTGRES_USER=values/POSTGRES_USER
+      - POSTGRES_PASSWORD=values/POSTGRES_PASSWORD
+      - JWT_SECRET=values/JWT_SECRET
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    app.kubernetes.io/name: ${API_NAME}
+    app.kubernetes.io/instance: ${APP_INSTANCE}
+    app.kubernetes.io/part-of: ${PROJECT_NAME}
+images:
+  - name: oficina-mecanica-api
+    newName: ${ECR_REPOSITORY_URL}
+    newTag: ${API_IMAGE_TAG}

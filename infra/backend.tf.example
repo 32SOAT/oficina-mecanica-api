@@ -1,0 +1,12 @@
+# Copie este arquivo para backend.tf se quiser armazenar o state remotamente.
+# Crie o bucket e a tabela DynamoDB antes de rodar terraform init.
+#
+# terraform {
+#   backend "s3" {
+#     bucket         = "meu-bucket-terraform-state"
+#     key            = "oficina-mecanica/dev/terraform.tfstate"
+#     region         = "us-east-1"
+#     dynamodb_table = "terraform-locks"
+#     encrypt        = true
+#   }
+# }

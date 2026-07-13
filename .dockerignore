@@ -10,3 +10,5 @@ dist
 .idea
 .DS_Store
 docker-compose.yml
+infra
+k8s
