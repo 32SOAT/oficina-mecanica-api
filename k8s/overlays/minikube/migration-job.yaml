@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: oficina-mecanica-migrations
+  labels:
+    app.kubernetes.io/name: oficina-mecanica-migrations
+    app.kubernetes.io/part-of: oficina-mecanica
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oficina-mecanica-migrations
+        app.kubernetes.io/part-of: oficina-mecanica
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - until pg_isready -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 2; done
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+      containers:
+        - name: migrations
+          image: oficina-mecanica-api:local
+          imagePullPolicy: IfNotPresent
+          command:
+            - node
+            - node_modules/typeorm/cli.js
+            - migration:run
+            - -d
+            - dist/database/data-source.js
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

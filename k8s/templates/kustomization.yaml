@@ -18,12 +18,15 @@ configMapGenerator:
       - POSTGRES_SSL=values/POSTGRES_SSL
       - POSTGRES_SSL_REJECT_UNAUTHORIZED=values/POSTGRES_SSL_REJECT_UNAUTHORIZED
       - JWT_EXPIRES_IN=values/JWT_EXPIRES_IN
+      - NOTIFICACAO_EMAIL_MECANICOS=values/NOTIFICACAO_EMAIL_MECANICOS
+      - NOTIFICACAO_EMAIL_ADMIN=values/NOTIFICACAO_EMAIL_ADMIN
 secretGenerator:
   - name: ${API_NAME}-secret
     files:
       - POSTGRES_USER=values/POSTGRES_USER
       - POSTGRES_PASSWORD=values/POSTGRES_PASSWORD
       - JWT_SECRET=values/JWT_SECRET
+      - RESEND_API_KEY=values/RESEND_API_KEY
 generatorOptions:
   disableNameSuffixHash: true
   labels:

@@ -71,6 +71,7 @@ Passo a passo (conta, domínio, testes): **[docs/build — E-mail (Resend)](./do
 | [Índice](./docs/README.md) | Entrada para toda a documentação |
 | [Arquitetura](./docs/architecture/README.md) | Camadas, ports, mapeamento HTTP, exceções, read models, dívida técnica |
 | [Build e execução](./docs/build/README.md) | npm, Docker, migrations, seeding, testes |
+| [Kubernetes local](./k8s/README.md) | Cluster Minikube, PostgreSQL, HPA e simulação de carga |
 | [CI/CD](./docs/ci-cd.md) | Pipeline GitHub Actions: build, testes, imagem Docker, Terraform e deploy no EKS |
 | [Análises](./docs/analysis/README.md) | SonarQube, OWASP ZAP |
 | [ADRs](./docs/adr/README.md) | Decisões arquiteturais |

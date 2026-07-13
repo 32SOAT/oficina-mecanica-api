@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-script
+  namespace: oficina-mecanica
+  labels:
+    app.kubernetes.io/name: k6
+    app.kubernetes.io/part-of: oficina-mecanica
+data:
+  load-test.js: |
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+
+    export const options = {
+      stages: [
+        { duration: '30s', target: 50 },
+        { duration: '2m', target: 250 },
+        { duration: '2m', target: 500 },
+        { duration: '30s', target: 0 },
+      ],
+      thresholds: {
+        http_req_failed: ['rate<0.01'],
+        http_req_duration: ['p(95)<1000'],
+      },
+    };
+
+    export default function () {
+      const response = http.get(
+        'http://oficina-mecanica-api:3000/api/v1/health',
+      );
+      check(response, { 'health retorna 200': (res) => res.status === 200 });
+      sleep(0.05);
+    }
