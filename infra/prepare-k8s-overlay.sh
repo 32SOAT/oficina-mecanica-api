@@ -16,6 +16,7 @@ rm -f "${values_dir}"/*
 cp "${templates_dir}/deployment.yaml" "${generated_dir}/"
 cp "${templates_dir}/hpa.yaml" "${generated_dir}/"
 cp "${templates_dir}/kustomization.yaml" "${generated_dir}/"
+cp "${templates_dir}/migration-job.yaml" "${generated_dir}/"
 cp "${templates_dir}/namespace.yaml" "${generated_dir}/"
 cp "${templates_dir}/service.yaml" "${generated_dir}/"
 

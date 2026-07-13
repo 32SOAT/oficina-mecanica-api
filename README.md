@@ -64,6 +64,7 @@ Variáveis: `JWT_SECRET` (obrigatória), `JWT_EXPIRES_IN` (opcional, padrão `1h
 | [Índice](./docs/README.md) | Entrada para toda a documentação |
 | [Arquitetura](./docs/architecture/README.md) | Camadas, ports, mapeamento HTTP, exceções, read models, dívida técnica |
 | [Build e execução](./docs/build/README.md) | npm, Docker, migrations, seeding, testes |
+| [CI/CD](./docs/ci-cd.md) | Pipeline GitHub Actions: build, testes, imagem Docker, Terraform e deploy no EKS |
 | [Análises](./docs/analysis/README.md) | SonarQube, OWASP ZAP |
 | [ADRs](./docs/adr/README.md) | Decisões arquiteturais |
 | [ADR 001 — Banco de dados](./docs/adr/001-escolha-do-banco-de-dados.md) | Rascunho |
