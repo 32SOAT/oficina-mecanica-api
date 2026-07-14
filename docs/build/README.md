@@ -1,6 +1,11 @@
-# Build e execução
+# Build e execução (ambiente local)
 
-Guia operacional: ambiente local, Docker, migrations, seeding e testes.
+Guia para **desenvolvimento e execução na sua máquina**: npm, Docker Compose, migrations, seeding e testes.
+
+> **Não é deploy AWS.** Para Terraform (EKS, RDS), Kubernetes e CI/CD, use:
+> - [Deploy AWS (Terraform)](../deployment/infra.md)
+> - [Deploy Kubernetes](../deployment/k8s.md) (EKS e Minikube)
+> - [docs/deployment](../deployment/README.md) · [docs/ci-cd](../ci-cd/README.md)
 
 ## Pré-requisitos
 
@@ -217,5 +222,6 @@ docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}
 ## Referências
 
 - [README principal](../../README.md)
+- [Deploy AWS/Kubernetes](../deployment/README.md)
 - [Análises de qualidade e segurança](../analysis/README.md)
 - [Arquitetura](../architecture/README.md)

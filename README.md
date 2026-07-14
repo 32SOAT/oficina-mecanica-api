@@ -1,32 +1,80 @@
 # Oficina Mecânica API
 
-**MVP** para gerenciamento de oficina mecânica: clientes, veículos, ordens de serviço (workflow com status), serviços, estoque e histórico. Escopo enxuto para validar fluxo e modelo de dados antes de evoluir.
+API para gestão de oficina mecânica: clientes, veículos, ordens de serviço (workflow com status), serviços, estoque, notificações por e-mail e autenticação.
 
-Stack: [NestJS](https://nestjs.com/) · TypeORM · PostgreSQL · JWT
+Stack: [NestJS](https://nestjs.com/) · TypeORM · PostgreSQL · JWT · Resend · Docker · Kubernetes · Terraform
 
-## O que a API faz
+## Objetivos
+
+- Organizar o código com **Clean Architecture / Hexagonal** (camadas e ports/adapters).
+- Garantir qualidade com **testes automatizados** e **CI/CD**.
+- Rodar a aplicação de forma **containerizada**, com **Kubernetes** (inclui HPA) e **infra como código** (Terraform na AWS).
+- Preparar o sistema para maior demanda com escala automática dos pods.
+
+## Entrega
+
+Links da entrega (repositório, vídeo, Swagger, prints, documentação):
+
+**→ [docs/entrega/README.md](./docs/entrega/README.md)**
+
+---
+
+## Desenho da arquitetura
+
+### Componentes da aplicação
+
+Monólito modular NestJS: cada contexto (`clientes`, `veiculos`, `servicos`, `estoque`, `ordens-de-servico`, `notificacoes`, `auth`, `users`) com camadas `domain` → `application` → `infrastructure` → `presentation`, integrados via **ports**.
 
 | Módulo | Responsabilidade |
 | ------ | ---------------- |
 | **Clientes** | CRUD, busca por documento (CPF/CNPJ) |
-| **Veículos** | CRUD, vínculo com cliente por documento |
-| **Serviços** | Catálogo de serviços da oficina |
-| **Estoque** | Peças/insumos, reposição, operação de saldo |
-| **Ordens de serviço** | Criação, orçamento, aprovação, execução, transições de status, relatórios |
-| **Notificações** | E-mails transacionais (Resend) em mudanças de status da OS |
-| **Usuários** | CRUD de usuários do sistema |
-| **Auth** | Login JWT, troca de senha, guard global |
+| **Veículos** | CRUD, vínculo com cliente |
+| **Serviços** | Catálogo de serviços |
+| **Estoque** | Peças/insumos, reposição, saldo |
+| **Ordens de serviço** | Abertura, orçamento, aprovação, execução, status, relatórios |
+| **Notificações** | E-mail (Resend) em mudanças de status |
+| **Usuários / Auth** | CRUD de usuários, login JWT |
 
-Documentação interativa: **Swagger** em [`/api`](http://localhost:3000/api) (com Bearer auth).
+Detalhes: **[docs/architecture](./docs/architecture/README.md)**.
 
-**Arquitetura:** monólito modular NestJS com camadas (domain → application → infrastructure → presentation).
+### Infraestrutura provisionada
 
-- **Respostas:** use cases retornam entidade de domínio ou read model; mapeamento HTTP só na presentation (`fromDomain` / `fromReadModel`).
-- **Erros:** application/infra (e auth: use cases + `JwtAuthGuard`) lançam `NotFoundError`, `BadRequestError`, `UnauthorizedError`, etc.; o `ApplicationExceptionFilter` traduz para HTTP (`ValidationPipe` continua com exceções Nest na borda).
+```mermaid
+flowchart TB
+  Client[Cliente HTTP] --> NLB[Load Balancer]
+  NLB --> Pods[API no EKS]
+  HPA[HPA] -.-> Pods
+  Pods --> RDS[(RDS PostgreSQL)]
+  Pods --> Resend[Resend]
+  GHA[GitHub Actions] --> ECR[ECR]
+  ECR -.-> Pods
+  GHA --> Pods
+```
 
-Detalhes em [docs/architecture](./docs/architecture/README.md).
+| Recurso | Função |
+| ------- | ------ |
+| **EKS** + Deployment/Service/HPA | Orquestração e escala por CPU |
+| **RDS PostgreSQL** | Banco gerenciado |
+| **ECR** | Imagens Docker |
+| **VPC / rede** | Terraform em `infra/` |
+| **Resend** | E-mails transacionais |
+| **GitHub Actions** | Build, testes e deploy |
 
-## Início rápido
+Diagrama completo: **[docs/deployment](./docs/deployment/README.md)**.
+
+### Fluxo de deploy
+
+1. Terraform (`infra/`) provisiona EKS, RDS, ECR e rede.
+2. CI/CD faz build, testes e push da imagem no ECR.
+3. Manifestos Kubernetes (`k8s/`) são aplicados no cluster (Deployment, Service, HPA, ConfigMap/Secret).
+
+Detalhes: **[docs/deployment](./docs/deployment/README.md)** · **[CI/CD](./docs/ci-cd/README.md)**.
+
+---
+
+## Instruções
+
+### Execução local
 
 **Pré-requisitos:** Node 20.11+ (ou 22), Docker Compose, arquivo `.env`.
 
@@ -38,15 +86,45 @@ npm run migration:run
 npm run start:dev
 ```
 
-API em `http://localhost:3000` (porta configurável via `APP_PORT`).
+API em `http://localhost:3000` · Swagger em `http://localhost:3000/api`.
 
-Detalhes de build, Docker, migrations e testes: **[docs/build](./docs/build/README.md)**.
+Guia completo: **[docs/build](./docs/build/README.md)**.
 
-## Autenticação
+### Provisionamento com Terraform
 
-JWT no header `Authorization: Bearer <token>`. Rotas protegidas por padrão; exceções marcadas com `@Public()`.
+```bash
+cd infra
+cp .env.example .env   # ajuste senhas, JWT, CIDRs
+source .env
+terraform init
+terraform apply
+```
 
-**Login:**
+Passo a passo: **[docs/deployment/infra.md](./docs/deployment/infra.md)**.
+
+### Deploy em Kubernetes
+
+Após a infra e a imagem no ECR:
+
+```bash
+source infra/.env
+source infra/load-terraform-outputs.sh
+source infra/load-k8s-template-vars.sh
+bash infra/prepare-k8s-overlay.sh
+bash infra/render-k8s-overlay.sh
+bash infra/apply-k8s-overlay.sh
+```
+
+Guia: **[docs/deployment/k8s.md](./docs/deployment/k8s.md)** (EKS e Minikube).
+
+---
+
+## Collection das APIs (Swagger)
+
+- **Local:** http://localhost:3000/api  
+- Rotas protegidas: Bearer JWT (botão **Authorize** no Swagger).
+
+Login rápido:
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/login \
@@ -54,25 +132,26 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
   -d '{"email": "admin@oficina.com", "password": "admin123"}'
 ```
 
-Use o token retornado nas demais requisições. No Swagger, clique em **Authorize** e cole o JWT.
-
-Variáveis: `JWT_SECRET` (obrigatória), `JWT_EXPIRES_IN` (opcional, padrão `1h`). Ver `.env.example`.
+---
 
 ## Notificações por e-mail (Resend)
 
-Mudanças de status da ordem de serviço disparam e-mails via [Resend](https://resend.com). Configure `RESEND_API_KEY`, `RESEND_FROM`, `NOTIFICACAO_EMAIL_MECANICOS` e `NOTIFICACAO_EMAIL_ADMIN` no `.env`. Em desenvolvimento com o remetente sandbox (`onboarding@resend.dev`), use `RESEND_DEV_REDIRECT_TO` para receber todos os e-mails numa caixa de teste.
+Mudanças de status da OS disparam e-mails via [Resend](https://resend.com). Configure `RESEND_API_KEY`, `RESEND_FROM`, `NOTIFICACAO_EMAIL_MECANICOS` e `NOTIFICACAO_EMAIL_ADMIN` no `.env`.
 
-Passo a passo (conta, domínio, testes): **[docs/build — E-mail (Resend)](./docs/build/README.md#e-mail-resend)**.
+Guia: **[docs/build — E-mail](./docs/build/README.md#e-mail-resend)** · [ADR 002](./docs/adr/002-envio-de-email-com-resend.md).
+
+---
 
 ## Documentação
 
 | Documento | Conteúdo |
 | --------- | -------- |
-| [Índice](./docs/README.md) | Entrada para toda a documentação |
-| [Arquitetura](./docs/architecture/README.md) | Camadas, ports, mapeamento HTTP, exceções, read models, dívida técnica |
-| [Build e execução](./docs/build/README.md) | npm, Docker, migrations, seeding, testes |
-| [Kubernetes local](./k8s/README.md) | Cluster Minikube, PostgreSQL, HPA e simulação de carga |
-| [CI/CD](./docs/ci-cd.md) | Pipeline GitHub Actions: build, testes, imagem Docker, Terraform e deploy no EKS |
-| [Análises](./docs/analysis/README.md) | SonarQube, OWASP ZAP |
+| **[Entrega](./docs/entrega/README.md)** | Links da entrega (repo, vídeo, Swagger, docs) |
+| [Arquitetura](./docs/architecture/README.md) | Clean/Hexagonal, ports, módulos |
+| [Deploy](./docs/deployment/README.md) | Desenho de infra AWS + fluxo de deploy |
+| [Terraform](./docs/deployment/infra.md) | Provisionamento AWS |
+| [Kubernetes](./docs/deployment/k8s.md) | EKS e Minikube (manifestos, HPA, carga) |
+| [CI/CD](./docs/ci-cd/README.md) | GitHub Actions |
+| [Build local](./docs/build/README.md) | npm, Docker Compose, migrations, testes |
 | [ADRs](./docs/adr/README.md) | Decisões arquiteturais |
-| [ADR 001 — Banco de dados](./docs/adr/001-escolha-do-banco-de-dados.md) | Rascunho |
+| [Análises](./docs/analysis/README.md) | SonarQube, OWASP ZAP |

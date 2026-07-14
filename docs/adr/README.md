@@ -14,7 +14,8 @@ Formato sugerido para novos registros:
 
 | ADR | Título | Status |
 | --- | ------ | ------ |
-| [001](./001-escolha-do-banco-de-dados.md) | Escolha do banco de dados | rascunho |
+| [001](./001-escolha-do-banco-de-dados.md) | Escolha do banco de dados | aceita |
+| [002](./002-envio-de-email-com-resend.md) | Envio de e-mail com Resend | aceita |
 
 ## Referências
 

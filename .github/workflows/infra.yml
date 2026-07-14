@@ -75,7 +75,7 @@ jobs:
           if (( ${#missing[@]} )); then
             echo "Configuração ausente no GitHub Actions: ${missing[*]}" >&2
             echo "O state remoto (S3) é obrigatório para rodar Terraform no CI;" >&2
-            echo "sem ele cada execução partiria de um state vazio. Ver docs/ci-cd.md." >&2
+            echo "sem ele cada execução partiria de um state vazio. Ver docs/ci-cd/README.md." >&2
             exit 1
           fi
 
