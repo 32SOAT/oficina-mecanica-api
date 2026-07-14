@@ -24,19 +24,19 @@ Prints / gravações da execução das principais rotas da API:
 
 **Abertura da ordem de serviço** — `POST /api/v1/ordens` (`201 Created`):
 
-![Abertura da ordem de serviço](./rota-abertura-ordem.jpg)
+![Abertura da ordem de serviço](./rota-abertura-ordem.gif)
 
 **Consulta status da OS** — `GET /api/v1/ordens/:id`:
 
-![Consulta status da OS](./rota-consulta-status.jpg)
+![Consulta status da OS](./rota-consulta-status.gif)
 
 **Aprovação / reprovação do orçamento (cliente)** — `POST .../aprovar-orcamento` ou `POST .../reprovar-orcamento`:
 
-![Aprovar ou reprovar orçamento](./rota-aprovar-orcamento.jpg)
+![Aprovar ou reprovar orçamento](./rota-aprovar-orcamento.gif)
 
 **Listagem de ordens de serviço** — `GET /api/v1/ordens` (filtro opcional `?status=ENTREGUE`):
 
-![Listagem de ordens de serviço](./rota-listagem-ordens.jpg)
+![Listagem de ordens de serviço](./rota-listagem-ordens.gif)
 
 ### ✉️ Envio de e-mail (Resend)
 
