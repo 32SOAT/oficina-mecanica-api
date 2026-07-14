@@ -1,4 +1,4 @@
-# Build e execução (ambiente local)
+# 💻 Build e execução (ambiente local)
 
 Guia para **desenvolvimento e execução na sua máquina**: npm, Docker Compose, migrations, seeding e testes.
 
@@ -7,7 +7,7 @@ Guia para **desenvolvimento e execução na sua máquina**: npm, Docker Compose,
 > - [Deploy Kubernetes](../deployment/k8s.md) (EKS e Minikube)
 > - [docs/deployment](../deployment/README.md) · [docs/ci-cd](../ci-cd/README.md)
 
-## Pré-requisitos
+## ✅ Pré-requisitos
 
 | Ferramenta | Uso |
 | ---------- | --- |
@@ -23,7 +23,7 @@ nvm use
 npm install
 ```
 
-## Configuração do ambiente
+## ⚙️ Configuração do ambiente
 
 1. Copie o exemplo de variáveis:
 
@@ -40,9 +40,9 @@ cp .env.example .env
 
 ---
 
-## Desenvolvimento local (npm)
+## 🚀 Desenvolvimento local (npm)
 
-### Fluxo rápido
+### ⚡ Fluxo rápido
 
 ```bash
 docker compose up -d db    # só o banco
@@ -50,7 +50,7 @@ npm run migration:run      # build + migrations
 npm run start:dev          # API com reload
 ```
 
-### Comandos
+### 📟 Comandos
 
 | Objetivo | Comando |
 | -------- | ------- |
@@ -70,7 +70,7 @@ npm run start:dev          # API com reload
 
 A porta da API vem de `APP_PORT` no `.env` (padrão: `3000`).
 
-### Migrations
+### 🗄️ Migrations
 
 Com Postgres no ar e `.env` apontando para ele:
 
@@ -80,7 +80,7 @@ npm run migration:run
 
 O script roda `npm run build` antes de aplicar as migrations via TypeORM.
 
-### Seeding
+### 🌱 Seeding
 
 Endpoint para popular dados de desenvolvimento (clientes, veículos, serviços, estoque, usuários):
 
@@ -96,9 +96,9 @@ A rota **não** cria ordens de serviço.
 
 ---
 
-## E-mail (Resend)
+## ✉️ E-mail (Resend)
 
-A API envia notificações por e-mail quando uma ordem de serviço muda de status. O provedor é o [Resend](https://resend.com); a integração fica no módulo `notificacoes/` (ver [arquitetura](../architecture/README.md#notificacoes-e-mail-transacional)).
+A API envia notificações por e-mail quando uma ordem de serviço muda de status. O provedor é o [Resend](https://resend.com); a integração fica no módulo `notificacoes/` (ver [arquitetura — notificações](../architecture/README.md)).
 
 ### 1. Conta e API key
 
@@ -159,7 +159,7 @@ Com essa variável definida, o adapter reescreve `to`, prefixa o assunto com `[D
 
 Erro comum no sandbox: *"only send testing emails to your own email"* — configure `RESEND_DEV_REDIRECT_TO` para o e-mail da conta Resend ou use domínio verificado e destinatários permitidos.
 
-### Variáveis (resumo)
+### 📋 Variáveis (resumo)
 
 | Variável | Obrigatória | Descrição |
 | -------- | ----------- | --------- |
@@ -173,11 +173,11 @@ Referência completa: `.env.example`.
 
 ---
 
-## Docker
+## 🐳 Docker
 
 O `Dockerfile` usa **multi-stage build**: compila na etapa de build e copia só `dist/` + deps de produção na imagem final.
 
-### Subir banco e API
+### 🔼 Subir banco e API
 
 ```bash
 docker compose build          # ou --no-cache após mudar migrations/código
@@ -188,7 +188,7 @@ docker compose logs -f app
 - **db** — PostgreSQL (healthcheck antes do `app`)
 - **app** — API na porta `APP_PORT` (padrão `3000`)
 
-### Migrations no container
+### 🗄️ Migrations no container
 
 Use o TypeORM direto (o `dist/` já veio da imagem):
 
@@ -199,7 +199,7 @@ docker compose exec app npx typeorm migration:revert -d dist/database/data-sourc
 
 Se alterou arquivos de migration no repo, **reconstrua a imagem** antes de rodar de novo.
 
-### Seeding no container
+### 🌱 Seeding no container
 
 ```bash
 docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}'
@@ -207,7 +207,7 @@ docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}
 
 ---
 
-## Resumo rápido
+## 📌 Resumo rápido
 
 | Objetivo | npm (local) | Docker |
 | -------- | ----------- | ------ |
@@ -219,7 +219,7 @@ docker compose exec app curl -X POST http://localhost:3000/api/v1/seeding -d '{}
 
 ---
 
-## Referências
+## 🔗 Referências
 
 - [README principal](../../README.md)
 - [Deploy AWS/Kubernetes](../deployment/README.md)

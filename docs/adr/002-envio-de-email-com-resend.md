@@ -7,13 +7,13 @@
 | Status | Aceita     |
 
 
-## Contexto
+## 📌 Contexto
 
 A Oficina Mecânica API precisa notificar stakeholders por e-mail quando eventos relevantes ocorrem no fluxo de ordens de serviço (por exemplo, avisos a mecânicos, à administração ou ao cliente). Para o Tech Challenge, o requisito é demonstrar esse comportamento de ponta a ponta, sem montar uma infraestrutura completa de e-mail de produção (filas, bounce handling, etc.).
 
 O time já organiza o módulo de notificações sob influência de Clean/Hexagonal Architecture: a aplicação depende de um port (`NotificacaoPort`), e a infraestrutura pluga um adapter concreto. Era necessário escolher um provedor simples o bastante para entregar a demo rapidamente, sem travar a evolução futura para um provedor cloud mais maduro.
 
-## Decisão
+## ✅ Decisão
 
 Adotamos o **Resend** como provedor de envio de e-mail **para o momento atual do projeto** — abordagem prática e mínima para o Tech Challenge.
 
@@ -26,23 +26,23 @@ Na prática:
 
 Esta decisão **não** fixa o Resend como solução definitiva de produção. O port de notificação permanece a fronteira estável; no futuro, um adapter para soluções da **AWS** (por exemplo SES, eventualmente com SNS/SQS) pode substituir o Resend sem alterar os casos de uso que disparam e-mail.
 
-## Consequências
+## 📊 Consequências
 
-### Positivas
+### 👍 Positivas
 
 - Entrega rápida do requisito de notificação no Tech Challenge, com API simples e SDK Node.
 - Fluxo demonstrável de ponta a ponta: a API dispara e o destinatário recebe o e-mail.
 - Troca futura de provedor fica localizada no adapter; domínio de negócio e application continuam acoplados só a `NotificacaoPort`.
 - Redirect opcional em testes evita envios indesejados quando ainda se está validando templates.
 
-### Negativas / trade-offs
+### 👎 Negativas / trade-offs
 
 - Dependência de serviço SaaS externo e de chave de API (não versionar segredos).
 - Reputação de entrega e filtros de spam do provedor do destinatário (Outlook, Gmail, etc.) ficam fora do controle da aplicação.
 - Compliance avançado de produção (filas, bounce, unsubscribe, políticas de domínio) não é o foco desta escolha básica.
 - Produção futura na AWS exigirá nova ADR (ou revisão desta) ao adotar SES ou equivalente.
 
-## Alternativas consideradas
+## 🔀 Alternativas consideradas
 
 
 | Alternativa                                  | Por que não foi escolhida agora                                                                                                                                                                                |

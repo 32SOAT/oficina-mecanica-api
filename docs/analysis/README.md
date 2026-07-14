@@ -1,12 +1,12 @@
-# Análises de qualidade e segurança
+# 🔍 Análises de qualidade e segurança
 
 SonarQube (análise estática + cobertura) e OWASP ZAP (DAST).
 
-## SonarQube
+## 📊 SonarQube
 
 Análise estática de código e cobertura de testes.
 
-### Subir o SonarQube
+### 🔼 Subir o SonarQube
 
 ```bash
 docker compose up -d sonarqube
@@ -16,7 +16,7 @@ Painel: [http://localhost:9000](http://localhost:9000)
 
 Login padrão: `admin` / `admin`
 
-### Análise local (npm + npx)
+### 💻 Análise local (npm + npx)
 
 Configure o token em `sonar-project.properties` (arquivo local, não versionado).
 
@@ -38,7 +38,7 @@ Ou em um passo:
 npm run sonar
 ```
 
-### Scanner via Docker
+### 🐳 Scanner via Docker
 
 Substitua `SEU_TOKEN` pelo token gerado no painel:
 
@@ -54,16 +54,16 @@ No Windows/Mac, use `host.docker.internal` em vez de `localhost` para acessar o 
 
 ---
 
-## OWASP ZAP
+## 🛡️ OWASP ZAP
 
 Análise dinâmica de segurança (DAST): headers, autenticação, injeções, exposição de endpoints etc.
 
-### Pré-requisitos
+### ✅ Pré-requisitos
 
 - API rodando em [http://localhost:3000](http://localhost:3000)
 - Token JWT obtido no login (`POST /api/v1/auth/login`)
 
-### Scan via OpenAPI
+### 🔎 Scan via OpenAPI
 
 Substitua `SEU_TOKEN` pelo JWT:
 
@@ -81,7 +81,7 @@ O relatório `report.html` é gerado no diretório atual.
 
 ---
 
-## Referências
+## 🔗 Referências
 
 - [README principal](../../README.md)
 - [Build e execução](../build/README.md)

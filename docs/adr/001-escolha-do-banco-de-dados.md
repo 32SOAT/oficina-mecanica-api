@@ -7,7 +7,7 @@
 | Status | Aceita     |
 
 
-## Contexto
+## 📌 Contexto
 
 O domínio de uma oficina mecânica não é um conjunto de registros isolados: existe uma malha de dependências que o sistema precisa respeitar. Um cliente possui veículos; cada ordem de serviço está ligada a um veículo; os itens da ordem apontam para serviços cadastrados ou para linhas de estoque; o histórico de status precisa estar sempre associado à ordem correta. Ou seja, o negócio é naturalmente estruturado em entidades e relacionamentos — exatamente o que o modelo relacional descreve com tabelas, chaves e integridade referencial.
 
@@ -15,7 +15,7 @@ Além disso, operações de oficina costumam exigir várias escritas coordenadas
 
 Diante disso, a equipe precisava escolher o tipo de persistência e o SGBD que sustentariam o monólito modular da Oficina Mecânica API.
 
-## Decisão
+## ✅ Decisão
 
 Adotamos um **banco de dados relacional**, especificamente o **PostgreSQL**, como persistência principal da aplicação.
 
@@ -27,9 +27,9 @@ Bancos relacionais oferecem transações **ACID** (atomicidade, consistência, i
 
 Na prática, a decisão se materializa com TypeORM, migrações versionadas neste repositório e PostgreSQL em desenvolvimento (Docker) e em ambientes de deploy.
 
-## Consequências
+## 📊 Consequências
 
-### Positivas
+### 👍 Positivas
 
 - Integridade referencial e unicidade ficam no banco, alinhadas ao domínio (cliente ↔ veículo ↔ OS ↔ itens ↔ estoque/serviços).
 - Transações ACID cobrem fluxos que atualizam vários agregados de uma vez (OS, estoque, histórico).
@@ -38,13 +38,13 @@ Na prática, a decisão se materializa com TypeORM, migrações versionadas nest
 - PostgreSQL oferece flexibilidade pontual (JSON/JSONB) sem trocar o modelo base.
 - Boa disponibilidade de documentação, operators e serviços gerenciados em nuvem.
 
-### Negativas / trade-offs
+### 👎 Negativas / trade-offs
 
 - Schema e migrações exigem disciplina: mudanças de modelo passam por versionamento e revisão, o que é mais rígido que documentos sem schema.
 - Escalabilidade horizontal e modelagem altamente desnormalizada (típicas de alguns NoSQL) não são o foco; para este MVP administrativo, a prioridade é consistência e clareza de relacionamentos.
 - A equipe precisa manter conhecimento de SQL/TypeORM e cuidar de índices e planos de consulta conforme o volume crescer.
 
-## Alternativas consideradas
+## 🔀 Alternativas consideradas
 
 
 | Alternativa                            | Por que não foi escolhida                                                                                                                                                                                                |

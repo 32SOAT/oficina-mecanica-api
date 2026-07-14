@@ -1,8 +1,8 @@
-# Deploy AWS (Terraform)
+# 🏗️ Deploy AWS (Terraform)
 
 Guia para provisionar a infraestrutura na AWS (Terraform) e fazer o deploy da aplicação no Kubernetes.
 
-## O que você precisa ter instalado
+## ✅ O que você precisa ter instalado
 
 - `terraform` 1.6 ou superior
 - `aws` CLI autenticado na conta correta
@@ -10,7 +10,7 @@ Guia para provisionar a infraestrutura na AWS (Terraform) e fazer o deploy da ap
 - `kubectl`
 - `envsubst` (normalmente fornecido pelo pacote `gettext-base`)
 
-## 1. Preparar as variáveis
+## 1️⃣ Preparar as variáveis
 
 Crie o arquivo local de ambiente:
 
@@ -32,7 +32,7 @@ Carregue as variáveis no terminal:
 source .env
 ```
 
-## 2. Criar a infraestrutura AWS com Terraform
+## 2️⃣ Criar a infraestrutura AWS com Terraform
 
 Inicialize o diretório:
 
@@ -58,7 +58,7 @@ Se quiser aplicar sem confirmação interativa:
 terraform apply -auto-approve
 ```
 
-## 3. Ler os outputs do Terraform
+## 3️⃣ Ler os outputs do Terraform
 
 Depois do `apply`, carregue em variáveis locais os valores que vamos reutilizar:
 
@@ -85,7 +85,7 @@ Se preferir conferir tudo de uma vez:
 terraform output
 ```
 
-## 4. Configurar acesso ao cluster EKS
+## 4️⃣ Configurar acesso ao cluster EKS
 
 Atualize o kubeconfig local:
 
@@ -102,7 +102,7 @@ kubectl get ns
 
 Se esse passo falhar, o problema ainda é acesso ao cluster, não deploy da API.
 
-## 5. Build e push da imagem Docker
+## 5️⃣ Build e push da imagem Docker
 
 Saia do diretório `infra` e volte para a raiz do projeto:
 
@@ -127,7 +127,7 @@ bash ./infra/publish-api-image.sh
 Para publicar intencionalmente para outra arquitetura, defina
 `API_IMAGE_PLATFORM` antes de executar o script.
 
-## 6. Gerar os manifestos Kubernetes manualmente
+## 6️⃣ Gerar os manifestos Kubernetes manualmente
 
 Os arquivos versionados ficam em `k8s/templates` e o resultado final vai para `k8s/overlays/generated`.
 
@@ -187,7 +187,7 @@ kubectl kustomize k8s/overlays/generated
 
 Esse comando não aplica nada no cluster. Ele apenas mostra o YAML final montado.
 
-## 7. Aplicar os manifestos no Kubernetes
+## 7️⃣ Aplicar os manifestos no Kubernetes
 
 Agora aplique de fato:
 
@@ -195,7 +195,7 @@ Agora aplique de fato:
 bash ./infra/apply-k8s-overlay.sh
 ```
 
-## 8. Verificar se a API subiu
+## 8️⃣ Verificar se a API subiu
 
 Veja os pods:
 
@@ -222,7 +222,7 @@ Quando o hostname aparecer, a URL pública será:
 http://<hostname-do-load-balancer>
 ```
 
-## 9. Atualizar a imagem no cluster
+## 9️⃣ Atualizar a imagem no cluster
 
 Depois do primeiro deploy, você não precisa recriar a infraestrutura para publicar uma versão nova da API. O fluxo normal é:
 
@@ -270,7 +270,7 @@ Para conferir qual imagem está rodando no momento:
 bash ./infra/show-k8s-image.sh
 ```
 
-## 10. Comandos úteis de diagnóstico
+## 🔟 Comandos úteis de diagnóstico
 
 Status do Deployment:
 
@@ -308,7 +308,7 @@ HPA:
 kubectl -n "${KUBERNETES_NAMESPACE}" get hpa
 ```
 
-## 11. Problemas comuns
+## ⚠️ Problemas comuns
 
 ### `error validating data: failed to download openapi`
 
@@ -355,7 +355,7 @@ source infra/load-terraform-outputs.sh
 source infra/load-k8s-template-vars.sh
 ```
 
-## 12. Destruir o ambiente manualmente
+## 💥 Destruir o ambiente manualmente
 
 Se quiser remover tudo sem usar os scripts:
 
@@ -371,8 +371,8 @@ bash ./infra/destroy-environment.sh -auto-approve
 
 Se o `Service` LoadBalancer ainda existir, a AWS pode demorar alguns minutos para liberar o NLB antes do `terraform destroy` conseguir remover rede e subnets.
 
-## Ver também
+## 🔗 Ver também
 
-- [Deploy (índice)](./README.md) — desenho da infra e fluxo
-- [Kubernetes](./k8s.md) — templates, Minikube, HPA
-- [CI/CD](../ci-cd/README.md)
+- 🗺️ [Deploy (índice)](./README.md) — desenho da infra e fluxo
+- ☸️ [Kubernetes](./k8s.md) — templates, Minikube, HPA
+- ⚙️ [CI/CD](../ci-cd/README.md)

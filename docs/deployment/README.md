@@ -1,8 +1,8 @@
-# Deploy (AWS / Kubernetes)
+# ☁️ Deploy (AWS / Kubernetes)
 
 Este índice orienta **onde** está cada guia de deploy e resume a infraestrutura provisionada.
 
-## Desenho da arquitetura
+## 🗺️ Desenho da arquitetura
 
 ```mermaid
 flowchart TB
@@ -43,27 +43,27 @@ flowchart TB
 
 | Recurso | Função |
 | ------- | ------ |
-| **VPC** + subnets | Rede (pública, privada, database) — Terraform em `infra/` |
-| **EKS** | Cluster Kubernetes: Deployment, Service, ConfigMap/Secret |
-| **HPA** | Escala pods conforme uso de CPU |
-| **RDS PostgreSQL** | Banco gerenciado |
-| **ECR** | Registro das imagens da API |
-| **NLB** | Entrada HTTP para a API no cluster |
-| **Resend** | E-mails de notificação da OS |
-| **GitHub Actions** | Build, testes, push de imagem e apply no EKS |
+| 🌐 **VPC** + subnets | Rede (pública, privada, database) — Terraform em `infra/` |
+| ☸️ **EKS** | Cluster Kubernetes: Deployment, Service, ConfigMap/Secret |
+| 📈 **HPA** | Escala pods conforme uso de CPU |
+| 🗄️ **RDS PostgreSQL** | Banco gerenciado |
+| 📦 **ECR** | Registro das imagens da API |
+| 🔀 **NLB** | Entrada HTTP para a API no cluster |
+| ✉️ **Resend** | E-mails de notificação da OS |
+| ⚙️ **GitHub Actions** | Build, testes, push de imagem e apply no EKS |
 
 ---
 
-## Qual guia usar?
+## 🧭 Qual guia usar?
 
 | Cenário | Onde ir | O que cobre |
 | ------- | ------- | ----------- |
-| **Desenvolvimento local** (npm, Docker Compose na máquina) | [docs/build](../build/README.md) | `.env` na raiz, Postgres local, migrations, testes, Resend |
-| **Infraestrutura AWS** (Terraform: EKS, RDS, ECR, rede…) | [infra.md](./infra.md) | Provisionamento, variáveis `infra/.env`, `terraform apply` |
-| **Kubernetes** (EKS e Minikube) | [k8s.md](./k8s.md) | Templates EKS, overlay Minikube, HPA e carga |
-| **Pipeline CI/CD** (GitHub Actions) | [docs/ci-cd](../ci-cd/README.md) | Workflows `.github/workflows/`, secrets, fluxo automatizado |
+| 💻 **Desenvolvimento local** | [docs/build](../build/README.md) | npm, Docker Compose, migrations, testes, Resend |
+| 🏗️ **Infraestrutura AWS** | [infra.md](./infra.md) | Terraform: EKS, RDS, ECR, rede |
+| ☸️ **Kubernetes** (EKS e Minikube) | [k8s.md](./k8s.md) | Templates EKS, overlay Minikube, HPA e carga |
+| ⚙️ **Pipeline CI/CD** | [docs/ci-cd](../ci-cd/README.md) | GitHub Actions |
 
-## Fluxo de deploy
+## 🔄 Fluxo de deploy
 
 ```mermaid
 flowchart LR
@@ -82,14 +82,14 @@ Em resumo:
 3. `k8s/` → `kubectl apply` (Deployment, Service, HPA, ConfigMap/Secret)
 4. CI/CD → repete build/test/deploy em push ou disparo manual (`workflow_dispatch`)
 
-## Artefatos no repositório
+## 📁 Artefatos no repositório
 
 | Artefato | Local |
 | -------- | ----- |
-| Docker (app + Compose local) | `Dockerfile`, `docker-compose.yml` |
-| Kubernetes (Deployment, Service, HPA, ConfigMap/Secret) | `k8s/` |
-| Terraform (cluster, banco, registro) | `infra/` |
-| Pipeline | `.github/workflows/ci-cd.yml`, `infra.yml` |
+| 🐳 Docker (app + Compose local) | `Dockerfile`, `docker-compose.yml` |
+| ☸️ Kubernetes | `k8s/` |
+| 🏗️ Terraform | `infra/` |
+| ⚙️ Pipeline | `.github/workflows/ci-cd.yml`, `infra.yml` |
 
 ```text
 oficina-mecanica-api/
@@ -104,8 +104,8 @@ oficina-mecanica-api/
     └── k8s.md              # Kubernetes (EKS + Minikube)
 ```
 
-## Relacionados
+## 🔗 Relacionados
 
-- [Arquitetura da aplicação](../architecture/README.md) — camadas e ports
-- [Build local](../build/README.md) — execução na máquina; não substitui deploy AWS
-- [Entrega](../entrega/README.md) — nossa entrega (repo, vídeo, docs)
+- 🧱 [Arquitetura da aplicação](../architecture/README.md)
+- 💻 [Build local](../build/README.md)
+- 📦 [Entrega](../entrega/README.md)

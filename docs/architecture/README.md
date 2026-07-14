@@ -1,4 +1,4 @@
-# Arquitetura
+# 🧱 Arquitetura
 
 Documentação da arquitetura da **Oficina Mecânica API**: monólito modular em NestJS com **Clean Architecture / Hexagonal** (ports e adapters) e testes automatizados.
 
@@ -8,11 +8,11 @@ Infraestrutura AWS (EKS, RDS, ECR, HPA) e fluxo de deploy: **[docs/deployment](.
 
 ---
 
-## Clean / Hexagonal no código
+## 🧩 Clean / Hexagonal no código
 
 Cada contexto de negócio vive em `src/{modulo}/`, com camadas e **ports** (contratos). A aplicação não importa TypeORM nem Resend diretamente nos use cases — isso fica nos **adapters** da infrastructure.
 
-### Padrão interno de cada módulo
+### 📁 Padrão interno de cada módulo
 
 Quase todos os contextos seguem o mesmo recorte:
 
@@ -65,7 +65,7 @@ Dois níveis de wiring Nest por contexto:
 | **domain** | Regras de negócio isoladas do framework |
 | **infrastructure** | Persistência, e-mail, JWT/bcrypt, listeners |
 
-### Fluxo de uma request
+### 🔄 Fluxo de uma request
 
 ```mermaid
 sequenceDiagram
@@ -96,7 +96,7 @@ Erros de aplicação/domínio (`NotFoundError`, `BadRequestError`, etc.) sobem s
 
 ---
 
-## Componentes da aplicação (`src/`)
+## 📦 Componentes da aplicação (`src/`)
 
 ```
 src/
@@ -113,17 +113,17 @@ src/
 
 Contexto = pasta + `module.ts`. É **um único deploy**, com fronteiras claras entre módulos.
 
-### Ordens de serviço (núcleo)
+### 🔧 Ordens de serviço (núcleo)
 
 - **Writes** transacionais (abertura, itens, estoque, status) via port + `EntityManager` compartilhado.
 - **Reads** via **read models** (CQRS light): evita acoplar o domínio da OS aos demais bounded contexts.
 - Mudança de status dispara evento; listeners persistem histórico e notificam por e-mail.
 
-### Notificações (e-mail)
+### ✉️ Notificações (e-mail)
 
-`NotificacaoPort` + `ResendNotificacaoAdapter`. O listener da OS reage a `StatusAlteradoEvent` (ex.: aguardando aprovação → cliente; recebida / aguardando serviço → mecânicos). Detalhes de configuração: [build — Resend](../build/README.md#e-mail-resend).
+`NotificacaoPort` + `ResendNotificacaoAdapter`. O listener da OS reage a `StatusAlteradoEvent` (ex.: aguardando aprovação → cliente; recebida / aguardando serviço → mecânicos). Detalhes de configuração: [build — Resend](../build/README.md).
 
-### Integração entre módulos (ports)
+### 🔌 Integração entre módulos (ports)
 
 Use cases **não** importam repositórios de outro módulo. Cruzamentos usam ports. Há dois padrões principais conforme o **contexto de execução**:
 
@@ -155,7 +155,7 @@ flowchart LR
 
 ---
 
-## Testes
+## 🧪 Testes
 
 - Unitários e de módulo em `src/**/*.spec.ts` (camadas e fluxos críticos da OS).
 - Specs de controller em `test/` (HTTP com use cases mockados).
@@ -164,7 +164,7 @@ A pipeline de CI executa `npm test` antes do build da imagem e do deploy — ver
 
 ---
 
-## Decisões e referências
+## 📝 Decisões e referências
 
 
 | Documento                                                       | Conteúdo                     |

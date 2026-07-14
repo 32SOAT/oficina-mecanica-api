@@ -1,4 +1,4 @@
-# Deploy Kubernetes
+# ☸️ Deploy Kubernetes
 
 Documentação dos ambientes Kubernetes da API:
 
@@ -7,7 +7,7 @@ Documentação dos ambientes Kubernetes da API:
 
 ---
 
-## EKS (AWS)
+## ☁️ EKS (AWS)
 
 Os templates YAML versionados ficam em `k8s/templates/`:
 
@@ -61,11 +61,11 @@ Provisionamento do cluster e publicação da imagem: [infra.md](./infra.md).
 
 ---
 
-## Minikube (local)
+## 💻 Minikube (local)
 
 Ambiente local autocontido com a API, PostgreSQL, migrations e HPA (`k8s/overlays/minikube`).
 
-### Pré-requisitos
+### ✅ Pré-requisitos
 
 - Docker
 - `minikube`
@@ -76,7 +76,7 @@ minikube start --profile=minikube --driver=docker --cpus=4 --memory=6g
 minikube addons enable metrics-server --profile=minikube
 ```
 
-### Selecionar o contexto local
+### 🎯 Selecionar o contexto local
 
 Um mesmo `kubeconfig` pode conter contextos locais e remotos. Antes de executar qualquer comando deste guia, confirme o destino:
 
@@ -91,7 +91,7 @@ kubectl cluster-info --context=minikube
 
 Os comandos abaixo passam `--context=minikube` explicitamente para evitar enviar operações ao EKS por engano.
 
-### Subir a API
+### 🚀 Subir a API
 
 ```bash
 minikube image build --profile=minikube -t oficina-mecanica-api:local .
@@ -114,7 +114,7 @@ kubectl --context=minikube -n oficina-mecanica \
   rollout restart deployment/oficina-mecanica-api
 ```
 
-### Acessar a API
+### 🌐 Acessar a API
 
 ```bash
 kubectl --context=minikube -n oficina-mecanica \
@@ -132,7 +132,7 @@ minikube service oficina-mecanica-api \
   --profile=minikube --namespace=oficina-mecanica --url
 ```
 
-### Diagnóstico
+### 🩺 Diagnóstico
 
 ```bash
 kubectl --context=minikube -n oficina-mecanica get pods,svc,hpa,pvc
@@ -143,7 +143,7 @@ kubectl --context=minikube top pods -n oficina-mecanica
 
 O HPA pode mostrar `<unknown>` nos primeiros minutos após habilitar o Metrics Server. Confirme `kubectl top pods` antes do teste de carga.
 
-### Simular aumento de carga
+### 📈 Simular aumento de carga
 
 O cenário em `k8s/load-test/` executa k6 dentro do cluster. Em cinco minutos sobe gradualmente de 50 para 500 usuários virtuais, chama o health check e depois reduz a carga:
 
@@ -169,7 +169,7 @@ kubectl --context=minikube -n oficina-mecanica logs job/k6-load-test --tail=50
 kubectl --context=minikube -n oficina-mecanica get hpa,pods -w
 ```
 
-### Limpeza
+### 🧹 Limpeza
 
 ```bash
 kubectl --context=minikube delete -k k8s/load-test --ignore-not-found
@@ -184,7 +184,7 @@ minikube delete --profile=minikube
 
 ---
 
-## Ver também
+## 🔗 Ver também
 
 - [Deploy (índice)](./README.md)
 - [Terraform / AWS](./infra.md)
