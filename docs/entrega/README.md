@@ -20,7 +20,7 @@ Links e artefatos da nossa entrega.
 
 ### Print dos testes e análises
 
-Cobertura de testes (`npm test` / Istanbul):
+Cobertura de testes (`npm run test:cov`):
 
 ![Cobertura de testes](./cobertura-testes.png)
 
