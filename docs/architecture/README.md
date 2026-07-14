@@ -4,53 +4,7 @@ Documentação da arquitetura da **Oficina Mecânica API**: monólito modular em
 
 Stack da aplicação: **NestJS** · **TypeORM** · **PostgreSQL** · **JWT** · **Resend** (e-mail).
 
-Infraestrutura e deploy (Docker, Kubernetes, Terraform, CI/CD): [docs/deployment](../deployment/README.md).
-
----
-
-## Visão geral da solução
-
-```mermaid
-flowchart TB
-  subgraph Clientes
-    HTTP[HTTP / Swagger]
-  end
-
-  subgraph Aplicação["Aplicação (EKS)"]
-    API[Oficina Mecânica API<br/>NestJS]
-    HPA[HPA — escala por CPU]
-  end
-
-  subgraph Dados
-    RDS[(PostgreSQL — RDS)]
-  end
-
-  subgraph Externos
-    Resend[Resend — e-mail]
-    ECR[ECR — imagens Docker]
-  end
-
-  HTTP --> API
-  HPA -.-> API
-  API --> RDS
-  API --> Resend
-  ECR -.-> API
-```
-
-
-
-
-| Parte          | Papel                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------ |
-| **API**        | Monólito modular: clientes, veículos, serviços, estoque, ordens de serviço, auth, notificações               |
-| **PostgreSQL** | Persistência relacional (integridade e transações ACID) — [ADR 001](../adr/001-escolha-do-banco-de-dados.md) |
-| **Resend**     | E-mails em mudanças de status da OS — [ADR 002](../adr/002-envio-de-email-com-resend.md)                     |
-| **EKS + HPA**  | Orquestração e escala automática sob carga                                                                   |
-| **ECR**        | Registro das imagens publicadas pelo CI/CD                                                                   |
-| **Terraform**  | Provisionamento da infra AWS (`infra/`)                                                                      |
-
-
-Guias de infra e deploy: [Deploy](../deployment/README.md).
+Infraestrutura AWS (EKS, RDS, ECR, HPA) e fluxo de deploy: **[docs/deployment](../deployment/README.md)**. Decisões: [ADR 001 — PostgreSQL](../adr/001-escolha-do-banco-de-dados.md), [ADR 002 — Resend](../adr/002-envio-de-email-com-resend.md).
 
 ---
 

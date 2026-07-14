@@ -32,7 +32,7 @@ Arquivos gerados no overlay:
 - `kustomization.yaml`
 - `values/`, com os valores locais usados pelos generators do Kustomize
 
-Fluxo recomendado, a partir da raiz do projeto:
+Fluxo recomendado, a partir da raiz do projeto (após o Terraform e a imagem no ECR — detalhes em [infra.md](./infra.md)):
 
 ```bash
 source infra/.env
@@ -57,7 +57,7 @@ O overlay gerado contém os segredos do banco/JWT em arquivos locais e fica igno
 
 Os probes HTTP usam o path configurado em `TF_VAR_api_healthcheck_path`, e o HPA escala o Deployment por uso médio de CPU.
 
-Provisionamento do cluster: [Terraform](./infra.md).
+Provisionamento do cluster e publicação da imagem: [infra.md](./infra.md).
 
 ---
 
@@ -145,6 +145,8 @@ O HPA pode mostrar `<unknown>` nos primeiros minutos após habilitar o Metrics S
 
 ### Simular aumento de carga
 
+O cenário em `k8s/load-test/` executa k6 dentro do cluster. Em cinco minutos sobe gradualmente de 50 para 500 usuários virtuais, chama o health check e depois reduz a carga:
+
 ```bash
 kubectl --context=minikube -n oficina-mecanica \
   delete job k6-load-test --ignore-not-found
@@ -152,13 +154,20 @@ kubectl --context=minikube apply -k k8s/load-test
 kubectl --context=minikube -n oficina-mecanica logs -f job/k6-load-test
 ```
 
-Em outro terminal:
+Em outro terminal, acompanhe o consumo e o aumento de réplicas:
 
 ```bash
 kubectl --context=minikube -n oficina-mecanica get hpa,pods -w
 ```
 
-HPA: alvo 50% de CPU, mín. 1 e máx. 5 réplicas. Ajuste de carga em `k8s/load-test/k6-script.yaml`.
+O HPA tem alvo de 50% da CPU solicitada, mínimo de 1 e máximo de 5 réplicas. A medição e a criação de novos pods não são instantâneas. Para ajustar a pressão, edite `target` e `duration` em `k8s/load-test/k6-script.yaml` e recrie o Job.
+
+Ao final:
+
+```bash
+kubectl --context=minikube -n oficina-mecanica logs job/k6-load-test --tail=50
+kubectl --context=minikube -n oficina-mecanica get hpa,pods -w
+```
 
 ### Limpeza
 

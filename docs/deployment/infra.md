@@ -370,3 +370,9 @@ bash ./infra/destroy-environment.sh -auto-approve
 ```
 
 Se o `Service` LoadBalancer ainda existir, a AWS pode demorar alguns minutos para liberar o NLB antes do `terraform destroy` conseguir remover rede e subnets.
+
+## Ver também
+
+- [Deploy (índice)](./README.md) — desenho da infra e fluxo
+- [Kubernetes](./k8s.md) — templates, Minikube, HPA
+- [CI/CD](../ci-cd/README.md)

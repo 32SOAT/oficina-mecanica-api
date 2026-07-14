@@ -1,6 +1,6 @@
 # Entrega
 
-Links e artefatos da nossa entrega.
+Artefatos e links da entrega.
 
 ---
 
@@ -8,8 +8,8 @@ Links e artefatos da nossa entrega.
 
 | Item | Link / valor |
 | ---- | ------------ |
-| **Desenho da arquitetura** (recursos: EKS, RDS, ECR, etc.) | [docs/deployment/README.md](../deployment/README.md) |
-| **Arquitetura da aplicação** (módulos / Clean Architecture) | [docs/architecture/README.md](../architecture/README.md) |
+| **Desenho da arquitetura** (EKS, RDS, ECR, etc.) | [docs/deployment/README.md](../deployment/README.md) |
+| **Arquitetura da aplicação** | [docs/architecture/README.md](../architecture/README.md) |
 | **Vídeo demonstrativo** (YouTube, até 15 min) | _cole o link do vídeo_ |
 
 ### API (Swagger)
@@ -34,24 +34,6 @@ Cobertura de testes (`npm run test:cov`):
 
 ---
 
-## Documentação no repositório
+## Onde está o restante
 
-| Tópico | Documento |
-| ------ | --------- |
-| Visão geral do projeto | [README.md](../../README.md) |
-| Arquitetura | [docs/architecture/README.md](../architecture/README.md) |
-| ADRs | [docs/adr/README.md](../adr/README.md) |
-| Execução local | [docs/build/README.md](../build/README.md) |
-| Deploy (índice) | [docs/deployment/README.md](../deployment/README.md) |
-| Terraform / AWS | [docs/deployment/infra.md](../deployment/infra.md) |
-| Kubernetes | [docs/deployment/k8s.md](../deployment/k8s.md) |
-| CI/CD | [docs/ci-cd/README.md](../ci-cd/README.md) |
-
-### Código e infra (no repo)
-
-| Item | Caminho |
-| ---- | ------- |
-| Dockerfile / Compose | [`Dockerfile`](../../Dockerfile), [`docker-compose.yml`](../../docker-compose.yml) |
-| Kubernetes | [`k8s/`](../../k8s/) |
-| Terraform | [`infra/`](../../infra/) |
-| Pipelines | [`.github/workflows/`](../../.github/workflows/) |
+Índice completo da documentação: **[README do projeto](../../README.md#documentação)**.
