@@ -50,7 +50,7 @@ Notificações reais com remetente `notificacoes@fiap.tech` ([configuração](..
 
 ![E-mail mecânicos — aguardando serviço](./email-mecanicos-aguardando-servico.png)
 
-**Cliente** — orçamento aguardando aprovação (`R$ 250,00`):
+**Cliente** — orçamento aguardando aprovação:
 
 ![E-mail cliente — orçamento](./email-cliente-orcamento.png)
 
