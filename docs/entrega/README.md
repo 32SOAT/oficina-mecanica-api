@@ -10,13 +10,33 @@ Artefatos e links da entrega.
 | ---- | ------------ |
 | ☁️ **Desenho da arquitetura** (EKS, RDS, ECR, etc.) | [docs/deployment/README.md](../deployment/README.md) |
 | 🧱 **Arquitetura da aplicação** | [docs/architecture/README.md](../architecture/README.md) |
-| 🎬 **Vídeo demonstrativo** (YouTube, até 15 min) | _cole o link do vídeo_ |
+| 🎬 **Vídeo demonstrativo** (YouTube) | https://www.youtube.com/watch?v=qgHBsH6hp6g |
 
 ### 📘 API (Swagger)
 
 | Ambiente | URL |
 | -------- | --- |
 | 💻 Local | http://localhost:3000/api |
+
+### 🛣️ Print demonstrativo das rotas
+
+Prints / gravações da execução das principais rotas da API:
+
+**Abertura da ordem de serviço** — `POST /api/v1/ordens` (`201 Created`):
+
+![Abertura da ordem de serviço](./rota-abertura-ordem.jpg)
+
+**Consulta status da OS** — `GET /api/v1/ordens/:id`:
+
+![Consulta status da OS](./rota-consulta-status.jpg)
+
+**Aprovação / reprovação do orçamento (cliente)** — `POST .../aprovar-orcamento` ou `POST .../reprovar-orcamento`:
+
+![Aprovar ou reprovar orçamento](./rota-aprovar-orcamento.jpg)
+
+**Listagem de ordens de serviço** — `GET /api/v1/ordens` (filtro opcional `?status=ENTREGUE`):
+
+![Listagem de ordens de serviço](./rota-listagem-ordens.jpg)
 
 ### ✉️ Envio de e-mail (Resend)
 
