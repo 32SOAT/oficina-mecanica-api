@@ -89,7 +89,7 @@ jobs:
         run: |
           if [[ -z "${ECR_REPOSITORY_URL}" ]]; then
             echo "Variável ECR_REPOSITORY_URL não configurada (Settings > Secrets and variables > Actions > Variables)." >&2
-            echo "Use o output 'ecr_repository_url' do Terraform. Ver docs/ci-cd.md." >&2
+            echo "Use o output 'ecr_repository_url' do Terraform. Ver docs/ci-cd/README.md." >&2
             exit 1
           fi
           docker build \
@@ -135,7 +135,7 @@ jobs:
           done
           if (( ${#missing[@]} )); then
             echo "Variáveis/segredos ausentes no GitHub Actions: ${missing[*]}" >&2
-            echo "Configure em Settings > Secrets and variables > Actions. Ver docs/ci-cd.md." >&2
+            echo "Configure em Settings > Secrets and variables > Actions. Ver docs/ci-cd/README.md." >&2
             exit 1
           fi
 

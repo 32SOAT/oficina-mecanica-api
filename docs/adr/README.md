@@ -1,4 +1,4 @@
-# Architecture Decision Records (ADRs)
+# 📝 Architecture Decision Records (ADRs)
 
 Registro de decisões arquiteturais relevantes do projeto. Cada ADR documenta **contexto**, **decisão** e **consequências** de uma escolha técnica.
 
@@ -10,13 +10,14 @@ Formato sugerido para novos registros:
 4. **Decisão** — o que foi escolhido
 5. **Consequências** — prós, contras e impactos
 
-## Índice
+## 📑 Índice
 
 | ADR | Título | Status |
 | --- | ------ | ------ |
-| [001](./001-escolha-do-banco-de-dados.md) | Escolha do banco de dados | rascunho |
+| [001](./001-escolha-do-banco-de-dados.md) | Escolha do banco de dados | aceita |
+| [002](./002-envio-de-email-com-resend.md) | Envio de e-mail com Resend | aceita |
 
-## Referências
+## 🔗 Referências
 
 - [README principal do projeto](../../README.md)
 - [Arquitetura](../architecture/README.md)
