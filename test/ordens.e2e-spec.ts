@@ -2,6 +2,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import { RolesGuard } from '../src/auth/presentation/guards/roles.guard';
+import { ApplicationExceptionFilter } from '../src/common/presentation/filters/application-exception.filter';
 import { AprovarOrcamentoOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/aprovar-orcamento-ordem-servico.use-case';
 import { AvancarStatusOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/avancar-status-ordem-servico.use-case';
 import { CreateOrdemServicoUseCase } from '../src/ordens-de-servico/application/use-cases/create-ordem-servico.use-case';
@@ -18,7 +20,9 @@ import { ConsultaOrdemServicoController } from '../src/ordens-de-servico/present
 import { OrdemServicoController } from '../src/ordens-de-servico/presentation/controllers/ordem-servico.controller';
 import { OrdemServicoPresentationMapper } from '../src/ordens-de-servico/presentation/mappers/ordem-servico-presentation.mapper';
 import {
+  E2E_AUTH_CLIENTE_STUB,
   E2E_AUTH_USER_STUB,
+  E2E_CLIENTE_AUTHORIZATION,
   FakeJwtAuthGuard,
 } from './helpers/fake-jwt-auth.guard';
 
@@ -88,12 +92,14 @@ describe('Ordens de Serviço (e2e)', () => {
         },
         Reflector,
         { provide: APP_GUARD, useClass: FakeJwtAuthGuard },
+        { provide: APP_GUARD, useClass: RolesGuard },
       ],
     }).compile();
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
       new ValidationPipe({ transform: true, whitelist: true }),
     );
+    app.useGlobalFilters(new ApplicationExceptionFilter());
     await app.init();
   });
 
@@ -182,13 +188,21 @@ describe('Ordens de Serviço (e2e)', () => {
       cliente: { documento: '99999999999', email: 'leak@example.com' },
     });
     findOrdemServicoHistoricoUseCase.execute.mockResolvedValueOnce([]);
-    const res = await request(app.getHttpServer()).get(
-      `/ordens/${OS_ID}/status`,
-    );
+    const res = await request(app.getHttpServer())
+      .get(`/ordens/${OS_ID}/status`)
+      .set('Authorization', E2E_CLIENTE_AUTHORIZATION);
     expect(res.status).toBe(200);
     const body = JSON.stringify(res.body);
     expect(body).not.toContain('99999999999');
     expect(body).not.toContain('leak@example.com');
+  });
+
+  it('GET /ordens/:id/status rejeita JWT de admin', async () => {
+    const res = await request(app.getHttpServer()).get(
+      `/ordens/${OS_ID}/status`,
+    );
+    expect(res.status).toBe(403);
+    expect(findOrdemServicoByIdUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('PATCH /ordens/:id/itens delega DTO e sub do JWT', async () => {
@@ -235,14 +249,22 @@ describe('Ordens de Serviço (e2e)', () => {
 
   it('POST /ordens/:id/aprovar-orcamento delega ao use case', async () => {
     aprovarOrcamentoOrdemServicoUseCase.execute.mockResolvedValueOnce({});
-    const res = await request(app.getHttpServer()).post(
-      `/ordens/${OS_ID}/aprovar-orcamento`,
-    );
+    const res = await request(app.getHttpServer())
+      .post(`/ordens/${OS_ID}/aprovar-orcamento`)
+      .set('Authorization', E2E_CLIENTE_AUTHORIZATION);
     expect(res.status).toBe(201);
     expect(aprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalledWith(
       OS_ID,
-      null,
+      E2E_AUTH_CLIENTE_STUB.sub,
     );
+  });
+
+  it('POST /ordens/:id/aprovar-orcamento rejeita JWT de admin', async () => {
+    const res = await request(app.getHttpServer()).post(
+      `/ordens/${OS_ID}/aprovar-orcamento`,
+    );
+    expect(res.status).toBe(403);
+    expect(aprovarOrcamentoOrdemServicoUseCase.execute).not.toHaveBeenCalled();
   });
 
   it('POST /ordens/:id/avancar-status valida o body', async () => {

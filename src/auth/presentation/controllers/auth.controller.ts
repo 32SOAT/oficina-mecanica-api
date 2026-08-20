@@ -15,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import type { AuthenticatedRequest } from '../interfaces/authenticated-request.interface';
 import { Public } from '../decorators/public.decorator';
+import { Roles } from '../decorators/roles.decorator';
 import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { IssueAuthTokenUseCase } from '../../application/use-cases/issue-auth-token.use-case';
 import { ValidateCredentialsUseCase } from '../../application/use-cases/validate-credentials.use-case';
@@ -52,12 +53,13 @@ export class AuthController {
     return LoginResponseDto.fromReadModel(this.issueAuthTokenUseCase.execute(user));
   }
 
+  @Roles('admin')
   @ApiBearerAuth('JWT-auth')
   @Patch('password')
   @ApiOperation({
     summary: 'Alterar senha do administrador',
     description:
-      'Permite o administrador autenticado alterar sua própria senha',
+      'Permite o administrador autenticado alterar sua própria senha. JWT de cliente é rejeitado.',
   })
   @ApiBody({ type: ChangePasswordDto })
   @ApiResponse({ status: 200, description: 'Senha alterada com sucesso.' })
@@ -65,6 +67,10 @@ export class AuthController {
     status: 401,
     description:
       'Não autenticado (token ausente, inválido ou expirado) ou senha atual incorreta.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Token autenticado, mas o perfil não é admin (ex.: JWT de cliente).',
   })
   async changePassword(
     @Req() req: AuthenticatedRequest,

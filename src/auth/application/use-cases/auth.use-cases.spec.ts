@@ -85,6 +85,7 @@ describe('IssueAuthTokenUseCase', () => {
     expect(result.token).toBe('jwt-token');
     expect(tokenService.sign).toHaveBeenCalledWith({
       sub: user.id,
+      role: 'admin',
       email: user.email,
       username: user.username,
     });

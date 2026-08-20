@@ -31,3 +31,4 @@ Configure em **Settings → Secrets and variables → Actions**. Os workflows re
 
 - ☁️ [Deploy (índice)](../deployment/README.md)
 - 💻 [Execução local](../build/README.md) — independente da pipeline
+- 🔐 [Lambda auth / Gateway](https://github.com/32SOAT/oficina-mecanica-lambda-auth) — CI própria (`lint` / `test` / `terraform validate`)

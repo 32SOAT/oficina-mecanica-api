@@ -22,3 +22,7 @@ export class ConflictError extends ApplicationError {
 export class UnauthorizedError extends ApplicationError {
   readonly statusCode = 401;
 }
+
+export class ForbiddenError extends ApplicationError {
+  readonly statusCode = 403;
+}

@@ -16,6 +16,7 @@ Formato sugerido para novos registros:
 | --- | ------ | ------ |
 | [001](./001-escolha-do-banco-de-dados.md) | Escolha do banco de dados | aceita |
 | [002](./002-envio-de-email-com-resend.md) | Envio de e-mail com Resend | aceita |
+| [003](./003-auth-cliente-lambda-jwt-role.md) | Auth de cliente via Lambda (CPF) e JWT com role | aceita |
 
 ## 🔗 Referências
 

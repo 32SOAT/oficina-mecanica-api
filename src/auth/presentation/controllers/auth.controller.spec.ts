@@ -56,7 +56,12 @@ describe('AuthController', () => {
   describe('changePassword', () => {
     it('calls changePassword with user id from token', async () => {
       const req = {
-        user: { sub: 'user-id', email: 'admin@oficina.com', username: 'admin' },
+        user: {
+          sub: 'user-id',
+          role: 'admin',
+          email: 'admin@oficina.com',
+          username: 'admin',
+        },
       } as AuthenticatedRequest;
       const dto = { currentPassword: 'old', newPassword: 'new' };
 
@@ -149,6 +154,40 @@ describe('JwtAuthGuard', () => {
 
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
+    expect(req).toHaveProperty('user', { ...payload, role: 'admin' });
+  });
+
+  it('allows access with cliente token from Lambda', async () => {
+    const payload = {
+      sub: 'cliente-1',
+      cpf: '52998224725',
+      role: 'cliente',
+    };
+    verifyAsync.mockResolvedValue(payload);
+
+    const req = { headers: { authorization: 'Bearer cliente-token' } };
+    const handler = () => {};
+    const cls = class {};
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => req,
+      }),
+      getHandler: () => handler,
+      getClass: () => cls,
+    } as never;
+
+    const result = await guard.canActivate(context);
+    expect(result).toBe(true);
     expect(req).toHaveProperty('user', payload);
+  });
+
+  it('throws when verified payload has unknown role', async () => {
+    verifyAsync.mockResolvedValue({ sub: 'x', role: 'mecanico' });
+    const context = createExecutionContext({
+      authorization: 'Bearer odd-token',
+    });
+    await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
+      UnauthorizedError,
+    );
   });
 });

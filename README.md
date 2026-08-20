@@ -22,7 +22,8 @@ Monólito modular NestJS (`domain` → `application` → `infrastructure` → `p
 | Documento | Conteúdo |
 | --------- | -------- |
 | 🧱 [Arquitetura da aplicação](./docs/architecture/README.md) | Camadas, módulos, ports, fluxo de request |
-| ☁️ [Desenho da infra / deploy](./docs/deployment/README.md) | EKS, RDS, ECR, HPA, fluxo CI/CD |
+| 🔐 [Autenticação](./docs/architecture/auth.md) | JWT admin (Nest) e cliente CPF ([Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth)) |
+| ☁️ [Desenho da infra / deploy](./docs/deployment/README.md) | EKS, RDS, ECR, HPA, API Gateway, fluxo CI/CD |
 
 ## 💻 Execução local
 
@@ -37,7 +38,9 @@ npm run start:dev
 ```
 
 - API: `http://localhost:3000`
-- Swagger: http://localhost:3000/api (Bearer JWT)
+- Swagger: http://localhost:3000/api (Bearer JWT de **admin** via `POST /api/v1/auth/login`)
+
+Auth de **cliente via CPF** e o API Gateway não rodam neste repo: [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth). Localmente o Nest aceita os dois JWTs se o `JWT_SECRET` for o mesmo. Detalhe: [docs/architecture/auth.md](./docs/architecture/auth.md).
 
 Detalhes, migrations, testes e Resend: **[docs/build](./docs/build/README.md)**.
 
@@ -56,6 +59,7 @@ Detalhes, migrations, testes e Resend: **[docs/build](./docs/build/README.md)**.
 | ---------- | -------- |
 | 📦 **[Entrega](./docs/entrega/README.md)** | Checklist e artefatos da entrega |
 | 🧱 [Arquitetura](./docs/architecture/README.md) | Clean/Hexagonal, ports, módulos |
+| 🔐 [Autenticação](./docs/architecture/auth.md) | Admin Nest + cliente Lambda/CPF |
 | ☁️ [Deploy](./docs/deployment/README.md) | Infra AWS + fluxo de deploy |
 | 🏗️ [Terraform](./docs/deployment/infra.md) | Provisionamento AWS |
 | ☸️ [Kubernetes](./docs/deployment/k8s.md) | EKS e Minikube |

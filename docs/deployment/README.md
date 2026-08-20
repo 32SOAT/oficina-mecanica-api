@@ -16,6 +16,8 @@ flowchart TB
 
   subgraph AWS["AWS"]
     ECR[ECR<br/>imagens Docker]
+    GW[API Gateway HTTP API]
+    Lambda[Lambda auth CPF]
 
     subgraph VPC["VPC"]
       NLB[Network Load Balancer<br/>Service LoadBalancer]
@@ -31,7 +33,10 @@ flowchart TB
     Resend[Resend — e-mail]
   end
 
-  Client --> NLB
+  Client --> GW
+  GW -->|POST /auth/cpf| Lambda
+  GW -->|/api/...| NLB
+  Lambda --> RDS
   NLB --> Pods
   HPA -.-> Pods
   Pods --> RDS
@@ -41,14 +46,17 @@ flowchart TB
   Pipeline --> EKS
 ```
 
+Gateway e Lambda **não** estão neste repositório: [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth). O Nest continua acessível pelo NLB; no vídeo da Fase 3 a entrada pública é o Gateway.
+
 | Recurso | Função |
 | ------- | ------ |
 | 🌐 **VPC** + subnets | Rede (pública, privada, database) — Terraform em `infra/` |
 | ☸️ **EKS** | Cluster Kubernetes: Deployment, Service, ConfigMap/Secret |
 | 📈 **HPA** | Escala pods conforme uso de CPU |
-| 🗄️ **RDS PostgreSQL** | Banco gerenciado |
+| 🗄️ **RDS PostgreSQL** | Banco gerenciado (API e Lambda) |
 | 📦 **ECR** | Registro das imagens da API |
-| 🔀 **NLB** | Entrada HTTP para a API no cluster |
+| 🔀 **NLB** | Entrada HTTP para a API no cluster; `nest_api_url` da Lambda |
+| 🚪 **API Gateway** + **Lambda** | CPF → JWT e proxy `/api` → Nest — [repo da Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth) |
 | ✉️ **Resend** | E-mails de notificação da OS |
 | ⚙️ **GitHub Actions** | Build, testes, push de imagem e apply no EKS |
 
@@ -60,6 +68,8 @@ flowchart TB
 | ------- | ------- | ----------- |
 | 💻 **Desenvolvimento local** | [docs/build](../build/README.md) | npm, Docker Compose, migrations, testes, Resend |
 | 🏗️ **Infraestrutura AWS** | [infra.md](./infra.md) | Terraform: EKS, RDS, ECR, rede |
+| 🎓 **AWS Academy (passo a passo)** | [academy-passo-a-passo.md](./academy-passo-a-passo.md) | Subir e derrubar no lab da faculdade |
+| 🔐 **Auth cliente + Gateway** | [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) | Lambda CPF e proxy `/api` → Nest |
 | ☸️ **Kubernetes** (EKS e Minikube) | [k8s.md](./k8s.md) | Templates EKS, overlay Minikube, HPA e carga |
 | ⚙️ **Pipeline CI/CD** | [docs/ci-cd](../ci-cd/README.md) | GitHub Actions |
 
@@ -99,13 +109,17 @@ oficina-mecanica-api/
 ├── k8s/                    # Templates / overlays (código)
 ├── .github/workflows/
 └── docs/deployment/
-    ├── README.md           # este índice
-    ├── infra.md            # Deploy AWS (Terraform)
-    └── k8s.md              # Kubernetes (EKS + Minikube)
+    ├── README.md                 # este índice
+    ├── academy-passo-a-passo.md  # AWS Academy
+    ├── infra.md                  # Deploy AWS (Terraform)
+    └── k8s.md                    # Kubernetes (EKS + Minikube)
 ```
+
+Auth cliente (CPF) e API Gateway: repositório [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth).
 
 ## 🔗 Relacionados
 
 - 🧱 [Arquitetura da aplicação](../architecture/README.md)
+- 🔐 [Autenticação](../architecture/auth.md)
 - 💻 [Build local](../build/README.md)
 - 📦 [Entrega](../entrega/README.md)
