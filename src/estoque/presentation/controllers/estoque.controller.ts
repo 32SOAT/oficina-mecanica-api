@@ -19,11 +19,10 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
-  ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { type AuthenticatedRequest } from '../../../auth/presentation/interfaces/authenticated-request.interface';
-import { PaginationDto } from '../../../common/pagination/pagination.dto';
+import { FiltrosEstoqueDto } from '../dto/filtros-estoque.dto';
 import { CreateEstoqueUseCase } from '../../application/use-cases/create-estoque.use-case';
 import { ExecutarOperacaoEstoqueUseCase } from '../../application/use-cases/executar-operacao-estoque.use-case';
 import { FindAllEstoquesUseCase } from '../../application/use-cases/find-all-estoques.use-case';
@@ -79,27 +78,14 @@ export class EstoqueController {
     description:
       'Retorna uma lista paginada de itens do estoque. Use estoque_baixo=true para filtrar itens com estoque baixo.',
   })
-  @ApiQuery({
-    name: 'estoque_baixo',
-    required: false,
-    type: Boolean,
-    description: 'Filtrar itens com estoque baixo (disponível <= 5).',
-    example: false,
-  })
   @ApiResponse({ status: 200, description: 'Lista de itens retornada.' })
   @ApiResponse({
     status: 400,
     description: 'Parâmetros de paginação inválidos.',
   })
-  async findAll(
-    @Query() paginationDto: PaginationDto,
-    @Query('estoque_baixo') estoqueBaixo?: string,
-  ) {
+  async findAll(@Query() filtros: FiltrosEstoqueDto) {
     const result = await this.findAllEstoquesUseCase.execute(
-      EstoquePresentationMapper.toFindAllInput(
-        paginationDto,
-        estoqueBaixo === 'true',
-      ),
+      EstoquePresentationMapper.toFindAllInput(filtros),
     );
     return {
       data: result.data.map(EstoqueResponseDto.fromDomain),

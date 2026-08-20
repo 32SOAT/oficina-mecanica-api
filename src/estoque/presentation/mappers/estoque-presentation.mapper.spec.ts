@@ -33,7 +33,11 @@ describe('EstoquePresentationMapper', () => {
 
   it('maps find all input', () => {
     expect(
-      EstoquePresentationMapper.toFindAllInput({ page: 2, take: 20 }, true),
+      EstoquePresentationMapper.toFindAllInput({
+        page: 2,
+        take: 20,
+        estoque_baixo: true,
+      }),
     ).toEqual({ page: 2, take: 20, estoqueBaixo: true });
   });
 

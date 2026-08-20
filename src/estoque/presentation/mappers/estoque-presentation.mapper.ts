@@ -1,4 +1,4 @@
-import { PaginationDto } from '../../../common/pagination/pagination.dto';
+import { FiltrosEstoqueDto } from '../dto/filtros-estoque.dto';
 import { CreateEstoqueInput } from '../../application/dto/create-estoque.input';
 import { FindAllEstoquesInput } from '../../application/dto/find-all-estoques.input';
 import { OperacaoEstoqueInput } from '../../application/dto/operacao-estoque.input';
@@ -26,14 +26,11 @@ export class EstoquePresentationMapper {
     };
   }
 
-  static toFindAllInput(
-    pagination: PaginationDto,
-    estoqueBaixo?: boolean,
-  ): FindAllEstoquesInput {
+  static toFindAllInput(filtros: FiltrosEstoqueDto): FindAllEstoquesInput {
     return {
-      page: pagination.page,
-      take: pagination.take,
-      estoqueBaixo,
+      page: filtros.page,
+      take: filtros.take,
+      estoqueBaixo: filtros.estoque_baixo === true,
     };
   }
 
