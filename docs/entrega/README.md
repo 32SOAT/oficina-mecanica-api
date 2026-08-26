@@ -26,11 +26,11 @@ Prints / gravações da execução das principais rotas da API:
 
 ![Abertura da ordem de serviço](./rota-abertura-ordem.gif)
 
-**Consulta status da OS** — `GET /api/v1/ordens/:id`:
+**Consulta status da OS (cliente)** — `GET /api/v1/ordens/:id/status` (JWT `role: cliente`):
 
 ![Consulta status da OS](./rota-consulta-status.gif)
 
-**Aprovação / reprovação do orçamento (cliente)** — `POST .../aprovar-orcamento` ou `POST .../reprovar-orcamento`:
+**Aprovação / reprovação do orçamento (cliente)** — `POST .../aprovar-orcamento` ou `POST .../reprovar-orcamento` (JWT `role: cliente`):
 
 ![Aprovar ou reprovar orçamento](./rota-aprovar-orcamento.gif)
 
@@ -78,6 +78,7 @@ OWASP ZAP (DAST) — High: 0 · Medium: 0 · Low: 3 · Informational: 4 ([como r
 
 | Item | Link |
 | ---- | ---- |
+| 🔐 **Auth cliente (CPF) + API Gateway** | [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) · [auth.md](../architecture/auth.md) |
 | 🧩 **Miro** — documentações adicionais (domain storytelling, event-driven) | https://miro.com/app/board/uXjVGupYixo=/?share_link_id=890608508965 |
 
 ---

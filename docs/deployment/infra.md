@@ -32,6 +32,16 @@ Carregue as variáveis no terminal:
 source .env
 ```
 
+## AWS Academy (Learner Lab)
+
+O lab **nao deixa criar roles IAM**. Neste caso, no `infra/.env` deixe:
+
+- `TF_VAR_use_existing_eks_iam_roles=true`
+- `TF_VAR_eks_cluster_role_name` / `TF_VAR_eks_node_role_name` — no Academy o nome real tem prefixo (`...-LabEksClusterRole-...`); o Terraform procura pelo trecho `LabEksClusterRole` / `LabEksNodeRole`
+- `TF_VAR_db_storage_type="gp2"`
+
+O Terraform passa a usar as roles ja criadas pelo Academy. Sem isso, o `apply` falha em `iam:CreateRole`.
+
 ## 2️⃣ Criar a infraestrutura AWS com Terraform
 
 Inicialize o diretório:
@@ -222,6 +232,8 @@ Quando o hostname aparecer, a URL pública será:
 http://<hostname-do-load-balancer>
 ```
 
+Na Fase 3 esse hostname vai em `nest_api_url` no Terraform da [Lambda / API Gateway](https://github.com/32SOAT/oficina-mecanica-lambda-auth) (`http://<hostname>`, sem barra no final). O Gateway faz proxy de `/api/...` para este NLB. `api_allowed_cidr_blocks` precisa incluir `0.0.0.0/0` para o Gateway alcançar a API. Auth: [auth.md](../architecture/auth.md).
+
 ## 9️⃣ Atualizar a imagem no cluster
 
 Depois do primeiro deploy, você não precisa recriar a infraestrutura para publicar uma versão nova da API. O fluxo normal é:
@@ -370,6 +382,17 @@ bash ./infra/destroy-environment.sh -auto-approve
 ```
 
 Se o `Service` LoadBalancer ainda existir, a AWS pode demorar alguns minutos para liberar o NLB antes do `terraform destroy` conseguir remover rede e subnets.
+
+No Windows, prefira `terraform destroy` direto na pasta `infra` (o `bash ./infra/destroy-environment.sh` no PowerShell cai no WSL e falha).
+
+Se o cluster EKS já foi destruído e o destroy travar com `DependencyViolation` nas subnets/IGW, o NLB ainda está na conta. Liste e apague:
+
+```bash
+aws elbv2 describe-load-balancers --region us-east-1
+aws elbv2 delete-load-balancer --region us-east-1 --load-balancer-arn "<arn>"
+```
+
+Espere o NLB sumir e rode `terraform destroy` de novo. No AWS Academy o passo a passo completo (incluindo essa limpeza) está em [academy-passo-a-passo.md](./academy-passo-a-passo.md).
 
 ## 🔗 Ver também
 

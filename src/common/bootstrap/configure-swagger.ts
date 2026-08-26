@@ -14,7 +14,7 @@ export function configureSwagger(app: INestApplication): void {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         description:
-          'JWT retornado por POST /auth/login. No Swagger UI, clique em Authorize e cole apenas o token (o prefixo Bearer é aplicado pela interface).',
+          'JWT de admin (POST /auth/login) ou de cliente (Lambda POST /auth/cpf). Rotas da oficina exigem role admin. No Swagger UI, clique em Authorize e cole apenas o token.',
       },
       'JWT-auth',
     )

@@ -3,7 +3,11 @@ import { StatusOrdemServico as S } from '../../domain/status-ordem-servico.enum'
 import { type AuthenticatedRequest } from '../../../auth/presentation/interfaces/authenticated-request.interface';
 
 const mockReq = {
-  user: { sub: 'usuario-1', email: 'a@b.c', username: 'admin' },
+  user: { sub: 'usuario-1', role: 'admin', email: 'a@b.c', username: 'admin' },
+} as unknown as AuthenticatedRequest;
+
+const mockClienteReq = {
+  user: { sub: 'cliente-1', role: 'cliente', cpf: '52998224725' },
 } as unknown as AuthenticatedRequest;
 
 const mockUseCase = () => ({ execute: jest.fn() });
@@ -122,21 +126,21 @@ describe('OrdemServicoController', () => {
     );
   });
 
-  it('POST aprovar-orcamento delega sem usuarioId (rota pública)', async () => {
+  it('POST aprovar-orcamento delega o sub do cliente', async () => {
     aprovarOrcamentoOrdemServicoUseCase.execute.mockResolvedValue({});
-    await controller.aprovarOrcamento('os-1');
+    await controller.aprovarOrcamento(mockClienteReq, 'os-1');
     expect(aprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalledWith(
       'os-1',
-      null,
+      'cliente-1',
     );
   });
 
-  it('POST reprovar-orcamento delega sem usuarioId (rota pública)', async () => {
+  it('POST reprovar-orcamento delega o sub do cliente', async () => {
     reprovarOrcamentoOrdemServicoUseCase.execute.mockResolvedValue({});
-    await controller.reprovarOrcamento('os-1');
+    await controller.reprovarOrcamento(mockClienteReq, 'os-1');
     expect(reprovarOrcamentoOrdemServicoUseCase.execute).toHaveBeenCalledWith(
       'os-1',
-      null,
+      'cliente-1',
     );
   });
 

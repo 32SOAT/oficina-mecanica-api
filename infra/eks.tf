@@ -7,7 +7,7 @@ resource "aws_cloudwatch_log_group" "eks" {
 
 resource "aws_eks_cluster" "this" {
   name                      = local.cluster_name
-  role_arn                  = aws_iam_role.eks_cluster.arn
+  role_arn                  = local.eks_cluster_role_arn
   version                   = var.cluster_version
   enabled_cluster_log_types = var.cluster_enabled_log_types
 
@@ -33,7 +33,7 @@ resource "aws_eks_cluster" "this" {
 resource "aws_eks_node_group" "api" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "${local.name_prefix}-api"
-  node_role_arn   = aws_iam_role.eks_node.arn
+  node_role_arn   = local.eks_node_role_arn
   subnet_ids      = aws_subnet.private[*].id
   capacity_type   = var.node_capacity_type
   disk_size       = var.node_disk_size

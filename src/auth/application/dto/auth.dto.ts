@@ -11,6 +11,7 @@ export type ChangePasswordInput = {
 
 export type TokenPayload = {
   sub: string;
+  role: 'admin';
   email: string;
   username: string;
 };

@@ -4,7 +4,7 @@ Documentação da arquitetura da **Oficina Mecânica API**: monólito modular em
 
 Stack da aplicação: **NestJS** · **TypeORM** · **PostgreSQL** · **JWT** · **Resend** (e-mail).
 
-Infraestrutura AWS (EKS, RDS, ECR, HPA) e fluxo de deploy: **[docs/deployment](../deployment/README.md)**. Decisões: [ADR 001 — PostgreSQL](../adr/001-escolha-do-banco-de-dados.md), [ADR 002 — Resend](../adr/002-envio-de-email-com-resend.md).
+Infraestrutura AWS (EKS, RDS, ECR, HPA, API Gateway) e fluxo de deploy: **[docs/deployment](../deployment/README.md)**. Auth admin vs cliente: **[auth.md](./auth.md)**. Decisões: [ADR 001 — PostgreSQL](../adr/001-escolha-do-banco-de-dados.md), [ADR 002 — Resend](../adr/002-envio-de-email-com-resend.md), [ADR 003 — JWT cliente via Lambda](../adr/003-auth-cliente-lambda-jwt-role.md).
 
 ---
 
@@ -117,7 +117,8 @@ Contexto = pasta + `module.ts`. É **um único deploy**, com fronteiras claras e
 
 - **Writes** transacionais (abertura, itens, estoque, status) via port + `EntityManager` compartilhado.
 - **Reads** via **read models** (CQRS light): evita acoplar o domínio da OS aos demais bounded contexts.
-- Mudança de status dispara evento; listeners persistem histórico e notificam por e-mail.
+- Mudança de status dispara evento; listeners persistem histórico (`usuario_id` = `sub` do JWT) e notificam por e-mail.
+- Consulta de status, aprovar e reprovar orçamento exigem JWT `role: cliente`. O restante da OS é admin. Ver [auth.md](./auth.md).
 
 ### ✉️ Notificações (e-mail)
 
@@ -171,6 +172,8 @@ A pipeline de CI executa `npm test` antes do build da imagem e do deploy — ver
 | --------------------------------------------------------------- | ---------------------------- |
 | [ADR 001 — PostgreSQL](../adr/001-escolha-do-banco-de-dados.md) | Por que banco relacional     |
 | [ADR 002 — Resend](../adr/002-envio-de-email-com-resend.md)     | Envio de e-mail              |
+| [ADR 003 — JWT cliente via Lambda](../adr/003-auth-cliente-lambda-jwt-role.md) | CPF serverless + roles |
+| [Autenticação](./auth.md)                                       | Admin Nest, cliente Lambda, Gateway |
 | [README do projeto](../../README.md)                            | Visão geral e início rápido  |
 | [Entrega](../entrega/README.md)                                 | Nossa entrega (repo, vídeo, docs) |
 

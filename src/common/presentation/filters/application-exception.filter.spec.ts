@@ -4,6 +4,7 @@ import { StatusOrdemServico } from '../../../ordens-de-servico/domain/status-ord
 import {
   BadRequestError,
   ConflictError,
+  ForbiddenError,
   NotFoundError,
   UnauthorizedError,
 } from '../../application/errors/application.errors';
@@ -30,6 +31,7 @@ describe('ApplicationExceptionFilter', () => {
     [new BadRequestError('inválido'), HttpStatus.BAD_REQUEST],
     [new ConflictError('conflito'), HttpStatus.CONFLICT],
     [new UnauthorizedError('não autorizado'), HttpStatus.UNAUTHORIZED],
+    [new ForbiddenError('acesso negado'), HttpStatus.FORBIDDEN],
   ])('mapeia %s para HTTP %i', (error, expectedStatus) => {
     filter.catch(error, host);
 

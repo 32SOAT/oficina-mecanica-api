@@ -12,6 +12,7 @@ export class IssueAuthTokenUseCase {
   execute(user: AuthenticatedUserReadModel): LoginReadModel {
     const token = this.tokenService.sign({
       sub: user.id,
+      role: 'admin',
       email: user.email,
       username: user.username,
     });

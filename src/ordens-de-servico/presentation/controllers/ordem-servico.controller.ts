@@ -18,7 +18,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { type AuthenticatedRequest } from '../../../auth/presentation/interfaces/authenticated-request.interface';
-import { Public } from '../../../auth/presentation/decorators/public.decorator';
+import { Roles } from '../../../auth/presentation/decorators/roles.decorator';
 import { AprovarOrcamentoOrdemServicoUseCase } from '../../application/use-cases/aprovar-orcamento-ordem-servico.use-case';
 import { AvancarStatusOrdemServicoUseCase } from '../../application/use-cases/avancar-status-ordem-servico.use-case';
 import { CreateOrdemServicoUseCase } from '../../application/use-cases/create-ordem-servico.use-case';
@@ -134,27 +134,49 @@ export class OrdemServicoController {
     return OrdemServicoResponseDto.fromReadModel(os);
   }
 
-  @Public()
+  @Roles('cliente')
   @Post(':id/aprovar-orcamento')
   @ApiOperation({
-    summary: 'Aprovar orçamento (público)',
+    summary: 'Aprovar orçamento (cliente)',
     description:
-      'Permite ao cliente aprovar o orçamento sem autenticação JWT. O histórico registra usuário nulo.',
+      'Exige JWT com role cliente (Lambda POST /auth/cpf). O histórico grava o sub do token em usuario_id.',
   })
-  async aprovarOrcamento(@Param('id', ParseUUIDPipe) id: string) {
-    const os = await this.aprovarOrcamentoOrdemServicoUseCase.execute(id, null);
+  @ApiResponse({ status: 401, description: 'Token ausente, inválido ou expirado.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Token autenticado, mas o perfil não é cliente.',
+  })
+  async aprovarOrcamento(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const os = await this.aprovarOrcamentoOrdemServicoUseCase.execute(
+      id,
+      req.user.sub,
+    );
     return OrdemServicoResponseDto.fromReadModel(os);
   }
 
-  @Public()
+  @Roles('cliente')
   @Post(':id/reprovar-orcamento')
   @ApiOperation({
-    summary: 'Reprovar orçamento (público)',
+    summary: 'Reprovar orçamento (cliente)',
     description:
-      'Permite ao cliente reprovar o orçamento sem autenticação JWT. O histórico registra usuário nulo.',
+      'Exige JWT com role cliente (Lambda POST /auth/cpf). O histórico grava o sub do token em usuario_id.',
   })
-  async reprovarOrcamento(@Param('id', ParseUUIDPipe) id: string) {
-    const os = await this.reprovarOrcamentoOrdemServicoUseCase.execute(id, null);
+  @ApiResponse({ status: 401, description: 'Token ausente, inválido ou expirado.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Token autenticado, mas o perfil não é cliente.',
+  })
+  async reprovarOrcamento(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const os = await this.reprovarOrcamentoOrdemServicoUseCase.execute(
+      id,
+      req.user.sub,
+    );
     return OrdemServicoResponseDto.fromReadModel(os);
   }
 

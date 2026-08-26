@@ -79,6 +79,24 @@ variable "cluster_enabled_log_types" {
   default     = []
 }
 
+variable "use_existing_eks_iam_roles" {
+  type        = bool
+  description = "Quando true, nao cria roles IAM e usa as roles ja existentes (AWS Academy)."
+  default     = false
+}
+
+variable "eks_cluster_role_name" {
+  type        = string
+  description = "Nome da role IAM do cluster EKS quando use_existing_eks_iam_roles=true."
+  default     = "LabEksClusterRole"
+}
+
+variable "eks_node_role_name" {
+  type        = string
+  description = "Nome da role IAM dos nodes EKS quando use_existing_eks_iam_roles=true."
+  default     = "LabEksNodeRole"
+}
+
 variable "node_instance_types" {
   type        = list(string)
   description = "Tipos de instancia usados pelo node group."
@@ -171,6 +189,17 @@ variable "postgres_engine_version" {
   type        = string
   description = "Versao do engine Postgres. Deixe null para usar a versao padrao da AWS."
   default     = null
+}
+
+variable "db_storage_type" {
+  type        = string
+  description = "Tipo de armazenamento do RDS. Use gp2 no AWS Academy."
+  default     = "gp3"
+
+  validation {
+    condition     = contains(["gp2", "gp3"], var.db_storage_type)
+    error_message = "db_storage_type deve ser gp2 ou gp3."
+  }
 }
 
 variable "db_allocated_storage" {

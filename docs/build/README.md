@@ -70,6 +70,13 @@ npm run start:dev          # API com reload
 
 A porta da API vem de `APP_PORT` no `.env` (padrão: `3000`).
 
+### 🔐 Autenticação local
+
+- **Admin:** `POST /api/v1/auth/login` (e-mail/senha). Cole o Bearer no Swagger.
+- **Cliente:** o CPF não é emitido por este repo. A Lambda em [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) gera o JWT. O Nest aceita os dois se `JWT_SECRET` for o mesmo.
+
+Rotas e papéis: [auth.md](../architecture/auth.md).
+
 ### 🗄️ Migrations
 
 Com Postgres no ar e `.env` apontando para ele:

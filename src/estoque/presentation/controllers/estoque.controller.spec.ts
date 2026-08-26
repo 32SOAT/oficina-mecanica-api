@@ -66,7 +66,7 @@ describe('EstoqueController', () => {
       data: [output],
       meta: { currentPage: 1 },
     });
-    const result = await controller.findAll({ page: 1, take: 10 }, 'true');
+    const result = await controller.findAll({ page: 1, take: 10, estoque_baixo: true });
     expect(result.data).toHaveLength(1);
   });
 
