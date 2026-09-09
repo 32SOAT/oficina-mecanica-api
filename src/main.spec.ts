@@ -1,7 +1,13 @@
 describe('main bootstrap', () => {
+  beforeEach(() => {
+    jest.doMock('nestjs-pino', () => ({ Logger: class Logger {} }));
+  });
+
   afterEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    jest.dontMock('pino');
+    jest.restoreAllMocks();
   });
 
   it('bootstraps app with global settings', async () => {
@@ -10,6 +16,7 @@ describe('main bootstrap', () => {
         .fn()
         .mockReturnValue({ get: jest.fn().mockReturnValue({ port: 3333 }) }),
       getHttpAdapter: jest.fn(),
+      useLogger: jest.fn(),
       useGlobalPipes: jest.fn(),
       enableVersioning: jest.fn(),
       setGlobalPrefix: jest.fn(),
@@ -37,7 +44,12 @@ describe('main bootstrap', () => {
     });
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(create).toHaveBeenCalled();
+    expect(create).toHaveBeenCalledWith(expect.any(Function), {
+      bufferLogs: true,
+    });
+    expect(appMock.useLogger).toHaveBeenCalledWith(
+      appMock.get.mock.results[0].value,
+    );
     expect(configureApp).toHaveBeenCalledWith(appMock);
     expect(configureSwagger).toHaveBeenCalledWith(appMock);
     expect(appMock.listen).toHaveBeenCalledWith(3333);
@@ -45,7 +57,10 @@ describe('main bootstrap', () => {
 
   it('uses default port when config is undefined', async () => {
     const appMock = {
-      get: jest.fn().mockReturnValue({ get: jest.fn().mockReturnValue(undefined) }),
+      get: jest
+        .fn()
+        .mockReturnValue({ get: jest.fn().mockReturnValue(undefined) }),
+      useLogger: jest.fn(),
       listen: jest.fn().mockResolvedValue(undefined),
     };
     const create = jest.fn().mockResolvedValue(appMock);
@@ -74,9 +89,11 @@ describe('main bootstrap', () => {
   it('logs and exits on bootstrap error', async () => {
     const error = new Error('boom');
     const create = jest.fn().mockRejectedValue(error);
-    const consoleSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined);
+    const fatal = jest.fn();
+    jest.doMock('pino', () => ({
+      __esModule: true,
+      default: () => ({ fatal }),
+    }));
     const exitSpy = jest
       .spyOn(process, 'exit')
       .mockImplementation((() => undefined) as never);
@@ -99,7 +116,11 @@ describe('main bootstrap', () => {
     });
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(consoleSpy).toHaveBeenCalledWith(error);
+    expect(fatal).toHaveBeenCalledWith(
+      { err: error },
+      'Application bootstrap failed',
+    );
     expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
   });
 });
