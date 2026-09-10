@@ -140,10 +140,35 @@ assert_invalid_before_docker \
   'linux/amd64'
 
 assert_invalid_before_docker \
+  'ECR_REPOSITORY_URL fora do contrato da API' \
+  '0123456789abcdef0123456789abcdef01234567' \
+  'attacker.example/oficina-mecanica-api' \
+  'linux/amd64'
+
+assert_invalid_before_docker \
   'API_IMAGE_PLATFORM inválida' \
   '0123456789abcdef0123456789abcdef01234567' \
   '123456789012.dkr.ecr.us-east-1.amazonaws.com/oficina-mecanica-api' \
   'linux/ppc64le'
+
+cat >"${FAKE_BIN_DIR}/aws-invalid-digest" <<'EOF'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+if [[ "$*" == *'get-login-password'* ]]; then
+  printf '%s\n' 'temporary-password'
+elif [[ "$*" == *'describe-images'* ]]; then
+  printf '%s\n' 'not-a-digest'
+fi
+EOF
+chmod +x "${FAKE_BIN_DIR}/aws-invalid-digest"
+mv "${FAKE_BIN_DIR}/aws-invalid-digest" "${FAKE_BIN_DIR}/aws"
+: >"${DOCKER_LOG}"
+if SOURCE_SHA="${SOURCE_SHA}" AWS_REGION="${AWS_REGION}" \
+  ECR_REPOSITORY_URL="${ECR_REPOSITORY_URL}" API_IMAGE_PLATFORM="${API_IMAGE_PLATFORM}" \
+  GITHUB_OUTPUT="${GITHUB_OUTPUT_FILE}" bash "${PUBLISH_SCRIPT}" >/dev/null 2>&1; then
+  echo 'Digest inválido retornado pelo ECR foi aceito.' >&2
+  exit 1
+fi
 
 CI_WORKFLOW="${PROJECT_ROOT}/.github/workflows/ci.yml"
 PUBLISH_WORKFLOW="${PROJECT_ROOT}/.github/workflows/publish-image.yml"

@@ -32,8 +32,8 @@ if [[ ! "${SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 
 repository_name="${ECR_REPOSITORY_URL##*/}"
-if [[ "${ECR_REPOSITORY_URL}" != */* || -z "${repository_name}" ]]; then
-  echo "ECR_REPOSITORY_URL deve conter o registry e o repositorio: ${ECR_REPOSITORY_URL}" >&2
+if [[ ! "${ECR_REPOSITORY_URL}" =~ ^[0-9]{12}\.dkr\.ecr\.[a-z0-9-]+\.amazonaws\.com/oficina-mecanica-api$ ]]; then
+  echo "ECR_REPOSITORY_URL deve ser o repositório ECR da API: ${ECR_REPOSITORY_URL}" >&2
   exit 1
 fi
 
