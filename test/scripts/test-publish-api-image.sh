@@ -145,4 +145,46 @@ assert_invalid_before_docker \
   '123456789012.dkr.ecr.us-east-1.amazonaws.com/oficina-mecanica-api' \
   'linux/ppc64le'
 
+CI_WORKFLOW="${PROJECT_ROOT}/.github/workflows/ci.yml"
+PUBLISH_WORKFLOW="${PROJECT_ROOT}/.github/workflows/publish-image.yml"
+
+if rg -n '^[[:space:]]{2}(push|pull_request|schedule):|docker push|:latest|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY' "${PUBLISH_WORKFLOW}"; then
+  echo 'O workflow de publicação contém gatilho automático, latest ou credenciais estáticas.' >&2
+  exit 1
+fi
+
+assert_contains 'workflow_dispatch:' "${PUBLISH_WORKFLOW}"
+assert_contains 'environment: image-publishing' "${PUBLISH_WORKFLOW}"
+assert_contains 'git_ref:' "${PUBLISH_WORKFLOW}"
+assert_contains 'required: true' "${PUBLISH_WORKFLOW}"
+assert_contains 'id-token: write' "${PUBLISH_WORKFLOW}"
+assert_contains 'contents: read' "${PUBLISH_WORKFLOW}"
+
+if rg -n 'uses:' "${CI_WORKFLOW}" "${PUBLISH_WORKFLOW}" \
+  | rg -v 'uses:[[:space:]]*[^#[:space:]]+@[0-9a-f]{40}([[:space:]]*(#.*)?)?$'; then
+  echo 'As actions dos novos workflows devem estar fixadas por SHA completo.' >&2
+  exit 1
+fi
+
+if rg -n '^[[:space:]]{2}deploy[^:]*:' "${PROJECT_ROOT}/.github/workflows"; then
+  echo 'O repositório da API não pode conter job de deploy.' >&2
+  exit 1
+fi
+
+assert_contains 'pull_request:' "${CI_WORKFLOW}"
+assert_contains 'name: api / gate' "${CI_WORKFLOW}"
+assert_contains 'npm run build' "${CI_WORKFLOW}"
+assert_contains 'npm run test:cov' "${CI_WORKFLOW}"
+assert_contains 'docker build -t oficina-mecanica-api:ci .' "${CI_WORKFLOW}"
+assert_contains '/oficina/shared/ecr/repository-url' "${PUBLISH_WORKFLOW}"
+assert_contains "role-to-assume: \${{ vars.PUBLISH_ROLE_ARN }}" "${PUBLISH_WORKFLOW}"
+assert_contains 'run: bash infra/publish-api-image.sh' "${PUBLISH_WORKFLOW}"
+
+test_step_line="$(grep -nF 'npm run test:cov' "${PUBLISH_WORKFLOW}" | cut -d: -f1)"
+oidc_step_line="$(grep -nF 'aws-actions/configure-aws-credentials@' "${PUBLISH_WORKFLOW}" | cut -d: -f1)"
+if ((test_step_line >= oidc_step_line)); then
+  echo 'Build e testes devem terminar antes da configuração OIDC.' >&2
+  exit 1
+fi
+
 echo 'PASS: publicação imutável da imagem da API validada.'
