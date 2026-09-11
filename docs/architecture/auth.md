@@ -36,7 +36,7 @@ Na AWS, a porta de entrada pública é o **HTTP API** do repo da Lambda:
 
 Login de admin continua no Nest (`POST /api/v1/auth/login`), acessível pelo Gateway depois do proxy.
 
-Deploy, variáveis e curls: **[README da Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth)**. No Academy, a ordem é Nest no ar → hostname do NLB → `terraform apply` da Lambda. Passo a passo: [academy-passo-a-passo.md](../deployment/academy-passo-a-passo.md).
+Deploy, variáveis e curls: **[README da Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth)**. No Academy, a ordem é Nest no ar → hostname do NLB → `terraform apply` da Lambda. Restrições do Academy: [infra.md — AWS Academy](../deployment/infra.md#aws-academy-learner-lab).
 
 ## Fora de escopo (Fase 3)
 

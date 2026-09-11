@@ -14,6 +14,8 @@
 1. `npm ci` → lint (não bloqueante no momento) → `npm run build` → `npm test`
 2. Build e push da imagem para **ECR** (quando secrets/outputs estão configurados)
 3. Render e apply do overlay K8s (`infra/` + `k8s/`) no cluster **EKS**
+4. Job de migrations TypeORM (`infra/run-db-migrations.sh`), aguardando conclusão
+5. `rollout status` do Deployment e smoke test em `GET /api/v1/health` pelo hostname do NLB
 
 ## 🔐 Secrets e variáveis (GitHub)
 

@@ -2,7 +2,7 @@
 
 API para gestão de oficina mecânica: clientes, veículos, ordens de serviço, serviços, estoque, notificações por e-mail e autenticação.
 
-**Stack:** NestJS · TypeORM · PostgreSQL · JWT · Resend · Docker · Kubernetes · Terraform
+**Stack:** NestJS · TypeORM · PostgreSQL · JWT · Resend · Docker · Kubernetes · Terraform · Datadog (em integração)
 
 ## 🎯 Objetivos
 
@@ -23,6 +23,7 @@ Monólito modular NestJS (`domain` → `application` → `infrastructure` → `p
 | --------- | -------- |
 | 🧱 [Arquitetura da aplicação](./docs/architecture/README.md) | Camadas, módulos, ports, fluxo de request |
 | 🔐 [Autenticação](./docs/architecture/auth.md) | JWT admin (Nest) e cliente CPF ([Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth)) |
+| 🧩 [Componentes (C4)](./docs/architecture/componentes.md) | Contexto, contêineres na AWS, monitoramento, entrega |
 | ☁️ [Desenho da infra / deploy](./docs/deployment/README.md) | EKS, RDS, ECR, HPA, API Gateway, fluxo CI/CD |
 
 ## 💻 Execução local
@@ -55,15 +56,23 @@ Detalhes, migrations, testes e Resend: **[docs/build](./docs/build/README.md)**.
 
 ## 📚 Documentação geral
 
+Índice completo: [docs/README.md](./docs/README.md).
+
 | Documentos | Conteúdo |
 | ---------- | -------- |
 | 📦 **[Entrega](./docs/entrega/README.md)** | Checklist e artefatos da entrega |
+| 🧩 [Componentes](./docs/architecture/componentes.md) | C4: contexto, contêineres na AWS, monitoramento |
 | 🧱 [Arquitetura](./docs/architecture/README.md) | Clean/Hexagonal, ports, módulos |
 | 🔐 [Autenticação](./docs/architecture/auth.md) | Admin Nest + cliente Lambda/CPF |
+| 🔁 [Sequências](./docs/architecture/sequencia-auth.md) | Autenticação e [abertura de OS](./docs/architecture/sequencia-abertura-os.md) |
+| 🗄️ [Modelo de dados](./docs/architecture/modelo-de-dados.md) | Justificativa do banco, ER, relacionamentos |
+| 📋 [Requisitos](./docs/architecture/requisitos.md) | RF e RNF com metas mensuráveis |
+| 📄 [RFCs](./docs/rfc/README.md) | Propostas: nuvem, banco, auth, observabilidade, repositórios |
+| 📝 [ADRs](./docs/adr/README.md) | Decisões arquiteturais |
+| 📡 [Observabilidade](./docs/observability/README.md) | Logs, dashboards, monitores |
 | ☁️ [Deploy](./docs/deployment/README.md) | Infra AWS + fluxo de deploy |
 | 🏗️ [Terraform](./docs/deployment/infra.md) | Provisionamento AWS |
 | ☸️ [Kubernetes](./docs/deployment/k8s.md) | EKS e Minikube |
 | ⚙️ [CI/CD](./docs/ci-cd/README.md) | GitHub Actions |
 | 💻 [Build local](./docs/build/README.md) | npm, Docker Compose, migrations, testes, Resend |
-| 📝 [ADRs](./docs/adr/README.md) | Decisões arquiteturais |
 | 🔍 [Análises](./docs/analysis/README.md) | SonarQube, OWASP ZAP |

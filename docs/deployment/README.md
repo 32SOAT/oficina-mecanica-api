@@ -46,7 +46,7 @@ flowchart TB
   Pipeline --> EKS
 ```
 
-Gateway e Lambda **não** estão neste repositório: [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth). O Nest continua acessível pelo NLB; no vídeo da Fase 3 a entrada pública é o Gateway.
+Visão simplificada; o desenho completo, com subnets, NAT, CloudWatch e Datadog, está em [componentes.md](../architecture/componentes.md#-implantação-na-aws). Gateway e Lambda **não** estão neste repositório: [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth). O Nest continua acessível pelo NLB; no vídeo da Fase 3 a entrada pública é o Gateway.
 
 | Recurso | Função |
 | ------- | ------ |
@@ -68,7 +68,7 @@ Gateway e Lambda **não** estão neste repositório: [oficina-mecanica-lambda-au
 | ------- | ------- | ----------- |
 | 💻 **Desenvolvimento local** | [docs/build](../build/README.md) | npm, Docker Compose, migrations, testes, Resend |
 | 🏗️ **Infraestrutura AWS** | [infra.md](./infra.md) | Terraform: EKS, RDS, ECR, rede |
-| 🎓 **AWS Academy (passo a passo)** | [academy-passo-a-passo.md](./academy-passo-a-passo.md) | Subir e derrubar no lab da faculdade |
+| 🎓 **AWS Academy** | [infra.md — AWS Academy](./infra.md#aws-academy-learner-lab) | Restrições do Learner Lab (roles IAM, storage) |
 | 🔐 **Auth cliente + Gateway** | [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) | Lambda CPF e proxy `/api` → Nest |
 | ☸️ **Kubernetes** (EKS e Minikube) | [k8s.md](./k8s.md) | Templates EKS, overlay Minikube, HPA e carga |
 | ⚙️ **Pipeline CI/CD** | [docs/ci-cd](../ci-cd/README.md) | GitHub Actions |
@@ -81,6 +81,8 @@ flowchart LR
   GHA --> Test[lint · build · testes]
   Test --> Img[Build imagem → ECR]
   Img --> K8s[Apply manifestos no EKS]
+  K8s --> Mig[Job de migrations]
+  Mig --> Smoke[smoke test /api/v1/health]
   TF[Terraform infra/] --> AWS[EKS · RDS · ECR · rede]
   AWS --> K8s
 ```
@@ -110,7 +112,6 @@ oficina-mecanica-api/
 ├── .github/workflows/
 └── docs/deployment/
     ├── README.md                 # este índice
-    ├── academy-passo-a-passo.md  # AWS Academy
     ├── infra.md                  # Deploy AWS (Terraform)
     └── k8s.md                    # Kubernetes (EKS + Minikube)
 ```

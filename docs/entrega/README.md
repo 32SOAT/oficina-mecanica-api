@@ -1,8 +1,36 @@
 # 📦 Entrega
 
-Artefatos e links da entrega.
+Artefatos e links da entrega. A seção da Fase 3 é a fonte do PDF único pedido no portal.
 
 ---
+
+## 🎯 Fase 3
+
+Preencher antes de gerar o PDF. Itens com ⏳ ainda não existem.
+
+| Item do portal | Valor |
+| -------------- | ----- |
+| Repositório: aplicação | https://github.com/32SOAT/oficina-mecanica-api |
+| Repositório: Lambda | https://github.com/32SOAT/oficina-mecanica-lambda-auth |
+| Repositório: infra Kubernetes | https://github.com/32SOAT/oficina-mecanica-infra-k8s |
+| Repositório: infra banco | https://github.com/32SOAT/oficina-mecanica-infra-db |
+| Vídeo (até 15 min) | ⏳ roteiro em [observability/README.md](../observability/README.md#-roteiro-para-o-vídeo) |
+| Documentação arquitetural | [docs/README.md](../README.md) |
+| Diagrama de componentes | [componentes.md](../architecture/componentes.md) |
+| Diagramas de sequência | [autenticação](../architecture/sequencia-auth.md), [abertura de OS](../architecture/sequencia-abertura-os.md) |
+| RFCs | [docs/rfc](../rfc/README.md) |
+| ADRs | [docs/adr](../adr/README.md) |
+| Modelo de dados e justificativa do banco | [modelo-de-dados.md](../architecture/modelo-de-dados.md) |
+| Swagger público | ⏳ `https://<gateway>/api` |
+| Endpoint do API Gateway | ⏳ |
+| Dashboards Datadog | ⏳ links dos 3 dashboards ([observability](../observability/README.md#-dashboards)) |
+| `soat-architecture` adicionado aos 4 repositórios | ⏳ confirmar |
+
+Checklist do vídeo (enunciado): autenticação com CPF, execução da pipeline, deploy automático, consumo das APIs protegidas, dashboard com análise ao vivo, logs e traces em execução.
+
+---
+
+## 📋 Fase 2 (histórico)
 
 ## 📋 Pedido no PDF do portal
 
