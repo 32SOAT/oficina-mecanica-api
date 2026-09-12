@@ -26,4 +26,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "--require", "dotenv/config", "--require", "dd-trace/init", "dist/main.js"]

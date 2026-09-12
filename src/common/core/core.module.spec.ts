@@ -64,8 +64,12 @@ describe('CoreModule HTTP logging', () => {
     await request(app.getHttpServer())
       .get('/api/v1/logging-test')
       .set('x-correlation-id', 'client-request-123')
+      .set('Authorization', 'Bearer redaction-test-secret')
+      .set('Cookie', 'session=redaction-test-secret')
       .expect('x-correlation-id', 'client-request-123')
       .expect(200, { data: { ok: true } });
+
+    expect(output.join('')).not.toContain('redaction-test-secret');
 
     expect(logs()).toEqual(
       expect.arrayContaining([

@@ -1,4 +1,25 @@
 services:
+  datadog-agent:
+    image: registry.datadoghq.com/agent:7
+    profiles: [observability]
+    restart: unless-stopped
+    environment:
+      DD_API_KEY: ${DD_API_KEY:-}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
+      DD_ENV: ${DD_ENV:-dev}
+      DD_APM_ENABLED: 'true'
+      DD_APM_NON_LOCAL_TRAFFIC: 'true'
+      DD_LOGS_ENABLED: 'true'
+      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: 'false'
+      DD_LOGS_CONFIG_DOCKER_CONTAINER_USE_FILE: 'false'
+    ports:
+      - '127.0.0.1:8126:8126'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - datadog-run:/opt/datadog-agent/run
+
   sonarqube:
     image: sonarqube:community
     container_name: sonarqube
@@ -36,8 +57,8 @@ services:
     ports:
       - '${APP_PORT:-3000}:3000'
     environment:
-      NODE_ENV: ${NODE_ENV}
-      APP_PORT: ${APP_PORT:-3000}
+      NODE_ENV: production
+      APP_PORT: 3000
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
@@ -48,9 +69,27 @@ services:
       POSTGRES_SSL_REJECT_UNAUTHORIZED: ${POSTGRES_SSL_REJECT_UNAUTHORIZED:-0}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM: ${RESEND_FROM:-onboarding@resend.dev}
+      RESEND_DEV_REDIRECT_TO: ${RESEND_DEV_REDIRECT_TO:-}
+      NOTIFICACAO_EMAIL_MECANICOS: ${NOTIFICACAO_EMAIL_MECANICOS}
+      NOTIFICACAO_EMAIL_ADMIN: ${NOTIFICACAO_EMAIL_ADMIN}
+      DD_SERVICE: oficina-mecanica-api
+      DD_ENV: dev
+      DD_VERSION: ${DD_VERSION:-0.0.1}
+      DD_TRACE_ENABLED: 'true'
+      DD_LOGS_INJECTION: 'true'
+      DD_TRACE_STARTUP_LOGS: 'false'
+      DD_TRACE_AGENT_URL: http://datadog-agent:8126
+    labels:
+      com.datadoghq.ad.logs: '[{"source":"nodejs","service":"oficina-mecanica-api"}]'
+      com.datadoghq.tags.service: oficina-mecanica-api
+      com.datadoghq.tags.env: dev
+      com.datadoghq.tags.version: '${DD_VERSION:-0.0.1}'
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   pgdata:
+  datadog-run:
