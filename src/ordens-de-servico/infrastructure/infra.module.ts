@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ORDEM_SERVICO_METRICS_PORT } from '../application/ports/ordem-servico-metrics.port';
+import { OrdemServicoMetricsAdapter } from './adapters/ordem-servico-metrics.adapter';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClienteInfraModule } from '../../clientes/infrastructure/infra.module';
 import { EstoqueTransactionalModule } from '../../estoque/infrastructure/estoque-transactional.module';
@@ -35,6 +37,10 @@ import { RelatorioTypeormRepository } from './typeorm/repository/relatorio.repos
     NotificacaoInfraModule,
   ],
   providers: [
+    {
+      provide: ORDEM_SERVICO_METRICS_PORT,
+      useClass: OrdemServicoMetricsAdapter,
+    },
     OrdemServicoTypeormRepository,
     OrdemServicoTypeormTransaction,
     OrdemServicoEventsAdapter,
@@ -59,6 +65,7 @@ import { RelatorioTypeormRepository } from './typeorm/repository/relatorio.repos
     NotificarListener,
   ],
   exports: [
+    ORDEM_SERVICO_METRICS_PORT,
     ORDEM_SERVICO_QUERY_PORT,
     ORDEM_SERVICO_TRANSACTION_PORT,
     ORDEM_SERVICO_EVENTS_PORT,

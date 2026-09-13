@@ -1,13 +1,18 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  ORDEM_SERVICO_METRICS_PORT,
+  type OrdemServicoMetricsPort,
+} from '../ports/ordem-servico-metrics.port';
 import { Cpf } from '../../../clientes/domain/value-objects/cpf';
 import { Placa } from '../../../veiculos/domain/value-objects/placa';
 import { mergeObservacaoAvisoCompra } from '../../domain/observacao-compra';
 import { StatusOrdemServico } from '../../domain/status-ordem-servico.enum';
-import {
-  CriarOrdemServicoInput,
-} from '../dto/ordem-servico.dto';
+import { CriarOrdemServicoInput } from '../dto/ordem-servico.dto';
 import { OrdemServicoReadModel } from '../read-models/ordem-servico-read-model';
-import { OrdemServicoEventsPort, ORDEM_SERVICO_EVENTS_PORT } from '../ports/ordem-servico-events.port';
+import {
+  OrdemServicoEventsPort,
+  ORDEM_SERVICO_EVENTS_PORT,
+} from '../ports/ordem-servico-events.port';
 import {
   ORDEM_SERVICO_TRANSACTION_PORT,
   OrdemServicoTransactionPort,
@@ -20,11 +25,14 @@ import {
 
 @Injectable()
 export class CreateOrdemServicoUseCase {
+  private readonly logger = new Logger(CreateOrdemServicoUseCase.name);
   constructor(
     @Inject(ORDEM_SERVICO_TRANSACTION_PORT)
     private readonly transaction: OrdemServicoTransactionPort,
     @Inject(ORDEM_SERVICO_EVENTS_PORT)
     private readonly events: OrdemServicoEventsPort,
+    @Inject(ORDEM_SERVICO_METRICS_PORT)
+    private readonly metrics: OrdemServicoMetricsPort,
   ) {}
 
   execute(
@@ -38,30 +46,42 @@ export class CreateOrdemServicoUseCase {
     const documento = Cpf.normalize(input.documentoCliente);
     const placa = Placa.normalize(input.placa);
 
-    return this.transaction.runInTransaction(async (tx) => {
-      const clienteId = await tx.findClienteIdByDocumento(documento);
-      const veiculoId = await tx.findVeiculoIdForCliente(placa, clienteId);
-      const itensServico = await tx.buildItensServico(input.itensServico ?? []);
-      const { itens: itensPeca, pecaPrecisaObservacaoCompra } =
-        await tx.buildItensPecaWithReserva(input.itensPeca ?? []);
-      const os = await tx.insertNewOs({
-        clienteId,
-        veiculoId,
-        observacao: mergeObservacaoAvisoCompra(
-          input.observacao,
-          pecaPrecisaObservacaoCompra,
-        ),
-        itensServico,
-        itensPeca,
+    return this.transaction
+      .runInTransaction(async (tx) => {
+        const clienteId = await tx.findClienteIdByDocumento(documento);
+        const veiculoId = await tx.findVeiculoIdForCliente(placa, clienteId);
+        const itensServico = await tx.buildItensServico(
+          input.itensServico ?? [],
+        );
+        const { itens: itensPeca, pecaPrecisaObservacaoCompra } =
+          await tx.buildItensPecaWithReserva(input.itensPeca ?? []);
+        const os = await tx.insertNewOs({
+          clienteId,
+          veiculoId,
+          observacao: mergeObservacaoAvisoCompra(
+            input.observacao,
+            pecaPrecisaObservacaoCompra,
+          ),
+          itensServico,
+          itensPeca,
+        });
+        this.events.emitStatusAlterado(
+          os.id,
+          null,
+          StatusOrdemServico.Recebida,
+          usuarioId ?? null,
+        );
+        this.events.emitOsCriada(os.id);
+        return os;
+      })
+      .then((os) => {
+        // The transaction has committed before this promise resolves.
+        try {
+          this.metrics.registrarCriacao();
+        } catch {
+          this.logger.warn('Falha ao emitir métrica de criação de OS.');
+        }
+        return os;
       });
-      this.events.emitStatusAlterado(
-        os.id,
-        null,
-        StatusOrdemServico.Recebida,
-        usuarioId ?? null,
-      );
-      this.events.emitOsCriada(os.id);
-      return os;
-    });
   }
 }
