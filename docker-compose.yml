@@ -58,6 +58,7 @@ services:
     ports:
       - '${APP_PORT:-3000}:3000'
     environment:
+      BUSINESS_METRICS_ENABLED: 'true'
       NODE_ENV: production
       APP_PORT: 3000
       POSTGRES_HOST: db

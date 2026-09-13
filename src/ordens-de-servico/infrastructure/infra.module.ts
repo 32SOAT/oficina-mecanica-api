@@ -1,3 +1,4 @@
+import { TempoFaseMetricsPublisher } from './observability/tempo-fase-metrics.publisher';
 import { Module } from '@nestjs/common';
 import { ORDEM_SERVICO_METRICS_PORT } from '../application/ports/ordem-servico-metrics.port';
 import { OrdemServicoMetricsAdapter } from './adapters/ordem-servico-metrics.adapter';
@@ -37,6 +38,7 @@ import { RelatorioTypeormRepository } from './typeorm/repository/relatorio.repos
     NotificacaoInfraModule,
   ],
   providers: [
+    TempoFaseMetricsPublisher,
     {
       provide: ORDEM_SERVICO_METRICS_PORT,
       useClass: OrdemServicoMetricsAdapter,
