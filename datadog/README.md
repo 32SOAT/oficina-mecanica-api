@@ -111,3 +111,114 @@ RECEBIDA -> EM_DIAGNOSTICO -> AGUARDANDO_APROVACAO.
 
 As três fases possuem cobertura unitária do cálculo. A validação funcional restante
 depende da autenticação normal de cliente; não faz parte desta etapa alterá-la.
+
+## Kubernetes/EKS — métricas de infraestrutura
+
+O arquivo kubernetes-values.yaml configura o chart oficial
+[datadog/datadog](https://github.com/DataDog/helm-charts/tree/main/charts/datadog):
+um Node Agent por nó Linux e um Cluster Agent para CPU/memória dos containers,
+estado dos pods e métricas básicas do cluster. State Metrics Core dispensa
+kube-state-metrics legado. Logs, APM, admission controller e external metrics
+provider ficam desabilitados neste release. Coleta de processos e manifests
+(Orchestrator Explorer) também fica desabilitada; métricas de estado continuam
+disponíveis no Metrics Explorer.
+
+Instalação independente: não modifica a API, HPA, Terraform ou Agent do Compose.
+**Metrics-server continua fornecendo métricas ao HPA, independentemente do
+Datadog.** Este release não instala nem substitui metrics-server.
+
+### Pré-requisitos
+
+- Helm 3, kubectl e contexto autorizado do cluster desejado.
+- Nós Linux, acesso ao kubelet/API Kubernetes e saída HTTPS para Datadog US1.
+- Permissão para instalar RBAC, DaemonSet, Deployment e Secret.
+- API key válida do site datadoghq.com; application key não é necessária.
+- Conferir se já existe Agent/release, evitando instalação duplicada.
+- Capacidade adicional por nó: request 100m CPU/256Mi RAM, limite 500m/512Mi.
+  Cluster Agent: request 100m/128Mi, limite 500m/512Mi. Valores iniciais para
+  cluster pequeno; acompanhar throttling/OOM e ajustar conforme a carga.
+- Esta configuração atende nós Linux/EC2, não EKS Fargate. No Minikube, verificar
+  certificados/acesso ao kubelet; não desabilitar TLS globalmente por conveniência.
+
+### Secret e instalação manual
+
+Os comandos abaixo alteram o cluster somente quando executados pelo operador.
+Confirme o contexto. O Secret deve existir no namespace datadog, com nome
+datadog-api-key e chave interna api-key.
+
+~~~sh
+kubectl config current-context
+helm list --all-namespaces
+kubectl create namespace datadog --dry-run=client -o yaml | kubectl apply -f -
+~~~
+
+Exemplo usando Python 3 em terminal interativo: solicita a chave sem eco e
+envia o Secret por stdin, sem arquivo, argumento contendo segredo ou histórico
+do shell. Não execute com depuração de shell. Se o Secret já existir, reutilize
+o Secret aprovado: este comando falha, sem sobrescrevê-lo.
+
+~~~sh
+python3 -c 'import base64,getpass,json,sys; key=getpass.getpass("Datadog API key: "); sys.exit("Chave vazia") if not key else None; print(json.dumps({"apiVersion":"v1","kind":"Secret","metadata":{"name":"datadog-api-key","namespace":"datadog"},"type":"Opaque","data":{"api-key":base64.b64encode(key.encode()).decode()}}))'   | kubectl create -f -
+~~~
+
+Base64 não é criptografia. Proteja o acesso ao Secret com RBAC e nunca versione
+seu conteúdo. A aplicação não recebe essa credencial.
+
+~~~sh
+helm repo add datadog https://helm.datadoghq.com
+helm repo update datadog
+helm search repo datadog/datadog --versions
+~~~
+
+Escolha e fixe uma versão revisada do chart. Substitua os exemplos abaixo;
+clusterName deve ser único e estável por cluster.
+
+~~~sh
+DD_CLUSTER_NAME='nome-real-do-cluster'
+DD_CHART_VERSION='VERSAO_REVISADA_DO_CHART'
+
+helm template datadog datadog/datadog   --namespace datadog --version "$DD_CHART_VERSION"   -f datadog/kubernetes-values.yaml   --set-string datadog.clusterName="$DD_CLUSTER_NAME"
+
+helm upgrade --install datadog datadog/datadog   --namespace datadog --version "$DD_CHART_VERSION"   -f datadog/kubernetes-values.yaml   --set-string datadog.clusterName="$DD_CLUSTER_NAME"   --wait --timeout 5m
+~~~
+
+O clusterName do arquivo é exemplo. As tags env:dev e service:oficina-mecanica-api
+identificam esta instalação, mas **não restringem a coleta à API**. Filtre por
+namespace/container nas consultas. Ajuste as tags para outros ambientes.
+
+### Validação
+
+~~~sh
+kubectl -n datadog get daemonset,deployment,pods -o wide
+kubectl -n datadog rollout status daemonset/datadog
+kubectl -n datadog rollout status deployment/datadog-cluster-agent
+kubectl -n datadog exec daemonset/datadog -c agent -- agent status
+kubectl -n datadog exec deployment/datadog-cluster-agent -- datadog-cluster-agent status
+~~~
+
+Confirme um Agent pronto por nó elegível, Cluster Agent pronto, integração
+kubelet saudável e check kubernetes_state_core funcionando. Verifique erros de
+RBAC, certificados, conectividade e limites de memória.
+
+No Datadog Metrics Explorer, filtre pelo cluster, namespace e container da API.
+Exemplos (substitua os placeholders):
+
+~~~text
+sum:kubernetes.cpu.usage.total{kube_cluster_name:<cluster>,kube_namespace:<namespace>,kube_container_name:api} by {pod_name}
+sum:kubernetes.memory.usage{kube_cluster_name:<cluster>,kube_namespace:<namespace>,kube_container_name:api} by {pod_name}
+sum:kubernetes_state.pod.status_phase{kube_cluster_name:<cluster>,kube_namespace:<namespace>} by {phase}
+~~~
+
+CPU dessa métrica usa nanocores (dividir por 1.000.000.000 para cores); memória
+usa bytes. Estado Running não garante readiness da aplicação.
+Referências: [Kubernetes](https://docs.datadoghq.com/integrations/kubernetes/) e
+[State Core](https://docs.datadoghq.com/integrations/kubernetes_state_core/).
+
+### Remoção
+
+~~~sh
+helm uninstall datadog --namespace datadog
+~~~
+
+O Secret preexistente e o namespace permanecem. Só os remova separadamente se
+não forem usados por outra instalação. A aplicação e metrics-server permanecem.
