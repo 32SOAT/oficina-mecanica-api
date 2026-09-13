@@ -40,7 +40,7 @@ Configuração provisionada pelo Terraform de `oficina-mecanica-infra-db`:
 | Classe padrão | `db.t4g.micro` |
 | Storage | 20 GB, autoescalável, `storage_encrypted = true` |
 | Exposição | `publicly_accessible = false`, em subnets `database` |
-| Rede | Security group aceita ingress **apenas** do security group do cluster EKS |
+| Rede | Security group aceita ingress **apenas** do security group do cluster EKS (SGs extras, ex.: Lambda em VPC, via variável `extra_ingress_security_group_ids`) |
 | Multi-AZ | Variável `db_multi_az` (padrão `false`) |
 
 ---

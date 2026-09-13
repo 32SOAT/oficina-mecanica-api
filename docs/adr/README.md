@@ -14,6 +14,7 @@ Propostas ainda em discussão ficam em [docs/rfc](../rfc/README.md). Uma RFC apr
 | [004](./004-padrao-de-comunicacao.md) | Padrão de comunicação entre componentes | Aceita | |
 | [005](./005-uso-de-hpa.md) | Uso de HPA (Horizontal Pod Autoscaler) | Aceita | |
 | [006](./006-stack-de-observabilidade.md) | Stack de observabilidade com Datadog | Aceita | [RFC 004](../rfc/004-stack-de-observabilidade.md) |
+| [007](./007-terraform-do-banco-com-descoberta-via-data-sources.md) | Terraform do banco em repositório dedicado com descoberta via data sources | Aceita | [RFC 005](../rfc/005-segregacao-de-repositorios.md) |
 
 A instrumentação da ADR 006 está em andamento. O [diagrama de componentes](../architecture/componentes.md) marca em tracejado o que ainda não foi implantado.
 

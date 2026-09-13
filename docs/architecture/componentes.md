@@ -146,7 +146,7 @@ Papel de cada componente nos fluxos desta fase:
 
 ## ☁️ Implantação na AWS
 
-Diagrama de implantação, complementar ao C4: onde cada contêiner do C2 roda na nuvem. Provisionado por Terraform em `oficina-mecanica-infra-db` (rede e banco) e `oficina-mecanica-infra-k8s` (cluster, registro, IAM).
+Diagrama de implantação, complementar ao C4: onde cada contêiner do C2 roda na nuvem. Provisionado por Terraform em `oficina-mecanica-infra-db` (banco) e `oficina-mecanica-infra-k8s` (rede, cluster, registro, IAM) — ver [ADR 007](../adr/007-terraform-do-banco-com-descoberta-via-data-sources.md).
 
 ```mermaid
 flowchart TB
@@ -241,7 +241,7 @@ Modelo relacional e ajustes propostos em [modelo-de-dados.md](./modelo-de-dados.
 
 ### 🌐 Rede
 
-Três camadas de subnet, provisionadas em `oficina-mecanica-infra-db`:
+Três camadas de subnet, provisionadas junto com o cluster (destino: `oficina-mecanica-infra-k8s`); o repositório do banco as descobre pela tag `Tier` ([ADR 007](../adr/007-terraform-do-banco-com-descoberta-via-data-sources.md)):
 
 | Camada | Rota padrão | Ocupantes |
 | ------ | ----------- | --------- |
@@ -279,25 +279,25 @@ Este diagrama não faz parte do C4. Mostra qual repositório provisiona o quê e
 
 ```mermaid
 flowchart LR
-  R4["oficina-mecanica-infra-db<br/>VPC · subnets · RDS"]
-  R3["oficina-mecanica-infra-k8s<br/>EKS · node group · ECR · IAM<br/>+ regra de ingress no SG do RDS"]
+  R3["oficina-mecanica-infra-k8s<br/>VPC · subnets · EKS · node group · ECR · IAM"]
+  R4["oficina-mecanica-infra-db<br/>RDS · subnet group · SG (ingress do cluster)"]
   R1["oficina-mecanica-api<br/>imagem + manifestos K8s + Datadog Agent"]
   R2["oficina-mecanica-lambda-auth<br/>Lambda + API Gateway"]
 
-  R4 -->|"remote state: subnets, SG do RDS"| R3
+  R3 -->|"descoberta por data sources:<br/>nome do cluster, tag Tier=database"| R4
   R3 -->|"cluster_name, ecr_repository_url"| R1
-  R4 -->|"db_endpoint, subnet_ids"| R2
+  R4 -->|"db_endpoint"| R2
   R3 -->|"hostname do NLB"| R2
 ```
 
 | Componente | Repositório | Pipeline |
 | ---------- | ----------- | -------- |
-| VPC, subnets, RDS PostgreSQL | `oficina-mecanica-infra-db` | `terraform plan` em PR, `apply` em `develop` e `main` |
-| EKS, node group, ECR, IAM, regra de ingress do RDS | `oficina-mecanica-infra-k8s` | idem |
+| RDS PostgreSQL, subnet group, security group | `oficina-mecanica-infra-db` | `fmt`/`validate` em PR, `plan` + `apply` automático em `main` ✅ |
+| VPC, subnets, EKS, node group, ECR, IAM | `oficina-mecanica-infra-k8s` | `terraform plan` em PR, `apply` em `develop` e `main` (a migrar do repo da API) |
 | Imagem, manifestos K8s, Datadog Agent | `oficina-mecanica-api` | `ci-cd.yml`: build, push no ECR, `kubectl apply`, migrations |
 | Lambda + API Gateway | `oficina-mecanica-lambda-auth` | lint, testes, `terraform apply` |
 
-Cada repositório lê os outputs do anterior por `terraform_remote_state` em S3. Decisão e etapas: [RFC 005](../rfc/005-segregacao-de-repositorios.md).
+O repositório do banco descobre a rede por data sources (nome do cluster e tags), sem ler state alheio; os demais consomem outputs via variáveis de pipeline. A ordem de apply é cluster antes de banco. Decisão e etapas: [RFC 005](../rfc/005-segregacao-de-repositorios.md); implementação do banco registrada na [ADR 007](../adr/007-terraform-do-banco-com-descoberta-via-data-sources.md).
 
 ---
 

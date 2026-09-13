@@ -203,6 +203,8 @@ Um repositório com apenas `LICENSE` parece esquecimento. Um repositório com um
 
 **Encerrada — Aprovada.** O grupo decidiu migrar (alternativa B). Terraform de rede e banco em `oficina-mecanica-infra-db` (Gustavo de Matos Parizi); cluster, registro, IAM e regra de ingress em `oficina-mecanica-infra-k8s` (Isaac Bruno Siqueira de Souza). O diretório `infra/` do repositório da API é removido ao final da etapa 4. Os READMEs dos dois repositórios descrevem execução, outputs e pipeline.
 
+**Atualização de 13/09/2026:** o repositório do banco foi implementado e testado ponta a ponta, com ajustes em relação à alternativa B — a VPC permanece com o stack do cluster e a integração usa data sources em vez de `terraform_remote_state`, o que também elimina a dependência circular. Os ajustes e suas razões estão registrados na [ADR 007](../adr/007-terraform-do-banco-com-descoberta-via-data-sources.md).
+
 ## 🔗 Relacionados
 
 - [RFC 001 — Escolha da nuvem](./001-escolha-da-nuvem.md)

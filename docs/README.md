@@ -7,7 +7,7 @@
 | [oficina-mecanica-api](https://github.com/32SOAT/oficina-mecanica-api) | API NestJS, manifestos Kubernetes, Datadog (em integração) e esta documentação |
 | [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) | Lambda de autenticação por CPF e API Gateway |
 | [oficina-mecanica-infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s) | Terraform de EKS, node group, ECR e IAM |
-| [oficina-mecanica-infra-db](https://github.com/32SOAT/oficina-mecanica-infra-db) | Terraform de VPC, subnets e RDS |
+| [oficina-mecanica-infra-db](https://github.com/32SOAT/oficina-mecanica-infra-db) | Terraform do RDS (instância, subnet group e security group) |
 
 ## 🏗️ Arquitetura
 
@@ -26,7 +26,7 @@
 | Documento | Conteúdo |
 | --------- | -------- |
 | [RFCs](./rfc/README.md) | Nuvem, banco gerenciado, autenticação, observabilidade, repositórios |
-| [ADRs](./adr/README.md) | Banco, e-mail, auth, comunicação, HPA, observabilidade |
+| [ADRs](./adr/README.md) | Banco, e-mail, auth, comunicação, HPA, observabilidade, Terraform do banco |
 
 ## 🔧 Operação
 
@@ -51,7 +51,7 @@ docs/
 ├── README.md              este índice
 ├── architecture/          componentes, sequências, modelo de dados, auth, módulos
 ├── rfc/                   propostas (001–005)
-├── adr/                   decisões (001–006)
+├── adr/                   decisões (001–007)
 ├── observability/         o que é monitorado e como
 ├── deployment/            Terraform, Kubernetes, índice de deploy
 ├── ci-cd/                 pipelines
