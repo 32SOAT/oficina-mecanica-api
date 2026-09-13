@@ -1,9 +1,29 @@
-# Observabilidade local com Docker
+# Observabilidade — Oficina Mecânica
 
 A API usa `NODE_ENV=production` para emitir JSON em stdout, mantendo `DD_ENV=dev`.
 O Agent coleta somente `app`, selecionado pela label `com.datadoghq.ad.logs`,
 pelo socket Docker. A coleta global fica desabilitada; db e SonarQube não possuem
 labels de coleta. A estratégia de stdout também se aplica ao Kubernetes/EKS.
+
+## Logging e correlação com traces
+
+Em produção e no container Docker, os logs são JSON estruturado. No desenvolvimento
+local no host, com NODE_ENV diferente de production, o terminal usa pino-pretty.
+O correlationId reutiliza o header x-correlation-id recebido; quando ausente, gera
+UUID. A resposta devolve x-correlation-id e os logs HTTP incluem correlationId.
+
+O preload do dd-trace e DD_LOGS_INJECTION=true permitem incluir dd.trace_id e
+dd.span_id nos logs Pino quando há contexto de trace ativo, preservando o
+correlationId independente. Esses campos permitem navegar entre logs e traces.
+
+Existe suporte opcional a arquivo local com LOG_FILE_ENABLED=true e
+LOG_FILE_PATH (padrão ./logs/api.log), somente fora de produção. Esse recurso
+não é a estratégia oficial de coleta no Docker: usamos JSON em stdout →
+Docker → Datadog Agent, sem coleta de logs/api.log. A configuração Helm desta
+branch trata apenas métricas de infraestrutura; logs/APM no EKS ficam para
+uma etapa posterior.
+
+## Execução local com Docker
 
 Configure PostgreSQL, JWT e Resend no `.env` local conforme `.env.example`.
 O Compose repassa variáveis explicitamente: a API não recebe `DD_API_KEY`.
@@ -45,6 +65,36 @@ chave das variáveis usadas em execuções da API no host, mova-a manualmente pa
 ```sh
 docker compose --env-file .env --env-file datadog/.env.local --profile observability up -d db datadog-agent app
 ```
+
+## Métricas de negócio
+
+### Volume de ordens de serviço
+
+A métrica oficina.ordem_servico.criada é um contador enviado pelo cliente
+DogStatsD existente no dd-trace, com incremento de 1 somente após a conclusão
+bem-sucedida de runInTransaction() no CreateOrdemServicoUseCase.execute().
+A emissão fica fora do callback: ocorre após o commit. Falha/rollback não
+incrementa; falha síncrona de telemetria gera warning e preserva o sucesso da OS.
+
+A tag explícita é status_inicial:recebida. env, service e version são herdadas
+do SDK, sem duplicação. Não são enviados IDs de OS/cliente, documento, placa,
+correlationId ou traceId como tags. A entrega é best-effort, sem garantia de
+persistência da amostra em caso de encerramento antes do envio.
+
+No dd-trace 6.15.0, o cliente DogStatsD usa o proxy HTTP do Agent em 8126;
+as variáveis DogStatsD de hostname/porta não forçam UDP nessa versão.
+Nenhuma API key é fornecida à aplicação.
+
+O contador é usado para volume diário de OS no dashboard. Consulta:
+
+~~~text
+sum:oficina.ordem_servico.criada{env:dev,service:oficina-mecanica-api,status_inicial:recebida}.as_count()
+~~~
+
+Usar soma por dia, definindo o fuso horário do dashboard e a janela desejada.
+Não interpretar taxa por segundo como quantidade diária. A validação local
+confirmou recebimento após criação HTTP 201 e nenhuma nova amostra após uma
+criação inválida HTTP 404.
 
 ### Tempo médio por fase (histórico persistido)
 
@@ -114,7 +164,7 @@ depende da autenticação normal de cliente; não faz parte desta etapa alterá-
 
 ## Kubernetes/EKS — métricas de infraestrutura
 
-O arquivo kubernetes-values.yaml configura o chart oficial
+O arquivo datadog/kubernetes-values.yaml configura o chart oficial
 [datadog/datadog](https://github.com/DataDog/helm-charts/tree/main/charts/datadog):
 um Node Agent por nó Linux e um Cluster Agent para CPU/memória dos containers,
 estado dos pods e métricas básicas do cluster. State Metrics Core dispensa
@@ -126,6 +176,14 @@ disponíveis no Metrics Explorer.
 Instalação independente: não modifica a API, HPA, Terraform ou Agent do Compose.
 **Metrics-server continua fornecendo métricas ao HPA, independentemente do
 Datadog.** Este release não instala nem substitui metrics-server.
+
+### Estado de validação nesta branch
+
+A sintaxe YAML foi validada. O chart não foi renderizado nem instalado em
+cluster real nesta branch; as métricas Kubernetes não foram validadas em EKS
+ativo. A coleta de CPU, memória e estado dos pods descrita aqui é esperada,
+não uma confirmação de implantação. A versão do chart deve ser escolhida,
+revisada e fixada durante a instalação com --version.
 
 ### Pré-requisitos
 
@@ -222,3 +280,53 @@ helm uninstall datadog --namespace datadog
 
 O Secret preexistente e o namespace permanecem. Só os remova separadamente se
 não forem usados por outra instalação. A aplicação e metrics-server permanecem.
+
+
+## Healthcheck e uptime
+
+GET /api/v1/health é público, sem JWT no NestJS, e é usado pelas probes
+startup, readiness e liveness dos manifests Kubernetes. Retorna HTTP 200 com
+data.status igual a ok e data.timestamp quando a API consegue responder.
+
+O endpoint verifica somente disponibilidade HTTP da API. Não consulta
+PostgreSQL nem Resend; pode continuar saudável mesmo com essas dependências
+indisponíveis. O teste de uptime não comprova os fluxos completos de negócio.
+
+O Datadog Synthetic HTTP Test deve apontar para a URL pública realmente
+implantada, com o caminho /api/v1/health. Preferir o API Gateway se ele for a
+entrada pública em uso; testar diretamente o NLB não cobre o Gateway.
+Validar HTTP 200 e $.data.status igual a ok.
+
+A URL pública real não foi obtida nesta implementação: não havia credenciais
+AWS válidas nem kubeconfig/contexto Kubernetes válido disponíveis. Isso não
+comprova ausência de ambiente implantado. A descoberta da URL e a validação
+externa permanecem pendentes.
+
+localhost não é acessível por um Datadog Synthetic executado em localização
+pública. Para endpoint privado/local, seria necessária uma Private Location
+com conectividade apropriada; o Agent do Compose sozinho não fornece isso.
+
+## Dashboard e monitores na conta Datadog
+
+Os itens abaixo foram configurados manualmente na conta Datadog. Não fazem
+parte dos manifests versionados e não são criados pelos comandos Helm ou
+Compose deste repositório. Esta lista registra a configuração manual informada,
+não uma exportação ou validação automatizada dos recursos da conta.
+
+Dashboard: **Oficina Mecânica - Observabilidade**, com os painéis:
+
+- Volume de OS.
+- Tempo médio por fase.
+- Latência p95 da API.
+- Falhas de integração com Resend.
+- Requisições da API.
+- Erros 5xx da API.
+
+Monitores configurados manualmente:
+
+- Monitor de falha de integração com Resend.
+- Monitor de falhas 5xx da API.
+
+A existência dos painéis não substitui as validações pendentes descritas acima.
+A criação de Synthetic para uptime e a coleta Kubernetes em cluster real
+continuam dependendo da configuração e do acesso ao ambiente implantado.
