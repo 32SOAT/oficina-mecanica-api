@@ -1,6 +1,8 @@
 # ⚙️ CI/CD (GitHub Actions)
 
-Índice das pipelines. Configuração detalhada de infra e Kubernetes continua em [Deploy AWS (Terraform)](../deployment/infra.md) e [Deploy Kubernetes](../deployment/k8s.md).
+Índice das pipelines. A integração AWS canônica está em
+[cross-repository.md](../deployment/cross-repository.md). O
+[Deploy Kubernetes](../deployment/k8s.md) cobre o ambiente local.
 
 ## 📂 Workflows
 
@@ -8,7 +10,6 @@
 | ------- | ------- | ------ |
 | [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) | PR para `homolog` ou `main` | Check obrigatório `api / gate`: build, testes e build Docker sem push; lint informativo |
 | [`.github/workflows/publish-image.yml`](../../.github/workflows/publish-image.yml) | `workflow_dispatch` | Valida uma referência protegida e publica uma imagem imutável no ECR por OIDC |
-| [`.github/workflows/infra.yml`](../../.github/workflows/infra.yml) | PR em `infra/**`, `workflow_dispatch` | `terraform fmt/validate/plan/apply/destroy` |
 
 ## 🔄 Validação da API
 
@@ -26,7 +27,10 @@ Publicar uma imagem não altera o cluster. A promoção e o deploy por digest pe
 
 Configure em **Settings → Environments → image-publishing** a variável `PUBLISH_ROLE_ARN`. Configure também `AWS_REGION` como variável do repositório ou do environment. A role deve confiar no OIDC do GitHub Actions e permitir somente a publicação no ECR da API e a leitura do parâmetro SSM `/oficina/shared/ecr/repository-url`.
 
-O workflow legado de infraestrutura ainda possui configuração própria; veja suas mensagens de validação em `infra.yml`.
+O provisionamento e o deploy Kubernetes canônicos pertencem ao
+`oficina-mecanica-infra-k8s`; este repositório publica somente a imagem pelo
+workflow `publish-image.yml`. Não use workflows ou scripts Terraform antigos
+deste repositório para uma instalação nova.
 
 ## 🧭 Quando usar cada fluxo
 
@@ -34,7 +38,7 @@ O workflow legado de infraestrutura ainda possui configuração própria; veja s
 | -------- | ---- |
 | ✅ Validar PR (código) | Abrir PR para `homolog` ou `main` → aguardar `api / gate` |
 | 📦 Publicar imagem imutável | Workflow `Publish API image` → informar `git_ref` pertencente a uma branch protegida |
-| ☁️ Provisionar/alterar AWS | Workflow `Infra (Terraform)` → `plan` ou `apply` |
+| ☁️ Provisionar/alterar AWS | Workflow do `oficina-mecanica-infra-k8s` → `plan` ou `apply` protegido |
 | 🚀 Promover/deployar por digest | Usar o fluxo de promoção no repositório de infraestrutura |
 
 ## 🔗 Ver também

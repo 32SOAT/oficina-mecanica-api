@@ -29,14 +29,21 @@ Aprovar/reprovar gravam o `sub` do token em `historico_status_os.usuario_id` (uu
 
 ## API Gateway
 
-Na AWS, a porta de entrada pública é o **HTTP API** do repo da Lambda:
+Na AWS, a porta de entrada pública é o **HTTP API** gerenciado pelo
+`oficina-mecanica-infra-k8s`:
 
 - `POST /auth/cpf` → Lambda
-- `ANY /{proxy+}` (`/api/...`, Swagger `/api`) → NLB do Nest, quando `nest_api_url` está setado
+- `ANY /{proxy+}` (`/api/...`, Swagger `/api`) → NLB do Nest, usando o contrato
+  SSM `/oficina/<ambiente>/platform/api-nlb-hostname`
 
 Login de admin continua no Nest (`POST /api/v1/auth/login`), acessível pelo Gateway depois do proxy.
 
-Deploy, variáveis e curls: **[README da Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth)**. No Academy, a ordem é Nest no ar → hostname do NLB → `terraform apply` da Lambda. Passo a passo: [academy-passo-a-passo.md](../deployment/academy-passo-a-passo.md).
+Deploy, variáveis e curls: [integração entre repositórios](../deployment/cross-repository.md),
+[README da Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth) e
+[infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s). A ordem é
+Lambda → Nest/Kubernetes → hostname do NLB → API Gateway. A Lambda publica
+`/oficina/<ambiente>/platform/auth-lambda-arn`; o `infra-k8s` consome os dois
+parâmetros e gerencia exclusivamente o Gateway.
 
 ## Fora de escopo (Fase 3)
 
