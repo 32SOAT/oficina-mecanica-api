@@ -57,13 +57,3 @@ output "api_container_port" {
   description = "Porta HTTP exposta pelo container da API."
   value       = var.api_container_port
 }
-
-output "postgres_endpoint" {
-  description = "Endpoint privado do RDS Postgres."
-  value       = aws_db_instance.postgres.endpoint
-}
-
-output "postgres_address" {
-  description = "Endereco privado do RDS Postgres, sem porta."
-  value       = aws_db_instance.postgres.address
-}
