@@ -2,13 +2,17 @@
 
 API para gestão de oficina mecânica: clientes, veículos, ordens de serviço, serviços, estoque, notificações por e-mail e autenticação.
 
-**Stack:** NestJS · TypeORM · PostgreSQL · JWT · Resend · Docker · Kubernetes · Terraform
+**Stack:** NestJS · TypeORM · PostgreSQL · JWT · Resend · Docker · Kubernetes · ECR
+
+O provisionamento AWS, o EKS, o NLB, o API Gateway e a Lambda não são gerenciados
+por este repositório. O fluxo canônico entre os projetos está em
+[docs/deployment/cross-repository.md](./docs/deployment/cross-repository.md).
 
 ## 🎯 Objetivos
 
 - Código organizado com **Clean Architecture / Hexagonal** (camadas e ports/adapters).
 - Qualidade com **testes automatizados** e **CI/CD**.
-- Aplicação **containerizada**, com **Kubernetes** (HPA) e **Terraform** na AWS.
+- Aplicação **containerizada**, com publicação ECR e deploy Kubernetes operado pelo `infra-k8s`.
 - Escala automática dos pods sob carga.
 
 ## 📦 Entrega
@@ -23,7 +27,7 @@ Monólito modular NestJS (`domain` → `application` → `infrastructure` → `p
 | --------- | -------- |
 | 🧱 [Arquitetura da aplicação](./docs/architecture/README.md) | Camadas, módulos, ports, fluxo de request |
 | 🔐 [Autenticação](./docs/architecture/auth.md) | JWT admin (Nest) e cliente CPF ([Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth)) |
-| ☁️ [Desenho da infra / deploy](./docs/deployment/README.md) | EKS, RDS, ECR, HPA, API Gateway, fluxo CI/CD |
+| ☁️ [Desenho da infra / deploy](./docs/deployment/README.md) | EKS, RDS, ECR, HPA, API Gateway, fluxo entre repositórios |
 
 ## 💻 Execução local
 
@@ -40,7 +44,11 @@ npm run start:dev
 - API: `http://localhost:3000`
 - Swagger: http://localhost:3000/api (Bearer JWT de **admin** via `POST /api/v1/auth/login`)
 
-Auth de **cliente via CPF** e o API Gateway não rodam neste repo: [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth). Localmente o Nest aceita os dois JWTs se o `JWT_SECRET` for o mesmo. Detalhe: [docs/architecture/auth.md](./docs/architecture/auth.md).
+Auth de **cliente via CPF** e o API Gateway não rodam neste repo. A Lambda
+pertence a [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth)
+e o Gateway a [oficina-mecanica-infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s).
+Localmente o Nest aceita os dois JWTs se o `JWT_SECRET` for o mesmo. Detalhe:
+[docs/architecture/auth.md](./docs/architecture/auth.md).
 
 Detalhes, migrations, testes e Resend: **[docs/build](./docs/build/README.md)**.
 
@@ -48,7 +56,8 @@ Detalhes, migrations, testes e Resend: **[docs/build](./docs/build/README.md)**.
 
 | Cenário | Guia |
 | ------- | ---- |
-| ☁️ Terraform (EKS, RDS, ECR) | [docs/deployment/infra.md](./docs/deployment/infra.md) |
+| ☁️ Infraestrutura AWS canônica | [docs/deployment/cross-repository.md](./docs/deployment/cross-repository.md) |
+| 🔗 Integração de infraestrutura | [docs/deployment/cross-repository.md](./docs/deployment/cross-repository.md) |
 | ☸️ Kubernetes (EKS e Minikube) | [docs/deployment/k8s.md](./docs/deployment/k8s.md) |
 | 🗺️ Índice de deploy | [docs/deployment/README.md](./docs/deployment/README.md) |
 | ⚙️ Pipelines GitHub Actions | [docs/ci-cd/README.md](./docs/ci-cd/README.md) |
@@ -61,7 +70,7 @@ Detalhes, migrations, testes e Resend: **[docs/build](./docs/build/README.md)**.
 | 🧱 [Arquitetura](./docs/architecture/README.md) | Clean/Hexagonal, ports, módulos |
 | 🔐 [Autenticação](./docs/architecture/auth.md) | Admin Nest + cliente Lambda/CPF |
 | ☁️ [Deploy](./docs/deployment/README.md) | Infra AWS + fluxo de deploy |
-| 🏗️ [Terraform](./docs/deployment/infra.md) | Provisionamento AWS |
+| 🔗 [Integração de infraestrutura](./docs/deployment/cross-repository.md) | Provisionamento e deploy nos repositórios owners |
 | ☸️ [Kubernetes](./docs/deployment/k8s.md) | EKS e Minikube |
 | ⚙️ [CI/CD](./docs/ci-cd/README.md) | GitHub Actions |
 | 💻 [Build local](./docs/build/README.md) | npm, Docker Compose, migrations, testes, Resend |

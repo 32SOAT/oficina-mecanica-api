@@ -1,0 +1,56 @@
+name: API CI
+
+on:
+  pull_request:
+    branches:
+      - homolog
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  gate:
+    name: api / gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # Informativo até que o backlog de lint existente seja zerado.
+      - name: Lint
+        run: npm run lint:check
+        continue-on-error: true
+
+      - name: Build da aplicação
+        run: npm run build
+
+      - name: Testes automatizados (com cobertura)
+        run: npm run test:cov
+
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: ignore
+
+      - name: Build da imagem Docker sem push
+        run: docker build -t oficina-mecanica-api:ci .

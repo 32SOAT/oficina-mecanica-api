@@ -1,0 +1,147 @@
+name: Publish API image
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Commit, tag ou branch protegida a publicar
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-image-publishing
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22'
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  API_IMAGE_PLATFORM: linux/amd64
+
+jobs:
+  validate:
+    name: Validar referência da API
+    runs-on: ubuntu-latest
+    outputs:
+      source-sha: ${{ steps.source.outputs.source_sha }}
+    steps:
+      - name: Checkout da referência solicitada
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ inputs.git_ref }}
+          fetch-depth: 0
+
+      - name: Resolver e validar source SHA
+        id: source
+        env:
+          GIT_REF: ${{ inputs.git_ref }}
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main homolog
+          source_sha="$(git rev-parse "${GIT_REF}^{commit}")"
+          if ! git merge-base --is-ancestor "${source_sha}" origin/homolog && \
+             ! git merge-base --is-ancestor "${source_sha}" origin/main; then
+            echo "O commit não pertence a uma branch protegida." >&2
+            exit 1
+          fi
+          git checkout --detach "${source_sha}"
+          echo "source_sha=${source_sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build da aplicação
+        run: npm run build
+
+      - name: Testes automatizados (com cobertura)
+        run: npm run test:cov
+
+      - name: Build da imagem sem push
+        run: docker build -t oficina-mecanica-api:publish-validation .
+
+  publish:
+    name: Publicar imagem imutável
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: image-publishing
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      source-sha: ${{ needs.validate.outputs.source-sha }}
+      image-tag: ${{ steps.publisher.outputs.IMAGE_TAG }}
+      image-digest: ${{ steps.publisher.outputs.IMAGE_DIGEST }}
+      image-ref: ${{ steps.publisher.outputs.IMAGE_REF }}
+    steps:
+      - name: Checkout do SHA validado
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ needs.validate.outputs.source-sha }}
+          fetch-depth: 1
+
+      - name: Confirmar SHA do checkout
+        env:
+          EXPECTED_SHA: ${{ needs.validate.outputs.source-sha }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$(git rev-parse HEAD)" == "${EXPECTED_SHA}" ]] || {
+            echo 'O checkout de publicação não corresponde ao SHA validado.' >&2
+            exit 1
+          }
+
+      - name: Validar configuração de publicação
+        run: |
+          set -Eeuo pipefail
+          [[ -n "${AWS_REGION}" ]] || { echo 'AWS_REGION não configurada no environment image-publishing.' >&2; exit 1; }
+          [[ -n "${{ vars.PUBLISH_ROLE_ARN }}" ]] || { echo 'PUBLISH_ROLE_ARN não configurada no environment image-publishing.' >&2; exit 1; }
+
+      - name: Assumir role de publicação via OIDC
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c
+        with:
+          role-to-assume: ${{ vars.PUBLISH_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Ler URL do repositório ECR no SSM
+        id: ecr
+        run: |
+          repository_url="$(aws ssm get-parameter \
+            --region "${AWS_REGION}" \
+            --name /oficina/shared/ecr/repository-url \
+            --query 'Parameter.Value' \
+            --output text)"
+          if [[ -z "${repository_url}" || "${repository_url}" == "None" ]]; then
+            echo "Parâmetro SSM /oficina/shared/ecr/repository-url vazio ou ausente." >&2
+            exit 1
+          fi
+          echo "repository_url=${repository_url}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publicar imagem e resolver digest
+        id: publisher
+        env:
+          SOURCE_SHA: ${{ needs.validate.outputs.source-sha }}
+          ECR_REPOSITORY_URL: ${{ steps.ecr.outputs.repository_url }}
+        run: bash infra/publish-api-image.sh
+
+      - name: Resumir publicação
+        env:
+          SOURCE_SHA: ${{ needs.validate.outputs.source-sha }}
+          IMAGE_TAG: ${{ steps.publisher.outputs.IMAGE_TAG }}
+          IMAGE_DIGEST: ${{ steps.publisher.outputs.IMAGE_DIGEST }}
+          IMAGE_REF: ${{ steps.publisher.outputs.IMAGE_REF }}
+        run: |
+          {
+            echo '## Imagem da API publicada'
+            echo
+            echo "- Source SHA: \`${SOURCE_SHA}\`"
+            echo "- Tag: \`${IMAGE_TAG}\`"
+            echo "- Digest: \`${IMAGE_DIGEST}\`"
+            echo "- Image ref: \`${IMAGE_REF}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
