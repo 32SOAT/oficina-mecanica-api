@@ -3,7 +3,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export function configureSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
-    .setTitle('oficina-mecanica-api')
+    .setTitle('oficina-mecanica-api-fase3')
     .setDescription(
       'API para gerenciamento de oficina mecânica (clientes, veículos, OS, estoque, serviços).',
     )
