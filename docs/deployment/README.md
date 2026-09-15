@@ -11,7 +11,7 @@ flowchart TB
   end
 
   subgraph GHA["CI/CD — GitHub Actions"]
-    Pipeline[ci-cd.yml · infra.yml]
+    Pipeline[ci.yml · publish-image.yml]
   end
 
   subgraph AWS["AWS"]
@@ -46,17 +46,23 @@ flowchart TB
   Pipeline --> EKS
 ```
 
-Visão simplificada; o desenho completo, com subnets, NAT, CloudWatch e Datadog, está em [componentes.md](../architecture/componentes.md#-implantação-na-aws). Gateway e Lambda **não** estão neste repositório: [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth). O Nest continua acessível pelo NLB; no vídeo da Fase 3 a entrada pública é o Gateway.
+Visão simplificada; o desenho completo (C4 e implantação por ambiente) está em [componentes.md](../architecture/componentes.md). Gateway e Lambda **não** estão neste repositório. A Lambda pertence a
+[oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth)
+e o API Gateway pertence a
+[oficina-mecanica-infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s).
+O Nest é publicado como imagem e executado pelo deploy Kubernetes do
+`infra-k8s`; a entrada pública é o endpoint padrão do API Gateway.
 
 | Recurso | Função |
 | ------- | ------ |
-| 🌐 **VPC** + subnets | Rede (pública, privada, database) — Terraform em `infra/` |
-| ☸️ **EKS** | Cluster Kubernetes: Deployment, Service, ConfigMap/Secret |
-| 📈 **HPA** | Escala pods conforme uso de CPU |
-| 🗄️ **RDS PostgreSQL** | Banco gerenciado (API e Lambda) |
-| 📦 **ECR** | Registro das imagens da API |
-| 🔀 **NLB** | Entrada HTTP para a API no cluster; `nest_api_url` da Lambda |
-| 🚪 **API Gateway** + **Lambda** | CPF → JWT e proxy `/api` → Nest — [repo da Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth) |
+| 🌐 **VPC** + subnets | Rede gerenciada pelo `infra-k8s` |
+| ☸️ **EKS** | Cluster Kubernetes gerenciado pelo `infra-k8s` |
+| 📈 **HPA** | Escala pods conforme uso de CPU, aplicado pelo `infra-k8s` |
+| 🗄️ **RDS PostgreSQL** | Banco gerenciado por seu repositório owner |
+| 📦 **ECR** | Registro onde este repo publica imagens |
+| 🔀 **NLB** | Entrada HTTP pública para a API no cluster; hostname publicado no SSM pelo `infra-k8s` |
+| 🚪 **API Gateway** | HTTP API, `POST /auth/cpf` e proxy `/api` → Nest — gerenciado pelo `infra-k8s` |
+| 🔐 **Lambda** | CPF → JWT — gerenciada pelo `oficina-mecanica-lambda-auth` |
 | ✉️ **Resend** | E-mails de notificação da OS |
 | ⚙️ **GitHub Actions** | Build, testes, push de imagem e apply no EKS |
 
@@ -67,10 +73,10 @@ Visão simplificada; o desenho completo, com subnets, NAT, CloudWatch e Datadog,
 | Cenário | Onde ir | O que cobre |
 | ------- | ------- | ----------- |
 | 💻 **Desenvolvimento local** | [docs/build](../build/README.md) | npm, Docker Compose, migrations, testes, Resend |
-| 🏗️ **Infraestrutura AWS** | [infra.md](./infra.md) | Terraform: EKS, RDS, ECR, rede |
-| 🎓 **AWS Academy** | [infra.md — AWS Academy](./infra.md#aws-academy-learner-lab) | Restrições do Learner Lab (roles IAM, storage) |
+| 🏗️ **Infraestrutura e integração AWS** | [cross-repository.md](./cross-repository.md) | Ownership, SSM, ordem e deploy entre os repositórios |
+| 🎓 **AWS Academy** | [Integração entre repositórios](./cross-repository.md) | Pré-requisitos, ordem e handoff; operações AWS no `infra-k8s` |
 | 🔐 **Auth cliente + Gateway** | [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) | Lambda CPF e proxy `/api` → Nest |
-| ☸️ **Kubernetes** (EKS e Minikube) | [k8s.md](./k8s.md) | Templates EKS, overlay Minikube, HPA e carga |
+| ☸️ **Kubernetes local** (Minikube) | [k8s.md](./k8s.md) | Overlay Minikube, HPA e carga |
 | ⚙️ **Pipeline CI/CD** | [docs/ci-cd](../ci-cd/README.md) | GitHub Actions |
 
 ## 🔄 Fluxo de deploy
@@ -79,20 +85,19 @@ Visão simplificada; o desenho completo, com subnets, NAT, CloudWatch e Datadog,
 flowchart LR
   Dev[Desenvolvedor / PR] --> GHA[GitHub Actions]
   GHA --> Test[lint · build · testes]
-  Test --> Img[Build imagem → ECR]
-  Img --> K8s[Apply manifestos no EKS]
-  K8s --> Mig[Job de migrations]
-  Mig --> Smoke[smoke test /api/v1/health]
-  TF[Terraform infra/] --> AWS[EKS · RDS · ECR · rede]
-  AWS --> K8s
+  Test --> Img[Build e publicação da imagem → ECR]
+  Img --> Handoff[PR no infra-k8s por digest]
+  Handoff --> K8s[Migration e rollout no EKS]
+  Platform[Terraform e Kubernetes no infra-k8s] --> K8s
 ```
 
 Em resumo:
 
-1. `infra/` → Terraform cria cluster, RDS, ECR, rede, etc.
-2. `infra/` + `k8s/` → build/push da imagem + render do overlay Kubernetes
-3. `k8s/` → `kubectl apply` (Deployment, Service, HPA, ConfigMap/Secret)
-4. CI/CD → repete build/test/deploy em push ou disparo manual (`workflow_dispatch`)
+1. O banco e a plataforma são provisionados pelos repositórios owners.
+2. Este repositório valida e publica a imagem imutável no ECR.
+3. O `infra-k8s` referencia o digest, executa migration e faz o rollout no EKS.
+4. O `infra-k8s` publica o hostname do NLB no SSM e aplica o API Gateway depois
+   que a Lambda e o NLB estiverem disponíveis.
 
 ## 📁 Artefatos no repositório
 
@@ -100,23 +105,24 @@ Em resumo:
 | -------- | ----- |
 | 🐳 Docker (app + Compose local) | `Dockerfile`, `docker-compose.yml` |
 | ☸️ Kubernetes | `k8s/` |
-| 🏗️ Terraform | `infra/` |
-| ⚙️ Pipeline | `.github/workflows/ci-cd.yml`, `infra.yml` |
+| 📦 Publicação de imagem | `infra/publish-api-image.sh` |
+| ⚙️ Pipeline | `.github/workflows/ci.yml`, `publish-image.yml` |
 
 ```text
 oficina-mecanica-api/
 ├── Dockerfile
 ├── docker-compose.yml      # Dev local
-├── infra/                  # Código Terraform + scripts
-├── k8s/                    # Templates / overlays (código)
+├── infra/publish-api-image.sh # Publicação ECR
+├── k8s/                    # Ambiente local / referência de aplicação
 ├── .github/workflows/
 └── docs/deployment/
     ├── README.md                 # este índice
-    ├── infra.md                  # Deploy AWS (Terraform)
-    └── k8s.md                    # Kubernetes (EKS + Minikube)
+    ├── cross-repository.md       # Integração canônica entre repositórios
+    └── k8s.md                    # Kubernetes local (Minikube)
 ```
 
-Auth cliente (CPF) e API Gateway: repositório [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth).
+Auth cliente (CPF): [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth).
+API Gateway, EKS e NLB: [oficina-mecanica-infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s).
 
 ## 🔗 Relacionados
 
@@ -124,3 +130,4 @@ Auth cliente (CPF) e API Gateway: repositório [oficina-mecanica-lambda-auth](ht
 - 🔐 [Autenticação](../architecture/auth.md)
 - 💻 [Build local](../build/README.md)
 - 📦 [Entrega](../entrega/README.md)
+- 🔗 [Integração entre repositórios](./cross-repository.md)

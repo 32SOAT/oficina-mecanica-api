@@ -2,9 +2,9 @@
 
 Guia para **desenvolvimento e execução na sua máquina**: npm, Docker Compose, migrations, seeding e testes.
 
-> **Não é deploy AWS.** Para Terraform (EKS, RDS), Kubernetes e CI/CD, use:
-> - [Deploy AWS (Terraform)](../deployment/infra.md)
-> - [Deploy Kubernetes](../deployment/k8s.md) (EKS e Minikube)
+> **Não é deploy AWS.** Para a integração AWS e Kubernetes, use:
+> - [Integração entre repositórios](../deployment/cross-repository.md)
+> - [Deploy Kubernetes local](../deployment/k8s.md) (Minikube)
 > - [docs/deployment](../deployment/README.md) · [docs/ci-cd](../ci-cd/README.md)
 
 ## ✅ Pré-requisitos

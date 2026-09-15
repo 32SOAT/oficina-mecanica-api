@@ -96,7 +96,9 @@ describe('Ordem servico use cases', () => {
       pecaPrecisaObservacaoCompra: false,
     });
     txOps.insertNewOs.mockResolvedValue(osOutput);
-    const useCase = new CreateOrdemServicoUseCase(transaction, events);
+    const useCase = new CreateOrdemServicoUseCase(transaction, events, {
+      registrarCriacao: jest.fn(),
+    });
     await expect(
       useCase.execute(validCreateInput, 'user-id'),
     ).resolves.toEqual(osOutput);
@@ -114,7 +116,9 @@ describe('Ordem servico use cases', () => {
     });
     txOps.insertNewOs.mockResolvedValue(osOutput);
 
-    const useCase = new CreateOrdemServicoUseCase(transaction, events);
+    const useCase = new CreateOrdemServicoUseCase(transaction, events, {
+      registrarCriacao: jest.fn(),
+    });
     await useCase.execute(
       { ...validCreateInput, observacao: 'Urgente', itensPeca: [{ estoqueId: 1, quantidade: 1 }] },
       null,

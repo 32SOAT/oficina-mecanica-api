@@ -184,7 +184,7 @@ Cada monitor leva na mensagem o link do dashboard, o valor atual (`{{value}}`), 
 | Erro em listener de OS | Ler o log do listener com o `correlationId`; anotar o `osId` | Reprocessar o histórico manualmente com `INSERT` e abrir issue para o outbox |
 | Histórico divergente | Rodar a query da seção acima e listar os `os.id` | Corrigir as linhas faltantes; se voltar a ocorrer, priorizar mover o `emit` para depois do commit ([ADR 004](../adr/004-padrao-de-comunicacao.md)) |
 | Falha no Resend | Conferir status do Resend e validade da `RESEND_API_KEY` | Rotacionar a chave via pipeline; e-mails perdidos não são reenviados |
-| Pod em CrashLoop | `kubectl logs --previous` | Quase sempre variável ausente no ConfigMap/Secret ou senha do banco; ver [infra.md](../deployment/infra.md#-problemas-comuns) |
+| Pod em CrashLoop | `kubectl logs --previous` | Quase sempre variável ausente no ConfigMap/Secret ou senha do banco; ver o runbook de integração em [cross-repository.md](../deployment/cross-repository.md) |
 | Memória do pod | `kubectl top pods`; ver se o crescimento é contínuo | Reiniciar o pod; se repetir, investigar vazamento com heap snapshot |
 | HPA no teto | Ver se a carga é real ou teste do k6 | Aumentar `max_size` do node group e `maxReplicas`, com PgBouncer antes de passar de 3 réplicas |
 | Lambda com erro | Ler o log da Lambda pelo `requestId` | Se for timeout de conexão ao RDS, conferir `subnet_ids` e security group |

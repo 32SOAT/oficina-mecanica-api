@@ -6,6 +6,7 @@ describe('configureApp', () => {
   it('configures versioning, prefix, validation pipe and exception filter', () => {
     const disable = jest.fn();
     const app = {
+      use: jest.fn(),
       getHttpAdapter: jest.fn().mockReturnValue({
         getInstance: () => ({ disable }),
       }),

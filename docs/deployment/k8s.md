@@ -1,63 +1,17 @@
 # ☸️ Deploy Kubernetes
 
-Documentação dos ambientes Kubernetes da API:
+> Para AWS/EKS, o deploy canônico é executado pelo
+> [`oficina-mecanica-infra-k8s`](https://github.com/32SOAT/oficina-mecanica-infra-k8s),
+> que versiona o digest, executa migrations, publica o hostname do NLB no SSM
+> e integra o API Gateway. Este documento cobre somente o desenvolvimento
+> local com Minikube. Consulte
+> [cross-repository.md](./cross-repository.md) antes de operar um ambiente novo.
 
-- **EKS (AWS)** — templates em `k8s/templates/` + overlay gerado pelos scripts em `infra/`
+Documentação do ambiente Kubernetes local da API:
+
 - **Minikube (local)** — overlay em `k8s/overlays/minikube/` + teste de carga em `k8s/load-test/`
 
 ---
-
-## ☁️ EKS (AWS)
-
-Os templates YAML versionados ficam em `k8s/templates/`:
-
-- `namespace.yaml`
-- `deployment.yaml`
-- `service.yaml`
-- `hpa.yaml`
-- `kustomization.yaml`
-
-O overlay `overlays/generated/` é criado pelos scripts em `infra/` renderizando esses templates com:
-
-- outputs do Terraform, como ECR e RDS;
-- variáveis carregadas de `infra/.env`;
-- a tag da imagem Docker publicada.
-
-Arquivos gerados no overlay:
-
-- `namespace.yaml`
-- `deployment.yaml`
-- `service.yaml`
-- `hpa.yaml`
-- `kustomization.yaml`
-- `values/`, com os valores locais usados pelos generators do Kustomize
-
-Fluxo recomendado, a partir da raiz do projeto (após o Terraform e a imagem no ECR — detalhes em [infra.md](./infra.md)):
-
-```bash
-source infra/.env
-source infra/load-terraform-outputs.sh
-source infra/load-k8s-template-vars.sh
-bash infra/prepare-k8s-overlay.sh
-bash infra/render-k8s-overlay.sh
-kubectl kustomize k8s/overlays/generated
-```
-
-Para aplicar os manifestos depois de conferir o resultado:
-
-```bash
-bash infra/apply-k8s-overlay.sh
-```
-
-O ConfigMap e o Secret são criados por `configMapGenerator` e `secretGenerator`. Os valores são lidos de arquivos com permissão restrita, o que evita interpolação insegura de aspas, caracteres especiais e quebras de linha em YAML.
-
-O overlay gerado contém os segredos do banco/JWT em arquivos locais e fica ignorado pelo Git. Esses arquivos não devem ser copiados, publicados como artefato nem adicionados ao controle de versão.
-
-`API_NAME` identifica Deployment, Service, HPA, ConfigMap e Secret. O valor `oficina-mecanica-api` usado no campo `image` é somente um placeholder estável: o Kustomize o substitui por `${ECR_REPOSITORY_URL}:${API_IMAGE_TAG}`. Dessa forma, o nome local usado no build Docker não fica acoplado aos nomes dos recursos Kubernetes.
-
-Os probes HTTP usam o path configurado em `TF_VAR_api_healthcheck_path`, e o HPA escala o Deployment por uso médio de CPU.
-
-Provisionamento do cluster e publicação da imagem: [infra.md](./infra.md).
 
 ---
 
@@ -187,6 +141,6 @@ minikube delete --profile=minikube
 ## 🔗 Ver também
 
 - [Deploy (índice)](./README.md)
-- [Terraform / AWS](./infra.md)
+- [Integração AWS entre repositórios](./cross-repository.md)
 - [Build local (Docker Compose)](../build/README.md)
 - [CI/CD](../ci-cd/README.md)

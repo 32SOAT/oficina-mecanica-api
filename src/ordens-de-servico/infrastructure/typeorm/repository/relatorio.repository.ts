@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { JanelaTempoInput } from '../../../application/dto/janela-tempo.input';
 import { TempoMedioReadModel } from '../../../application/read-models/tempo-medio-read-model';
-import { RelatorioRepository } from '../../../application/ports/relatorio.repository';
+import {
+  RelatorioRepository,
+  MediaTempoFase,
+} from '../../../application/ports/relatorio.repository';
 import { StatusOrdemServico } from '../../../domain/status-ordem-servico.enum';
 import { HistoricoStatusOsEntity } from '../entity/historico-status-os.entity';
 import { OrdemServicoTypeormEntity } from '../entity/ordem-servico.typeorm.entity';
@@ -16,6 +19,66 @@ export class RelatorioTypeormRepository implements RelatorioRepository {
     @InjectRepository(HistoricoStatusOsEntity)
     private readonly historicoRepository: Repository<HistoricoStatusOsEntity>,
   ) {}
+
+  async tempoMedioFases(): Promise<MediaTempoFase[]> {
+    // Read one snapshot, including entries before the 24h exit window.
+    const agora = Date.now();
+    const limite = agora - 24 * 60 * 60 * 1000;
+    const historico = await this.historicoRepository.find({
+      order: { createdAt: 'ASC' },
+    });
+    const porOs = new Map<string, HistoricoStatusOsEntity[]>();
+    for (const h of historico) {
+      const rows = porOs.get(h.os_id) ?? [];
+      rows.push(h);
+      porOs.set(h.os_id, rows);
+    }
+    const S = StatusOrdemServico;
+    const fases = [
+      ['diagnostico', S.EmDiagnostico, S.AguardandoAprovacao],
+      ['execucao', S.EmExecucao, S.Finalizada],
+      ['finalizacao', S.Finalizada, S.Entregue],
+    ] as const;
+    const medias: MediaTempoFase[] = [];
+    for (const [fase, status, destino] of fases) {
+      let soma = 0;
+      let quantidade = 0;
+      for (const rows of porOs.values()) {
+        const entradas = rows.filter((h) => h.statusNovo === status);
+        const saidas = rows.filter((h) => h.statusAnterior === status);
+        // Current workflow has no re-entry: multiple candidates are ambiguous.
+        if (entradas.length !== 1 || saidas.length !== 1) continue;
+        const entrada = entradas[0];
+        const saida = saidas[0];
+        const inicio = entrada.createdAt.getTime();
+        const fim = saida.createdAt.getTime();
+        if (
+          saida.statusNovo !== destino ||
+          !Number.isFinite(inicio) ||
+          !Number.isFinite(fim) ||
+          fim < inicio ||
+          fim < limite ||
+          fim > agora
+        )
+          continue;
+        // Another transition between the pair makes the interval unreliable.
+        if (
+          rows.some(
+            (h) =>
+              h !== entrada &&
+              h !== saida &&
+              h.createdAt.getTime() >= inicio &&
+              h.createdAt.getTime() <= fim,
+          )
+        )
+          continue;
+        soma += (fim - inicio) / 1000;
+        quantidade++;
+      }
+      if (quantidade > 0) medias.push({ fase, segundos: soma / quantidade });
+    }
+    return medias;
+  }
 
   async tempoMedioServicos(
     janela?: JanelaTempoInput,

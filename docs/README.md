@@ -34,10 +34,11 @@
 | --------- | -------- |
 | [Build local](./build/README.md) | npm, Docker Compose, migrations, testes, Resend |
 | [Deploy](./deployment/README.md) | Infra AWS e fluxo de deploy |
-| [Terraform](./deployment/infra.md) | Provisionamento na AWS e no Academy |
+| [Integração entre repositórios](./deployment/cross-repository.md) | Ownership, contratos SSM, ordem de provisionamento e deploy |
 | [Kubernetes](./deployment/k8s.md) | EKS e Minikube |
 | [CI/CD](./ci-cd/README.md) | GitHub Actions |
 | [Observabilidade](./observability/README.md) | Logs, dashboards, monitores, roteiro do vídeo |
+| [Datadog (operação)](../datadog/README.md) | Compose com Agent, métricas de negócio, chart Helm, validação |
 | [Análises](./analysis/README.md) | SonarQube e OWASP ZAP |
 
 ## 📦 Entrega
@@ -53,7 +54,7 @@ docs/
 ├── rfc/                   propostas (001–005)
 ├── adr/                   decisões (001–007)
 ├── observability/         o que é monitorado e como
-├── deployment/            Terraform, Kubernetes, índice de deploy
+├── deployment/            integração entre repositórios, Kubernetes local, índice de deploy
 ├── ci-cd/                 pipelines
 ├── build/                 execução local
 ├── analysis/              Sonar e ZAP
