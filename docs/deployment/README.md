@@ -46,7 +46,7 @@ flowchart TB
   Pipeline --> EKS
 ```
 
-Gateway e Lambda **não** estão neste repositório. A Lambda pertence a
+Visão simplificada; o desenho completo (C4 e implantação por ambiente) está em [componentes.md](../architecture/componentes.md). Gateway e Lambda **não** estão neste repositório. A Lambda pertence a
 [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth)
 e o API Gateway pertence a
 [oficina-mecanica-infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s).
@@ -118,7 +118,6 @@ oficina-mecanica-api/
 └── docs/deployment/
     ├── README.md                 # este índice
     ├── cross-repository.md       # Integração canônica entre repositórios
-    ├── cross-repository.md        # Integração canônica entre repositórios
     └── k8s.md                    # Kubernetes local (Minikube)
 ```
 

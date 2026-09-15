@@ -1,0 +1,64 @@
+# 📚 Documentação
+
+Índice da documentação da plataforma da oficina mecânica. Este repositório concentra a documentação arquitetural que atravessa os quatro repositórios do projeto; cada um dos outros mantém no próprio README o diagrama e os passos de execução específicos e aponta para cá.
+
+| Repositório | Conteúdo |
+| ----------- | -------- |
+| [oficina-mecanica-api](https://github.com/32SOAT/oficina-mecanica-api) | API NestJS, instrumentação Datadog, publicação da imagem e esta documentação |
+| [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) | Lambda de autenticação por CPF |
+| [oficina-mecanica-infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s) | Terraform de rede, EKS, ECR, OIDC e API Gateway; manifestos Kubernetes e deploy por ambiente |
+| [oficina-mecanica-infra-db](https://github.com/32SOAT/oficina-mecanica-infra-db) | Terraform do RDS (instância, subnet group e security group) |
+
+## 🏗️ Arquitetura
+
+| Documento | Conteúdo |
+| --------- | -------- |
+| [Componentes](./architecture/componentes.md) | C4: contexto, contêineres na AWS, monitoramento, entrega |
+| [Arquitetura da aplicação](./architecture/README.md) | Módulos, camadas, ports e adapters (C3) |
+| [Autenticação](./architecture/auth.md) | Rotas por papel, admin e cliente |
+| [Sequência: autenticação](./architecture/sequencia-auth.md) | CPF via Lambda e login admin, até a rota protegida |
+| [Sequência: abertura de OS](./architecture/sequencia-abertura-os.md) | Transação, eventos, ciclo de vida da OS |
+| [Modelo de dados](./architecture/modelo-de-dados.md) | Justificativa do banco, ER, relacionamentos, ajustes propostos |
+| [Requisitos](./architecture/requisitos.md) | Requisitos funcionais e não funcionais com metas mensuráveis |
+
+## 📝 Decisões
+
+| Documento | Conteúdo |
+| --------- | -------- |
+| [RFCs](./rfc/README.md) | Nuvem, banco gerenciado, autenticação, observabilidade, repositórios |
+| [ADRs](./adr/README.md) | Banco, e-mail, auth, comunicação, HPA, observabilidade, Terraform do banco, plataforma por ambiente |
+
+## 🔧 Operação
+
+| Documento | Conteúdo |
+| --------- | -------- |
+| [Build local](./build/README.md) | npm, Docker Compose, migrations, testes, Resend |
+| [Deploy](./deployment/README.md) | Infra AWS e fluxo de deploy |
+| [Integração entre repositórios](./deployment/cross-repository.md) | Ownership, contratos SSM, ordem de provisionamento e deploy |
+| [Kubernetes](./deployment/k8s.md) | EKS e Minikube |
+| [CI/CD](./ci-cd/README.md) | GitHub Actions |
+| [Observabilidade](./observability/README.md) | Logs, dashboards, monitores, roteiro do vídeo |
+| [Datadog (operação)](../datadog/README.md) | Compose com Agent, métricas de negócio, chart Helm, validação |
+| [Análises](./analysis/README.md) | SonarQube e OWASP ZAP |
+
+## 📦 Entrega
+
+[docs/entrega](./entrega/README.md): links, prints e checklist do que vai para o portal.
+
+## 🗂️ Estrutura
+
+```
+docs/
+├── README.md              este índice
+├── architecture/          componentes, sequências, modelo de dados, auth, módulos
+├── rfc/                   propostas (001–005)
+├── adr/                   decisões (001–008)
+├── observability/         o que é monitorado e como
+├── deployment/            integração entre repositórios, Kubernetes local, índice de deploy
+├── ci-cd/                 pipelines
+├── build/                 execução local
+├── analysis/              Sonar e ZAP
+└── entrega/               artefatos para o portal
+```
+
+Regra de organização: decisão que afeta mais de um repositório fica aqui. Runbook e diagrama de um repositório específico ficam no README daquele repositório.

@@ -2,7 +2,7 @@
 
 API para gestão de oficina mecânica: clientes, veículos, ordens de serviço, serviços, estoque, notificações por e-mail e autenticação.
 
-**Stack:** NestJS · TypeORM · PostgreSQL · JWT · Resend · Docker · Kubernetes · ECR
+**Stack:** NestJS · TypeORM · PostgreSQL · JWT · Resend · Datadog · Docker · Kubernetes · ECR
 
 O provisionamento AWS, o EKS, o NLB, o API Gateway e a Lambda não são gerenciados
 por este repositório. O fluxo canônico entre os projetos está em
@@ -25,6 +25,7 @@ Monólito modular NestJS (`domain` → `application` → `infrastructure` → `p
 
 | Documento | Conteúdo |
 | --------- | -------- |
+| 🧩 [Componentes (C4)](./docs/architecture/componentes.md) | Contexto, contêineres, componentes, implantação na AWS |
 | 🧱 [Arquitetura da aplicação](./docs/architecture/README.md) | Camadas, módulos, ports, fluxo de request |
 | 🔐 [Autenticação](./docs/architecture/auth.md) | JWT admin (Nest) e cliente CPF ([Lambda](https://github.com/32SOAT/oficina-mecanica-lambda-auth)) |
 | ☁️ [Desenho da infra / deploy](./docs/deployment/README.md) | EKS, RDS, ECR, HPA, API Gateway, fluxo entre repositórios |
@@ -64,11 +65,19 @@ Detalhes, migrations, testes e Resend: **[docs/build](./docs/build/README.md)**.
 
 ## 📚 Documentação geral
 
+Índice completo: [docs/README.md](./docs/README.md).
+
 | Documentos | Conteúdo |
 | ---------- | -------- |
 | 📦 **[Entrega](./docs/entrega/README.md)** | Checklist e artefatos da entrega |
+| 🧩 [Componentes](./docs/architecture/componentes.md) | C4: contexto, contêineres, componentes, implantação |
 | 🧱 [Arquitetura](./docs/architecture/README.md) | Clean/Hexagonal, ports, módulos |
 | 🔐 [Autenticação](./docs/architecture/auth.md) | Admin Nest + cliente Lambda/CPF |
+| 🔁 [Sequências](./docs/architecture/sequencia-auth.md) | Autenticação e [abertura de OS](./docs/architecture/sequencia-abertura-os.md) |
+| 🗄️ [Modelo de dados](./docs/architecture/modelo-de-dados.md) | Justificativa do banco, ER, relacionamentos |
+| 📋 [Requisitos](./docs/architecture/requisitos.md) | RF e RNF com metas mensuráveis |
+| 📄 [RFCs](./docs/rfc/README.md) | Propostas: nuvem, banco, auth, observabilidade, repositórios |
+| 📡 [Observabilidade](./docs/observability/README.md) | Logs, dashboards, monitores; operação em [datadog/README.md](./datadog/README.md) |
 | ☁️ [Deploy](./docs/deployment/README.md) | Infra AWS + fluxo de deploy |
 | 🔗 [Integração de infraestrutura](./docs/deployment/cross-repository.md) | Provisionamento e deploy nos repositórios owners |
 | ☸️ [Kubernetes](./docs/deployment/k8s.md) | EKS e Minikube |
