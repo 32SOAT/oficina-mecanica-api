@@ -165,7 +165,7 @@ Remover `infra/`, mantendo `k8s/` e os scripts de render de overlay. Os scripts 
 
 Nos quatro repositórios:
 
-- Criar `develop` (homologação) e manter `main` (produção)
+- Criar a branch de homologação e manter `main` (produção)
 - Proteger ambas: sem push direto, PR obrigatório, CI verde como requisito
 - Pipeline: push em `develop` faz deploy de homologação; merge em `main` faz deploy de produção
 - Adicionar `soat-architecture` como colaborador
@@ -201,9 +201,12 @@ Um repositório com apenas `LICENSE` parece esquecimento. Um repositório com um
 
 ## 🏁 Resultado
 
-**Encerrada — Aprovada.** O grupo decidiu migrar (alternativa B). Terraform de rede e banco em `oficina-mecanica-infra-db` (Gustavo de Matos Parizi); cluster, registro, IAM e regra de ingress em `oficina-mecanica-infra-k8s` (Isaac Bruno Siqueira de Souza). O diretório `infra/` do repositório da API é removido ao final da etapa 4. Os READMEs dos dois repositórios descrevem execução, outputs e pipeline.
+**Encerrada — Aprovada.** O grupo decidiu migrar. A implementação seguiu a alternativa B com dois ajustes, registrados em ADRs próprias:
 
-**Atualização de 13/09/2026:** o repositório do banco foi implementado e testado ponta a ponta, com ajustes em relação à alternativa B — a VPC permanece com o stack do cluster e a integração usa data sources em vez de `terraform_remote_state`, o que também elimina a dependência circular. Os ajustes e suas razões estão registrados na [ADR 007](../adr/007-terraform-do-banco-com-descoberta-via-data-sources.md).
+- `oficina-mecanica-infra-db` (Gustavo de Matos Parizi) contém só os recursos do banco e descobre a rede do cluster por data sources, sem `terraform_remote_state`. O security group do Postgres nasce com a regra de ingress. [ADR 007](../adr/007-terraform-do-banco-com-descoberta-via-data-sources.md).
+- `oficina-mecanica-infra-k8s` (Isaac Bruno Siqueira de Souza) contém rede, EKS, ECR, identidades OIDC, manifestos Kubernetes e o API Gateway, em três roots com state próprio (`shared`, `homologacao`, `producao`). Os repositórios trocam valores por parâmetros SSM; a aplicação é promovida por digest imutável. Branches de ambiente são `homolog` e `main`. [ADR 008](../adr/008-plataforma-por-ambiente-com-contratos-ssm.md).
+
+A dependência circular apontada na motivação deixou de existir: o banco depende do cluster, e só nessa direção. O repositório da API publica a imagem no ECR; o deploy é feito pelo `infra-k8s`.
 
 ## 🔗 Relacionados
 

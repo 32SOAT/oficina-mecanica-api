@@ -21,6 +21,7 @@ sequenceDiagram
     participant LH as PersistirHistoricoListener
     participant LN as NotificarListener
     participant Resend as Resend
+    participant DD as Datadog (DogStatsD)
 
     Admin->>GW: POST /api/v1/ordens<br/>Bearer JWT admin
     GW->>Ctrl: ANY /{proxy+} → NLB → pod
@@ -75,22 +76,23 @@ sequenceDiagram
                 Note right of DB: INSERT em ordem_servico,<br/>item_os_servico, item_os_estoque<br/>status_atual = RECEBIDA
                 DB-->>TX: OrdemServicoReadModel
 
+                Note over UC,EV: Ainda dentro do callback
+                UC->>EV: emitStatusAlterado(osId, null, RECEBIDA, usuarioId)
+                UC->>EV: emitOsCriada(osId)
+                EV->>LH: StatusAlteradoEvent
+                LH-->>DB: INSERT historico_status_os<br/>em outra conexão, fora da transação
+                EV->>LN: StatusAlteradoEvent
+                LN-->>Resend: e-mail "OS recebida"
+
                 TX->>DB: COMMIT
             end
         end
 
-        Note over UC,EV: Após o commit
-        UC->>EV: emitStatusAlterado(osId, null, RECEBIDA, usuarioId)
-        UC->>EV: emitOsCriada(osId)
+        Note over UC,DD: Após o commit
+        UC->>DD: registrarCriacao()<br/>oficina.ordem_servico.criada +1
         UC-->>Ctrl: OrdemServicoReadModel
         Ctrl-->>Admin: 201 Created
-
-        Note over EV,LN: Listeners no mesmo processo, em sequência,<br/>fora da transação. O 201 não espera por eles
-        EV->>LH: StatusAlteradoEvent
-        LH->>DB: INSERT historico_status_os<br/>(os_id, null, RECEBIDA, usuario_id)
-        EV->>LN: StatusAlteradoEvent
-        LN->>Resend: e-mail "OS recebida"
-        Resend-->>LN: aceito ou erro
+        Note over LH,Resend: O 201 não espera pelos listeners
     end
 ```
 
@@ -123,15 +125,13 @@ A reserva ocorre **antes** da OS existir. Sem atomicidade, uma falha entre as du
 
 A regra de negócio é que falta de peça vira informação para a oficina, não recusa ao cliente. O tratamento posterior fica com o status `AGUARDANDO_PECAS_INSUMOS` e com `TentarLiberarOsAposReposicaoEstoqueUseCase`.
 
-### Eventos disparam antes do commit
+### Eventos, listeners e métrica
 
-`emitStatusAlterado` e `emitOsCriada` são chamados dentro do callback de `runInTransaction`, antes do `return os`, e o commit só acontece depois que o callback retorna. O `emit` do `EventEmitter2` é síncrono: cada listener começa a executar no momento da chamada. `PersistirHistoricoListener` grava com um `Repository` próprio, ou seja, em outra conexão do pool, fora da transação da OS. A promise do listener não é aguardada, então o HTTP 201 não espera pelo histórico nem pelo e-mail.
+`emitStatusAlterado` e `emitOsCriada` são chamados dentro do callback de `runInTransaction`. O `emit` do `EventEmitter2` é síncrono, e os listeners rodam no mesmo processo, em sequência, com repositórios próprios, ou seja, em outra conexão do pool, fora da transação da OS. A promise de cada listener não é aguardada: o HTTP 201 não espera pelo histórico nem pelo e-mail.
 
-Isso cria uma corrida. O `INSERT` em `historico_status_os` tem chave estrangeira para `ordem_servico.id`. Se ele chegar ao banco antes do `COMMIT` da transação principal, a FK falha e o histórico não é gravado; se chegar depois, funciona. O resultado depende de qual conexão o Postgres atende primeiro.
+A métrica de volume segue outro caminho: `registrarCriacao()` é chamado no `then` da transação, depois do commit, e incrementa `oficina.ordem_servico.criada` via DogStatsD. Rollback não conta ([ADR 006](../adr/006-stack-de-observabilidade.md)).
 
-Consequência a registrar: uma OS pode existir com `status_atual = RECEBIDA` e sem a linha correspondente em `historico_status_os`, seja pela corrida acima, seja por falha do listener. Não há retry nem dead-letter, e nada avisa. A correção é mover os dois `emit` para depois do `runInTransaction` (ou adotar o outbox da [ADR 004](../adr/004-padrao-de-comunicacao.md)); até lá, o monitor de histórico divergente da [ADR 006](../adr/006-stack-de-observabilidade.md) é o único sinal.
-
-Esse é exatamente o caso que o enunciado da Fase 3 cobre ao pedir "alertas para falhas no processamento de ordens de serviço". É o primeiro alerta da stack de observabilidade ([ADR 006](../adr/006-stack-de-observabilidade.md)).
+Os eventos não têm retry nem dead-letter ([ADR 004](../adr/004-padrao-de-comunicacao.md)). A evolução prevista é emiti-los depois do `runInTransaction`, no mesmo ponto da métrica, e um monitor que compare `status_atual` com a última linha do histórico.
 
 ### `usuario_id` no histórico
 

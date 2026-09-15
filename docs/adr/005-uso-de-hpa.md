@@ -24,8 +24,6 @@ A pergunta desta ADR é: **como a aplicação escala, sob qual métrica e com qu
 
 ## ✅ Decisão
 
-> Estado em 11/09/2026: a decisão abaixo está aceita e ainda não aplicada aos manifestos. `k8s/templates/deployment.yaml` tem `strategy: Recreate`, `infra/variables.tf` tem `api_hpa_min_replicas = 1` e não existe `PodDisruptionBudget`. Responsável pela implementação: Isaac Bruno Siqueira de Souza.
-
 Adotamos o **Horizontal Pod Autoscaler** do Kubernetes, API `autoscaling/v2`, com métrica de utilização de CPU.
 
 ### Configuração
@@ -36,43 +34,23 @@ kind: HorizontalPodAutoscaler
 spec:
   scaleTargetRef:
     kind: Deployment
-    name: ${API_NAME}
-  minReplicas: ${API_HPA_MIN_REPLICAS}
-  maxReplicas: ${API_HPA_MAX_REPLICAS}
+    name: oficina-mecanica-api
+  minReplicas: 1
+  maxReplicas: 3
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: ${API_HPA_TARGET_CPU_UTILIZATION_PERCENTAGE}
+          averageUtilization: 70
 ```
 
-Valores padrão, parametrizados via Terraform:
+O manifesto canônico é `kubernetes/oficina-api/base/hpa.yaml` no repositório `oficina-mecanica-infra-k8s`, aplicado pelo deploy Kubernetes de cada ambiente ([ADR 008](./008-plataforma-por-ambiente-com-contratos-ssm.md)). O overlay do Minikube em `k8s/overlays/minikube/` deste repositório reproduz a mesma configuração para desenvolvimento local.
 
-| Parâmetro | Padrão |
-| --------- | ------ |
-| `api_hpa_min_replicas` | 2 (hoje 1; ver nota no início da Decisão) |
-| `api_hpa_max_replicas` | 3 |
-| `api_hpa_target_cpu_utilization_percentage` | 70 |
+### Estratégia de rollout
 
-### Estratégia de rollout e disponibilidade
-
-O HPA garante réplicas sob carga; a estratégia de rollout garante que um deploy não derrube todas ao mesmo tempo. O Deployment passa a usar:
-
-```yaml
-spec:
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-```
-
-Com `maxUnavailable: 0`, o rollout sobe o pod novo, espera a `readinessProbe` passar e só então remove o antigo. Um `PodDisruptionBudget` com `minAvailable: 1` protege contra despejo simultâneo em manutenção de nó, e `minReplicas: 2` mantém duas réplicas mesmo fora do horário de pico.
-
-Consequência para as migrations: versão nova e antiga da API coexistem por alguns segundos durante o rollout, então cada migration precisa ser compatível com a versão anterior do código (adicionar coluna antes de usar, nunca renomear em um passo só). O Job de migrations roda antes do `rollout status` no pipeline.
-
+O Deployment usa `strategy: Recreate`. Antes de cada rollout o pipeline aplica o Job de migrations e espera sua conclusão; com `Recreate`, a versão nova do código só sobe depois que a anterior parou, então nunca há duas versões da API falando com o mesmo schema. O custo é uma janela sem pods durante a troca de versão, aceitável para o ritmo de deploy da fase.
 
 ### Requests e limits
 
@@ -92,7 +70,7 @@ Com request de 100m e alvo de 70%, o HPA adiciona réplica quando a média passa
 
 ### Escala no nível do nó
 
-O node group tem `min_size = 1`, `desired_size = 2`, `max_size = 3`, com instâncias `t3.medium`. O teto de 3 réplicas foi escolhido para caber na capacidade disponível sem depender de Cluster Autoscaler, que não está instalado.
+Node group por ambiente ([ADR 008](./008-plataforma-por-ambiente-com-contratos-ssm.md)): homologação com `t3.medium` SPOT de 1 a 3 nós; produção com `m6i.large` on-demand de 2 a 6 nós. O teto de 3 réplicas cabe na capacidade de homologação sem Cluster Autoscaler, que não está instalado.
 
 ### Probes
 
@@ -108,14 +86,14 @@ Sem a `readinessProbe`, um pod novo receberia requisições antes de conectar ao
 
 ### Validação
 
-`k8s/load-test/` contém um Job com script k6, usado para gerar carga e observar o escalonamento.
+`k8s/load-test/` neste repositório contém um Job com script k6, usado para gerar carga e observar o escalonamento no Minikube e no EKS.
 
 ## 📊 Consequências
 
 ### 👍 Positivas
 
 - Capacidade acompanha a demanda sem intervenção manual, atendendo o requisito de escalabilidade da fase.
-- Custo proporcional ao uso. Fora do horário comercial a aplicação fica no piso de duas réplicas; nos picos, sobe até três.
+- Custo proporcional ao uso. Fora do horário comercial a aplicação opera com uma réplica; nos picos, sobe até três.
 - Requests e limits declarados dão ao scheduler informação para distribuir pods entre nós, e ao HPA a base de cálculo.
 - Configuração parametrizada por Terraform permite ajustar sem alterar manifesto.
 - Existe caminho de validação reproduzível com k6.
@@ -123,8 +101,8 @@ Sem a `readinessProbe`, um pod novo receberia requisições antes de conectar ao
 
 ### 👎 Negativas / trade-offs
 
-- Migrations precisam ser retrocompatíveis. `RollingUpdate` faz duas versões do código conviverem. Uma migration que remove ou renomeia coluna quebra os pods antigos durante o rollout.
-- `minReplicas: 2` custa capacidade ociosa fora do horário comercial. É o preço da disponibilidade exigida pela fase.
+- `Recreate` deixa a API sem pods durante a troca de versão. Deploy fora do horário de pico.
+- Com `minReplicas: 1`, a queda do único pod fora do pico causa indisponibilidade até o restart.
 - CPU pode não ser o gargalo real. A API é dominada por I/O com o RDS. Sob carga de consultas lentas, a latência sobe sem que a CPU acompanhe, e o HPA não reage. Latência ou requisições por segundo seriam métricas mais fiéis, mas exigem métricas customizadas.
 - Escalar pods pressiona o banco. Cada réplica abre seu próprio pool de conexões. Três réplicas triplicam conexões contra uma instância `db.t4g.micro`. O HPA pode transformar gargalo de aplicação em gargalo de banco.
 - Teto de 3 sem Cluster Autoscaler. Se os nós não comportarem, os pods ficam `Pending` indefinidamente.
@@ -135,7 +113,7 @@ Sem a `readinessProbe`, um pod novo receberia requisições antes de conectar ao
 
 | Alternativa | Por que não foi escolhida |
 | ----------- | ------------------------- |
-| **`strategy: Recreate`** (configuração anterior) | Derruba todos os pods antes de subir os novos; garante que só uma versão fala com o banco, mas deixa a API fora do ar a cada deploy. Anula o objetivo de disponibilidade do HPA. Substituída por `RollingUpdate` com migrations retrocompatíveis |
+| **`RollingUpdate` com `maxUnavailable: 0`** | Elimina a janela sem pods, mas faz duas versões do código conviverem durante o rollout, o que exige migrations retrocompatíveis. Fica como evolução quando o piso subir para duas réplicas |
 | **Réplicas fixas** | Simples e previsível, mas obriga escolher entre pagar pelo pico ou degradar nele. O enunciado pede escalabilidade explicitamente |
 | **VPA (Vertical Pod Autoscaler)** | Ajusta requests em vez de contar réplicas. Não resolve disponibilidade (continua sendo um pod) e o redimensionamento reinicia o pod. Complementar ao HPA, não substituto |
 | **KEDA (escala por evento)** | Escalaria por profundidade de fila ou métrica externa. Faz sentido com broker, que não existe hoje ([ADR 004](./004-padrao-de-comunicacao.md)). Candidato natural se o outbox ou SQS forem adotados |
@@ -147,6 +125,7 @@ Sem a `readinessProbe`, um pod novo receberia requisições antes de conectar ao
 
 ## 🔮 Evolução prevista
 
+- `minReplicas: 2`, `RollingUpdate` com `maxUnavailable: 0` e `PodDisruptionBudget` com `minAvailable: 1`, para alta disponibilidade também durante o deploy.
 - Migrar para métrica de latência via external metrics do Datadog Cluster Agent ([ADR 006](./006-stack-de-observabilidade.md)).
 - Configurar `behavior` com janelas de estabilização ajustadas ao perfil de carga da oficina.
 - Instalar Cluster Autoscaler se `maxReplicas` ultrapassar a capacidade do node group.

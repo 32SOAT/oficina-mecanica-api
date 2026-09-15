@@ -232,7 +232,7 @@ Isso permite recadastrar um documento cujo registro anterior foi logicamente rem
 
 ---
 
-## 🔧 Ajustes propostos no modelo relacional
+## 🔧 Evolução proposta do modelo relacional
 
 Sete pontos identificados na revisão do schema. A1 é defeito confirmado; os demais são melhorias.
 
@@ -359,17 +359,15 @@ Escopo relevante, provavelmente além desta fase. Registrar como evolução prev
 
 ## 📋 Resumo dos ajustes
 
-| # | Ajuste | Severidade | Recomendação para esta fase | Status |
-| --- | ------ | ---------- | --------------------------- | ------ |
-| A1 | `UQ_veiculo_placa` não removida | 🔴 Alta | Corrigir | ⏳ Pendente (confirmar com `\d veiculo`) |
-| A2 | PKs `SERIAL` vs `uuid` | 🟡 Média | Documentar como dívida | 📝 Documentado |
-| A3 | `usuario` sem timestamps | 🟡 Média | Corrigir | ⏳ Pendente |
-| A4 | `ator_tipo` no histórico | 🟡 Média | Avaliar | 📝 Documentado |
-| A5 | Consistência cliente/veículo na OS | 🟢 Baixa | Documentar | 📝 Documentado |
-| A6 | Índices dos dashboards | 🔴 Alta | Corrigir | ⏳ Pendente ([ADR 006](../adr/006-stack-de-observabilidade.md) depende) |
-| A7 | Trilha de movimentação de estoque | 🟢 Baixa | Evolução prevista | 📝 Documentado |
-
-Atualizar a coluna **Status** na mesma PR que criar a migration correspondente.
+| # | Ajuste | Prioridade | Encaminhamento |
+| --- | ------ | ---------- | -------------- |
+| A1 | `UQ_veiculo_placa` a remover | Alta | Migration na próxima evolução do schema |
+| A2 | PKs `SERIAL` vs `uuid` | Média | Dívida registrada |
+| A3 | `usuario` sem timestamps | Média | Migration na próxima evolução do schema |
+| A4 | `ator_tipo` no histórico | Média | Avaliar com a ADR 003 |
+| A5 | Consistência cliente/veículo na OS | Baixa | Coberto por teste de integração |
+| A6 | Índices para as consultas de métricas | Alta | Migration na próxima evolução; reduz o custo do polling de `tempo_medio_fase` ([ADR 006](../adr/006-stack-de-observabilidade.md)) |
+| A7 | Trilha de movimentação de estoque | Baixa | Evolução prevista |
 
 ---
 

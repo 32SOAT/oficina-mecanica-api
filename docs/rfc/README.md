@@ -22,7 +22,7 @@ A RFC mostra o processo, a ADR registra o resultado. Uma RFC rejeitada continua 
 | [002](./002-banco-de-dados-gerenciado.md) | Banco de dados gerenciado | Encerrada — Aprovada | Amazon RDS PostgreSQL |
 | [003](./003-estrategia-de-autenticacao.md) | Estratégia de autenticação | Encerrada — Aprovada | [ADR 003](../adr/003-auth-cliente-lambda-jwt-role.md) |
 | [004](./004-stack-de-observabilidade.md) | Stack de observabilidade | Encerrada — Aprovada | Datadog ([ADR 006](../adr/006-stack-de-observabilidade.md)) |
-| [005](./005-segregacao-de-repositorios.md) | Segregação de repositórios | Encerrada — Aprovada | Migração completa (alternativa B) |
+| [005](./005-segregacao-de-repositorios.md) | Segregação de repositórios | Encerrada — Aprovada | Terraform em repositórios próprios ([ADR 007](../adr/007-terraform-do-banco-com-descoberta-via-data-sources.md) e [ADR 008](../adr/008-plataforma-por-ambiente-com-contratos-ssm.md)) |
 
 As RFCs 001 a 003 foram escritas em setembro de 2026 a partir das decisões já implementadas. A arquitetura e a divisão de responsabilidades foram fechadas em reunião do grupo em 25/08/2026; a RFC 003 leva a data da ADR 003, decidida antes. Cada uma declara isso no cabeçalho.
 

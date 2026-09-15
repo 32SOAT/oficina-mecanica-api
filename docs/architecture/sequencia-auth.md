@@ -23,7 +23,6 @@ sequenceDiagram
     Note over Cliente,DB: Etapa 1 — emissão do token
 
     Cliente->>GW: POST /auth/cpf<br/>{ "cpf": "529.982.247-25" }
-    GW->>GW: injeta x-correlation-id = $context.requestId
     GW->>L: invoke (AWS_PROXY, payload 2.0)
 
     L->>L: normalizeCpf() remove máscara
@@ -53,10 +52,9 @@ sequenceDiagram
     Note over Cliente,Nest: Etapa 2 — consumo de rota protegida
 
     Cliente->>GW: GET /api/v1/ordens/{id}/status<br/>Authorization: Bearer JWT
-    GW->>GW: injeta x-correlation-id = $context.requestId
     GW->>NLB: ANY /{proxy+} (HTTP_PROXY)
     NLB->>Nest: encaminha requisição
-    Nest->>Nest: pino-http — lê x-correlation-id<br/>e devolve no header da resposta
+    Nest->>Nest: pino-http — lê ou gera x-correlation-id<br/>e devolve no header da resposta
 
     Nest->>Nest: JwtAuthGuard — verifyAsync(token)
     Nest->>Nest: parseJwtPayload(payload)
@@ -164,9 +162,9 @@ Registradas aqui porque afetam a leitura do diagrama, e detalhadas na ADR 003.
 | Sem `iss` / `aud` | Não há como distinguir criptograficamente qual emissor assinou |
 | Sem filtro por dono | Qualquer cliente autenticado que descubra o UUID de uma OS acessa status e aprovação. É IDOR conhecido e aceito neste recorte |
 | Gateway não autoriza | Token inválido só é recusado no Nest, após atravessar Gateway e NLB |
-| Correlação parcial | A Lambda loga o `requestId` do Gateway. O Nest (branch `integration-datadog`) aceita ou gera `x-correlation-id` e o ecoa na resposta. O Gateway ainda não injeta esse header, então os dois ids não se cruzam ponta a ponta |
+| Correlação | A Lambda loga o `requestId` do Gateway no CloudWatch. O Nest aceita `x-correlation-id` do cliente ou gera um UUID, devolve no header e injeta `dd.trace_id` nos logs. Os dois ids são consultáveis separadamente; a propagação do mesmo id pelo Gateway é evolução prevista na ADR 006 |
 
-A última linha é tratada na [RFC 004](../rfc/004-stack-de-observabilidade.md) e na [ADR 006](../adr/006-stack-de-observabilidade.md).
+Detalhes de observabilidade na [ADR 006](../adr/006-stack-de-observabilidade.md).
 
 ---
 

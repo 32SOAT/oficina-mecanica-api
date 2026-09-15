@@ -27,20 +27,20 @@ O enunciado da fase pede integração com Datadog ou New Relic e lista o que pre
 | R7 | Dashboard de tempo médio por status (Diagnóstico, Execução, Finalização) | métrica de negócio |
 | R8 | Dashboard de erros e falhas nas integrações | log / trace |
 
-Hoje nenhum desses sinais sai da plataforma. O único log que existe fora do pod é o do control plane do EKS, e mesmo esse está desligado (`cluster_enabled_log_types` com `default = []`).
+Na abertura desta RFC nenhum desses sinais saía da plataforma.
 
 Há também um problema que o requisito R4 descreve sem saber: os eventos de domínio da OS rodam em `EventEmitter2`, sem retry ([ADR 004](../adr/004-padrao-de-comunicacao.md)). Se o listener de histórico falhar, a OS fica com `status_atual` preenchido e sem linha em `historico_status_os`. Ninguém fica sabendo. A observabilidade é a única forma de detectar isso enquanto o outbox não existe.
 
-### O que já existe
+### Ponto de partida
 
-| Componente | Estado em `origin/main` | Estado em `integration-datadog` |
-| ---------- | ----------------------- | ------------------------------- |
+| Componente | Antes | Primeiro passo (branch `integration-datadog`) |
+| ---------- | ----- | --------------------------------------------- |
 | API Nest | Logger padrão do Nest, texto | `nestjs-pino` + `pino-http`. JSON em produção, `pino-pretty` em dev. `x-correlation-id` lido do header ou gerado (UUID v4) e devolvido na resposta. Campo `correlationId` em todos os logs da requisição |
 | Lambda | `logStructured` emite JSON com `level`, `event`, `timestamp`, `requestId` do Gateway | igual |
 | Gateway | Sem log de acesso configurado | igual |
 | EKS | `metrics-server` para o HPA | igual |
 
-A branch não adiciona agente, APM nem nada específico do Datadog. O nome dela declara a intenção.
+O restante da instrumentação foi feito na mesma branch depois desta RFC; o resultado está na [ADR 006](../adr/006-stack-de-observabilidade.md).
 
 ## 📋 Requisitos
 
@@ -147,7 +147,7 @@ Lista de monitores e dashboards em [observability/README.md](../observability/RE
 
 ## 🏁 Resultado
 
-**Encerrada — Aprovada em 10/09/2026.** O grupo confirmou o Datadog. A instrumentação está em andamento na branch `integration-datadog` da API. Decisão registrada na [ADR 006](../adr/006-stack-de-observabilidade.md).
+**Encerrada — Aprovada em 10/09/2026.** O grupo confirmou o Datadog. Implementado na API (`dd-trace`, `nestjs-pino`, métricas de negócio via DogStatsD), no Compose (Agent) e no EKS (Helm chart `datadog/datadog`), com dashboard e monitores na conta. Do que a proposta listou, ficaram como evolução a Lambda Extension, a integração AWS, o Synthetic e os monitores em Terraform. Decisão registrada na [ADR 006](../adr/006-stack-de-observabilidade.md).
 
 ## 🔗 Relacionados
 

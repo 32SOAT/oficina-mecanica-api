@@ -90,7 +90,7 @@ flowchart TB
   subgraph App["Dentro da aplicação"]
     PortsT["Ports transactional — síncrono, atômico"]
     PortsL["Ports lookup — síncrono, fora de transação"]
-    Events["Eventos de domínio — assíncrono, pós-commit"]
+    Events["Eventos de domínio — assíncrono,<br/>listeners fora da transação"]
     Adapters["Ports de integração — Resend"]
   end
   HTTP --> Ctrl["Controller → Use case"]
@@ -113,7 +113,7 @@ flowchart TB
 
 ### 👎 Negativas / trade-offs
 
-- Os eventos são emitidos antes do commit. `CreateOrdemServicoUseCase` chama `emitStatusAlterado` e `emitOsCriada` dentro do callback de `runInTransaction`. O listener de histórico grava em outra conexão, então o `INSERT` em `historico_status_os` disputa com o `COMMIT` da OS e pode falhar na FK. Detalhe em [sequencia-abertura-os.md](../architecture/sequencia-abertura-os.md). A correção é emitir depois do `runInTransaction`; está na evolução prevista.
+- Os eventos são emitidos dentro do callback de `runInTransaction` e os listeners gravam em outra conexão, fora da transação. O `INSERT` do histórico pode chegar ao banco antes ou depois do `COMMIT` da OS. A métrica de volume, por outro lado, é emitida só depois que a transação resolve ([ADR 006](./006-stack-de-observabilidade.md)). Detalhe em [sequencia-abertura-os.md](../architecture/sequencia-abertura-os.md).
 - Eventos não têm garantia de entrega. `EventEmitter2` é in-process. Se o listener de histórico falhar, a OS fica com `status_atual` preenchido e sem linha em `historico_status_os`. Não há retry, dead-letter nem alerta. Esta é a falha silenciosa que o requisito de "alertas para falhas no processamento de ordens de serviço" precisa cobrir.
 - Eventos morrem com o pod. Sendo in-process, um evento emitido e não processado antes do término do pod se perde. Mesmo com `RollingUpdate` ([ADR 005](./005-uso-de-hpa.md)), a troca de cada pod é uma janela para isso.
 - Banco compartilhado entre Lambda e API. Mudança na tabela `cliente` pode quebrar a Lambda sem que nenhum teste da API acuse. Não há contrato versionado entre os dois repositórios.
@@ -135,7 +135,7 @@ flowchart TB
 
 ## 🔮 Evolução prevista
 
-- Mover a emissão dos eventos para depois do `runInTransaction`, no use case. Correção pequena e imediata.
+- Emitir os eventos depois do `runInTransaction`, como já é feito com a métrica de volume.
 - Outbox pattern para os eventos de histórico, eliminando a inconsistência silenciosa sem introduzir broker.
 - Alerta de observabilidade sobre divergência entre `ordem_servico.status_atual` e a última linha de `historico_status_os`, cobrindo o gap enquanto o outbox não existe ([ADR 006](./006-stack-de-observabilidade.md)).
 - Contrato versionado entre Lambda e API quando a tabela `cliente` evoluir, seja por view dedicada ou por endpoint de leitura.

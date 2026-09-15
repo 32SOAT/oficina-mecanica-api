@@ -1,23 +1,21 @@
 # 📡 Observabilidade
 
-O que é monitorado, onde ver e como cada requisito do enunciado é atendido. Decisão de ferramenta e instrumentação: [ADR 006](../adr/006-stack-de-observabilidade.md).
-
-> Estado em 11/09/2026: a branch `integration-datadog` está em andamento e hoje contém o log estruturado com `correlationId`. O restante desta página é o alvo definido na ADR 006. Cada tabela tem a coluna **Estado**; atualizar na mesma PR que implementar o item.
+O que é monitorado, onde ver e como cada requisito do enunciado é atendido. Decisão de ferramenta e instrumentação: [ADR 006](../adr/006-stack-de-observabilidade.md). Procedimentos de execução, validação e instalação do Agent: [datadog/README.md](../../datadog/README.md).
 
 ---
 
 ## 🧭 Requisitos do enunciado × sinal
 
-| Requisito | Sinal | Onde ver no Datadog | Estado |
-| --------- | ----- | ------------------- | ------ |
-| Latência das APIs | APM, `trace.express.request` por `resource_name` | APM → Services → `oficina-mecanica-api` | ⏳ |
-| CPU e memória do Kubernetes | `kubernetes.cpu.usage.total`, `kubernetes.memory.usage` por pod e nó | Infrastructure → Kubernetes | ⏳ |
-| Healthcheck e uptime | Synthetic API Test em `/api/v1/health` | Synthetics | ⏳ |
-| Alertas de falha no processamento de OS | Log Monitor + custom query no Postgres | Monitors | ⏳ |
-| Logs JSON com correlação | `correlationId`, `dd.trace_id` | Logs → filtro `@correlationId:<id>` | 🟡 log JSON pronto na branch; sem agente |
-| Volume diário de OS | `oficina.os.criada` (count) | Dashboard "Oficina — Operação" | ⏳ |
-| Tempo médio por status | `oficina.os.status.duracao` (distribution, tag `status`) | Dashboard "Oficina — Operação" | ⏳ |
-| Erros e falhas nas integrações | Error Tracking do APM + logs `status:error` com `integracao:resend` | Dashboard "Oficina — Erros" | ⏳ |
+| Requisito | Sinal | Onde ver no Datadog |
+| --------- | ----- | ------------------- |
+| Latência das APIs | APM, `trace.express.request.duration` por `resource_name` | APM → Services → `oficina-mecanica-api`; painel "Latência p95 da API" |
+| CPU e memória do Kubernetes | `kubernetes.cpu.usage.total`, `kubernetes.memory.usage`, `kubernetes_state.pod.status_phase` | Infrastructure → Kubernetes; Metrics Explorer filtrando `kube_container_name:api` |
+| Healthchecks e uptime | `GET /api/v1/health` nas probes e no health check do deploy | Kubernetes (`rollout status`) e Job Summary do `kubernetes-deploy.yml` |
+| Alertas de falha no processamento de OS | Monitor de 5xx da API e monitor de falha no Resend (integração disparada pela OS) | Monitors |
+| Logs JSON com correlação | `correlationId`, `dd.trace_id`, `dd.span_id` | Logs → `service:oficina-mecanica-api @correlationId:<id>` |
+| Volume diário de OS | `oficina.ordem_servico.criada` (count) | Painel "Volume de OS" |
+| Tempo médio por status (Diagnóstico, Execução, Finalização) | `oficina.ordem_servico.tempo_medio_fase` (gauge, tag `fase`) | Painel "Tempo médio por fase" |
+| Erros e falhas nas integrações | logs `status:error` do `ResendNotificacaoAdapter`; erros 5xx | Painéis "Falhas de integração com Resend" e "Erros 5xx da API" |
 
 ---
 
@@ -25,185 +23,101 @@ O que é monitorado, onde ver e como cada requisito do enunciado é atendido. De
 
 ### Campos
 
-Formato único para API e Lambda (detalhe na ADR 006):
-
 ```json
 {
-  "timestamp": "2026-09-10T14:03:22.114Z",
-  "status": "info",
-  "message": "request completed",
+  "level": 30,
+  "time": 1757944202114,
+  "msg": "request completed",
   "service": "oficina-mecanica-api",
-  "env": "prod",
-  "version": "sha-a8c6585",
+  "env": "dev",
+  "version": "0.0.1",
   "correlationId": "3f1e...",
   "dd": { "trace_id": "...", "span_id": "..." },
-  "http": { "method": "POST", "url": "/api/v1/ordens", "status_code": 201 },
+  "req": { "method": "POST", "url": "/api/v1/ordens", "headers": { "authorization": "[REDACTED]" } },
+  "res": { "statusCode": 201 },
   "context": "OrdemServicoController"
 }
 ```
 
+`level`, `time` e `msg` são o formato nativo do pino; o Datadog mapeia `level` numérico para `status` e `msg` para `message` no pipeline padrão de Node.js. `service`, `env` e `version` vêm do `dd-trace`. Em desenvolvimento no host (`NODE_ENV` diferente de `production`) o log sai em texto colorido pelo `pino-pretty`; em container e em produção sai JSON.
+
 ### Como seguir uma requisição
 
-1. Pegar o `x-correlation-id` do header da resposta (o Nest sempre devolve).
-2. No Datadog, Logs → `@correlationId:<valor>`. Aparecem Gateway (access log), Lambda (se a rota for `/auth/cpf`) e Nest.
-3. Clicar no `dd.trace_id` para abrir o trace com as consultas SQL da mesma requisição.
+1. Pegar o `x-correlation-id` do header da resposta (o Nest sempre devolve; se o cliente mandou um, é o mesmo).
+2. No Datadog, Logs → `service:oficina-mecanica-api @correlationId:<valor>`.
+3. Clicar em `dd.trace_id` para abrir o trace com as consultas SQL da mesma requisição.
 
-Localmente, `NODE_ENV` diferente de `production` liga o `pino-pretty` e o log sai colorido em texto. Em produção sai JSON puro no stdout.
+A Lambda loga JSON com `requestId` do Gateway no CloudWatch.
 
-### O que não logar
+### O que não vai para o log
 
-CPF completo, senha, token JWT, `DD_API_KEY`, `RESEND_API_KEY`. A Lambda já loga só o `requestId` e o resultado; manter. No Nest, o `pino-http` padrão serializa os headers da requisição, incluindo `Authorization` com o JWT inteiro. A branch `integration-datadog` ainda não configura `redact`; precisa de:
-
-```ts
-redact: { paths: ['req.headers.authorization', 'req.headers.cookie'], censor: '[redacted]' }
-```
-
-### Drop rule para as probes
-
-O Deployment tem três probes HTTP em `/api/v1/health` (a cada 10 s, 20 s e 10 s) por réplica. Com `logs.containerCollectAll=true`, isso vira a maior parte do volume indexado sem nenhum valor. Regra de exclusão no pipeline do Datadog, como a aula 3 sugere para health checks:
-
-- Filtro: `service:oficina-mecanica-api @http.url:"/api/v1/health" @http.status_code:200`
-- Ação: excluir da indexação (os logs continuam contando no Live Tail, não no índice)
-
-O mesmo vale para o Synthetic, que também bate em `/health`.
+`authorization`, `cookie` e `set-cookie` são substituídos por `[REDACTED]` pelo `redact` do pino. CPF completo, senha e chaves de API não são logados pela aplicação. A Lambda loga só o `requestId` e o resultado.
 
 ---
 
-## 🎯 Metas (SLO)
+## 📈 Dashboard
 
-Os thresholds abaixo derivam de [requisitos.md](../architecture/requisitos.md). Enquanto o grupo não validar as metas, os valores são propostas.
+Dashboard **Oficina Mecânica - Observabilidade** na conta Datadog, tipo Timeboard.
 
-| SLO | Meta | SLI no Datadog |
-| --- | ---- | -------------- |
-| Disponibilidade da API | 99,5% ao mês | uptime do Synthetic `health` |
-| Latência de leitura | p95 < 400 ms | `trace.express.request.duration` |
-| Taxa de erro | < 1% de 5xx | `trace.express.request.errors / hits` |
+| Painel | Consulta | Requisito |
+| ------ | -------- | --------- |
+| Volume de OS | `sum:oficina.ordem_servico.criada{env:dev,service:oficina-mecanica-api,status_inicial:recebida}.as_count()`, somado por dia | Volume diário de OS |
+| Tempo médio por fase | `avg:oficina.ordem_servico.tempo_medio_fase{env:dev,service:oficina-mecanica-api,janela:24h} by {fase}` | Tempo médio por status |
+| Latência p95 da API | `p95:trace.express.request.duration{service:oficina-mecanica-api}` | Latência |
+| Requisições da API | `sum:trace.express.request.hits{service:oficina-mecanica-api}.as_count()` | Latência e volume |
+| Erros 5xx da API | `sum:trace.express.request.errors{service:oficina-mecanica-api}.as_count()` | Erros |
+| Falhas de integração com Resend | `logs("service:oficina-mecanica-api status:error @context:ResendNotificacaoAdapter").rollup("count")` | Erros nas integrações |
 
-Criar como SLO no Datadog (Monitors → SLOs) com error budget mensal, para o dashboard de infra mostrar o budget consumido.
+Leitura das métricas de negócio:
 
-## 📈 Dashboards
+- `oficina.ordem_servico.criada` é um contador. No painel de volume diário, usar soma por dia com o fuso do dashboard; não interpretar taxa por segundo como quantidade.
+- `oficina.ordem_servico.tempo_medio_fase` é uma gauge em segundos, calculada a cada 60 s sobre as transições concluídas nas últimas 24 h. Fases: `diagnostico`, `execucao`, `finalizacao` (`finalizacao` mede a espera entre FINALIZADA e ENTREGUE). Sem amostra na janela, o painel fica vazio.
 
-Três dashboards, definidos em Terraform em `datadog/` na raiz do repositório da API (a criar). Tipo: Timeboard nos três, porque a leitura é temporal e o eixo de tempo sincronizado entre widgets é o que permite cruzar um pico de latência com CPU ou com uma transição de OS. Screenboard ficaria para uma tela de TV na oficina, que não está no escopo.
-
-### Oficina — Operação
-
-| Widget | Query | Requisito |
-| ------ | ----- | --------- |
-| Timeseries, barras por dia | `sum:oficina.os.criada{env:prod}.as_count().rollup(sum, 86400)` | Volume diário de OS |
-| Query Value | mesma métrica, últimos 7 dias | Volume da semana |
-| Timeseries, uma linha por status | `avg:oficina.os.status.duracao{env:prod} by {status}` filtrando `status:EM_DIAGNOSTICO,EM_EXECUCAO,FINALIZADA` | Tempo médio por status |
-| Toplist | `sum:oficina.os.status.transicao{env:prod} by {para}` | OS por status atual |
-| Timeseries | `oficina.os.status.transicao{para:AGUARDANDO_PECAS_INSUMOS}` | Gargalo de peças |
-
-Template variables: `env`, `version`.
-
-### Oficina — API e infra
-
-| Widget | Query | Requisito |
-| ------ | ----- | --------- |
-| Timeseries p50/p95/p99 | `trace.express.request.duration{service:oficina-mecanica-api} by {resource_name}` | Latência das APIs |
-| Timeseries | `trace.express.request.hits` por `http.status_code` (2xx, 4xx, 5xx) | Taxa de erro |
-| Timeseries | `kubernetes.cpu.usage.total{kube_deployment:oficina-mecanica-api} by {pod_name}` | CPU dos pods |
-| Timeseries | `kubernetes.memory.usage{...} by {pod_name}` | Memória dos pods |
-| Query Value | `kubernetes_state.deployment.replicas_available` | Réplicas do HPA |
-| Check Status | Synthetic `health` | Uptime |
-| Timeseries | `aws.rds.cpuutilization`, `aws.rds.database_connections` | RDS |
-| Timeseries | `aws.lambda.duration`, `aws.lambda.errors{functionname:...auth}` | Lambda |
-
-### Oficina — Erros e integrações
-
-| Widget | Query | Requisito |
-| ------ | ----- | --------- |
-| Log Stream | `service:oficina-mecanica-api status:error` | Erros da API |
-| Timeseries | `logs("service:oficina-mecanica-api status:error @integracao:resend").rollup("count")` | Falhas no Resend |
-| Timeseries | `aws.apigateway.5xxerror` | Falhas no Gateway |
-| Top List | Error Tracking por `error.type` | Exceções mais frequentes |
-| Query Value | monitor "Histórico divergente" | OS inconsistentes |
-
-Para o filtro `@integracao:resend` funcionar, o `ResendNotificacaoAdapter` precisa logar o erro com esse atributo.
+Métricas de infraestrutura no EKS (`kubernetes.cpu.usage.total` em nanocores, `kubernetes.memory.usage` em bytes) filtradas por `kube_cluster_name`, `kube_namespace:oficina-mecanica` e `kube_container_name:api`.
 
 ---
 
 ## 🚨 Monitores
 
-| Nome | Tipo | Condição | Severidade | Requisito |
-| ---- | ---- | -------- | ---------- | --------- |
-| API fora do ar | Synthetic API Test | 2 falhas seguidas em `/api/v1/health` | Alert | Uptime |
-| Latência p95 alta | APM | `p95(last_5m) > 800 ms` em qualquer `resource_name`, warning em 400 ms | Warning / Alert | Latência |
-| Taxa de 5xx | APM | `> 2%` das requisições em 5 min | Alert | Erros |
-| Erro em listener de OS | Log | `service:oficina-mecanica-api status:error @context:*Listener*` > 0 em 5 min | Alert | Falha no processamento de OS |
-| Histórico divergente | Postgres custom query | OS com `status_atual` diferente do último `status_novo` em `historico_status_os` > 0 | Alert | Falha silenciosa no processamento de OS |
-| Falha no Resend | Log | `@integracao:resend status:error` > 3 em 15 min | Warning | Integrações |
-| Pod em CrashLoop | Kubernetes | `kubernetes_state.container.status_report.count.waiting{reason:crashloopbackoff}` > 0 | Alert | Infra |
-| Memória do pod | Metric | `kubernetes.memory.usage / limit > 85%` por 10 min | Warning | Infra |
-| HPA no teto | Metric | réplicas disponíveis = `maxReplicas` por 15 min | Warning | Escala |
-| Lambda com erro | Metric | `aws.lambda.errors` > 0 em 5 min | Alert | Auth |
-| Sem dados | qualquer monitor de métrica | `notify_no_data` em 10 min | Alert | Agente parou |
+| Nome | Tipo | Condição | Requisito |
+| ---- | ---- | -------- | --------- |
+| Falhas 5xx da API | APM / métrica | `trace.express.request.errors` acima do limiar em 5 min | Erros; falha no processamento de OS |
+| Falha de integração com Resend | Log | `status:error @context:ResendNotificacaoAdapter` acima do limiar em 15 min | Erros nas integrações |
 
-Consulta do monitor "Histórico divergente" (custom query do check `postgres` do Agent):
-
-```sql
-SELECT count(*) AS os_divergentes
-FROM ordem_servico os
-LEFT JOIN LATERAL (
-  SELECT status_novo
-  FROM historico_status_os h
-  WHERE h.os_id = os.id
-  ORDER BY h.created_at DESC
-  LIMIT 1
-) ult ON true
-WHERE os.deleted_at IS NULL
-  AND (ult.status_novo IS NULL OR ult.status_novo <> os.status_atual);
-```
-
-Usa o índice composto `(os_id, created_at)` proposto em [modelo-de-dados.md A6](../architecture/modelo-de-dados.md#a6--índices-para-os-dashboards-da-fase-3). Sem ele a consulta varre o histórico inteiro a cada execução.
-
-### Convenção de nome e roteamento
-
-Nome no Datadog segue o padrão da aula 10: `provedor-recurso-ambiente-região-métrica-severidade`. Exemplos: `AWS-EKS-prod-use1-latencia-p95-warning`, `AWS-Lambda-prod-use1-erros-critical`, `DB-RDS-prod-use1-historico-divergente-critical`. Os nomes curtos da tabela acima são o título legível na mensagem.
-
-Tags em todos os monitores: `env`, `service`, `team:32soat`, `categoria`. A categoria segue a aula 10 e define para onde a notificação vai:
-
-| Categoria | Monitores | Destino |
-| --------- | --------- | ------- |
-| Proativo | Latência p95, Memória do pod, HPA no teto, Falha no Resend | canal do grupo, sem urgência |
-| Reativo | API fora do ar, Taxa de 5xx, Erro em listener, Histórico divergente, Pod em CrashLoop, Lambda com erro, Sem dados | canal do grupo com menção a quem está de plantão |
-| Informativo | deploy concluído: evento enviado pelo `ci-cd.yml` via API de eventos do Datadog no fim do job `deploy` (a adicionar ao workflow) | canal do grupo |
-
-Canal: a definir pelo grupo (Slack, Discord ou e-mail). O `@` de roteamento vai na mensagem do monitor, com `{{#is_alert}}` e `{{#is_warning}}` separando os dois destinos.
+Os dois monitores notificam o canal do grupo. Cada mensagem traz o link do dashboard, o valor atual e o limiar.
 
 ### Runbooks
 
-Cada monitor leva na mensagem o link do dashboard, o valor atual (`{{value}}`), o limiar (`{{threshold}}`) e o runbook abaixo. Os runbooks ficam nesta página até existir volume para uma pasta própria.
-
 | Monitor | Primeiro passo | Se persistir |
 | ------- | -------------- | ------------ |
-| API fora do ar | `kubectl get pods` e `describe` no pod mais recente; conferir se o NLB tem target saudável | `rollout undo` do Deployment; se o RDS estiver indisponível, aguardar o failover |
-| Latência p95 alta | Abrir o trace mais lento no APM; ver se o tempo está no `pg` (consulta) ou no Express | Se for consulta, `EXPLAIN ANALYZE` na query do trace; se for CPU, conferir se o HPA está no teto |
-| Taxa de 5xx | Filtrar logs `status:error` pelo `correlationId` de uma das requisições | Se o erro vier do Postgres, checar conexões no RDS; se for exceção nova, abrir issue e considerar `rollout undo` |
-| Erro em listener de OS | Ler o log do listener com o `correlationId`; anotar o `osId` | Reprocessar o histórico manualmente com `INSERT` e abrir issue para o outbox |
-| Histórico divergente | Rodar a query da seção acima e listar os `os.id` | Corrigir as linhas faltantes; se voltar a ocorrer, priorizar mover o `emit` para depois do commit ([ADR 004](../adr/004-padrao-de-comunicacao.md)) |
-| Falha no Resend | Conferir status do Resend e validade da `RESEND_API_KEY` | Rotacionar a chave via pipeline; e-mails perdidos não são reenviados |
-| Pod em CrashLoop | `kubectl logs --previous` | Quase sempre variável ausente no ConfigMap/Secret ou senha do banco; ver o runbook de integração em [cross-repository.md](../deployment/cross-repository.md) |
-| Memória do pod | `kubectl top pods`; ver se o crescimento é contínuo | Reiniciar o pod; se repetir, investigar vazamento com heap snapshot |
-| HPA no teto | Ver se a carga é real ou teste do k6 | Aumentar `max_size` do node group e `maxReplicas`, com PgBouncer antes de passar de 3 réplicas |
-| Lambda com erro | Ler o log da Lambda pelo `requestId` | Se for timeout de conexão ao RDS, conferir `subnet_ids` e security group |
-| Sem dados | Conferir se o Datadog Agent está rodando em todos os nós (`kubectl get ds -n datadog`) | Reinstalar o chart; conferir `DD_API_KEY` no Secret |
+| Falhas 5xx da API | Filtrar logs `status:error` pelo `correlationId` de uma das requisições; abrir o trace | Se o erro vier do Postgres, checar conexões no RDS; se for exceção nova, abrir issue e restaurar o digest anterior por PR no `infra-k8s` |
+| Falha de integração com Resend | Conferir status do Resend e validade da `RESEND_API_KEY` no GitHub Environment | Rotacionar a chave e refazer o deploy; e-mails perdidos não são reenviados |
+
+### Convenção
+
+Nomes no Datadog seguem `provedor-recurso-ambiente-região-métrica-severidade` (exemplo: `AWS-EKS-homologacao-use1-5xx-critical`), com tags `env`, `service` e `team:32soat`. Categorias, como na aula de alertas: reativo (5xx, Resend) notifica quem está de plantão; proativo (a criar) notifica o canal sem urgência.
 
 ---
 
-## 🎬 Roteiro para o vídeo
+## ✅ Validação
 
-O enunciado pede "dashboard de monitoramento com análise ao vivo" e "logs e traces em execução". Sequência sugerida:
+Local, com o profile `observability` do Compose:
 
-1. `POST /auth/cpf` pelo Gateway. Mostrar o `x-correlation-id` na resposta.
-2. `POST /api/v1/ordens` com token admin. Mostrar a mesma correlação no header.
-3. Logs no Datadog filtrados pelo `correlationId`: Gateway, Lambda, Nest.
-4. Abrir o trace do `POST /ordens`: spans do Express e do `pg`, tempo por consulta.
-5. Dashboard "Operação": a OS recém-criada aparece no volume do dia.
-6. Transicionar a OS por dois status e mostrar `oficina.os.status.duracao` mudando.
-7. Forçar um erro (Resend com chave inválida) e mostrar o monitor "Falha no Resend" disparar.
-8. `kubectl apply` do k6 (`k8s/load-test/`) e o dashboard de infra mostrando CPU subindo e o HPA criando réplica.
+```sh
+docker compose --profile observability up -d db datadog-agent app
+curl -i -H 'x-correlation-id: docker-log-trace-001' http://localhost:3000/api/v1/health
+docker compose logs --no-log-prefix app | grep 'docker-log-trace-001'
+docker compose exec datadog-agent agent status
+```
+
+No EKS, após `helm upgrade --install` com `datadog/kubernetes-values.yaml`:
+
+```sh
+kubectl -n datadog rollout status daemonset/datadog
+kubectl -n datadog exec daemonset/datadog -c agent -- agent status
+```
+
+Passo a passo, chaves e diagnóstico das métricas de negócio: [datadog/README.md](../../datadog/README.md).
 
 ---
 
@@ -211,6 +125,7 @@ O enunciado pede "dashboard de monitoramento com análise ao vivo" e "logs e tra
 
 - [ADR 006 — Stack de observabilidade](../adr/006-stack-de-observabilidade.md)
 - [RFC 004](../rfc/004-stack-de-observabilidade.md)
+- [Datadog: operação](../../datadog/README.md)
 - [Componentes](../architecture/componentes.md)
+- [Requisitos](../architecture/requisitos.md)
 - [Modelo de dados](../architecture/modelo-de-dados.md)
-- [Kubernetes](../deployment/k8s.md)

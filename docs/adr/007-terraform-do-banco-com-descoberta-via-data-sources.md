@@ -42,7 +42,7 @@ data "aws_subnets" "database" {
 | Recurso | Onde vive |
 | ------- | --------- |
 | `aws_db_instance`, `aws_db_subnet_group`, `aws_security_group` do Postgres | `oficina-mecanica-infra-db` |
-| VPC, subnets (inclusive as de tag `Tier = database`), EKS | Stack do cluster (hoje `oficina-mecanica-api/infra`; destino: `infra-k8s`) |
+| VPC, subnets (inclusive as de tag `Tier = database`), EKS | `oficina-mecanica-infra-k8s`, root do ambiente ([ADR 008](./008-plataforma-por-ambiente-com-contratos-ssm.md)) |
 | Regra de ingress 5432 ← SG do cluster | No próprio SG, em `infra-db`, via data source |
 | Regras de ingress adicionais (ex.: Lambda em VPC) | Variável `extra_ingress_security_group_ids` em `infra-db` |
 
@@ -67,14 +67,13 @@ A dependência circular que a RFC apontou como único bloqueio técnico deixa de
 - State isolado por key: um `terraform destroy` no repositório do banco não alcança rede nem cluster, e vice-versa.
 - Deploy automático na `main` implementado e verificado — requisito da fase que o `infra.yml` da API (apply só manual) não atendia.
 - Testado ponta a ponta em conta AWS Academy em 13/09/2026: cluster + subnets aplicados pelo stack da API, RDS aplicado por `infra-db` via data sources, ingress verificado (5432 apenas a partir do SG do cluster), `terraform plan` subsequente sem mudanças, destroy completo sem resíduo de recurso ou custo.
-- Quando o stack de rede migrar da API para `infra-k8s` (etapa do Isaac na RFC 005), `infra-db` não muda: as tags e o nome do cluster viajam com o código.
+- O stack de rede vive no `infra-k8s` e o `infra-db` não precisou mudar: as tags e o nome do cluster (`oficina-mecanica-<ambiente>`) viajam com o código.
 
 ### 👎 Negativas e trade-offs
 
 - A convenção de nomes vira contrato implícito. Renomear o cluster ou retirar a tag `Tier` quebra a descoberta — a falha é explícita no `plan`, mas é quebra.
 - A ordem de apply (cluster antes do banco) é obrigatória e vive só em documentação.
-- `infra-k8s` continua vazio até a migração do stack do cluster; o R5 da RFC 005 segue pendente.
-- Branches de homologação (`develop`) ainda não existem; o pipeline cobre apenas `main`.
+- O pipeline do banco cobre `main`; a separação de homologação e produção no banco depende de passar `environment` igual ao do `infra-k8s` (`homologacao` ou `producao`).
 - A senha do RDS continua em GitHub Secret + variável Terraform ([requisitos RNF11](../architecture/requisitos.md)); Secrets Manager fica para depois.
 - Credenciais do AWS Academy expiram a cada sessão (~4h): antes de qualquer apply via pipeline, os três secrets AWS precisam ser renovados.
 
@@ -89,8 +88,8 @@ A dependência circular que a RFC apontou como único bloqueio técnico deixa de
 
 ## 🔮 Evolução prevista
 
-- Migração do stack de rede/EKS da API para `infra-k8s`, sem mudança em `infra-db`.
-- Branch `develop` com deploy de homologação nos quatro repositórios (etapa 5 da RFC 005).
+- Consumir `database-client-security-group-id` do contrato SSM do `infra-k8s` em vez do SG do cluster.
+- Branch de homologação no repositório do banco, no mesmo modelo do `infra-k8s`.
 - OIDC do GitHub Actions para role AWS no lugar de chaves estáticas, quando fora do Academy.
 - Senha do RDS via AWS Secrets Manager.
 - Quando a Lambda entrar na VPC, autorizá-la no banco por `extra_ingress_security_group_ids`, sem tocar no SG na mão.

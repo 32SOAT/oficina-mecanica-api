@@ -4,9 +4,9 @@
 
 | Repositório | Conteúdo |
 | ----------- | -------- |
-| [oficina-mecanica-api](https://github.com/32SOAT/oficina-mecanica-api) | API NestJS, manifestos Kubernetes, Datadog (em integração) e esta documentação |
-| [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) | Lambda de autenticação por CPF e API Gateway |
-| [oficina-mecanica-infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s) | Terraform de EKS, node group, ECR e IAM |
+| [oficina-mecanica-api](https://github.com/32SOAT/oficina-mecanica-api) | API NestJS, instrumentação Datadog, publicação da imagem e esta documentação |
+| [oficina-mecanica-lambda-auth](https://github.com/32SOAT/oficina-mecanica-lambda-auth) | Lambda de autenticação por CPF |
+| [oficina-mecanica-infra-k8s](https://github.com/32SOAT/oficina-mecanica-infra-k8s) | Terraform de rede, EKS, ECR, OIDC e API Gateway; manifestos Kubernetes e deploy por ambiente |
 | [oficina-mecanica-infra-db](https://github.com/32SOAT/oficina-mecanica-infra-db) | Terraform do RDS (instância, subnet group e security group) |
 
 ## 🏗️ Arquitetura
@@ -26,7 +26,7 @@
 | Documento | Conteúdo |
 | --------- | -------- |
 | [RFCs](./rfc/README.md) | Nuvem, banco gerenciado, autenticação, observabilidade, repositórios |
-| [ADRs](./adr/README.md) | Banco, e-mail, auth, comunicação, HPA, observabilidade, Terraform do banco |
+| [ADRs](./adr/README.md) | Banco, e-mail, auth, comunicação, HPA, observabilidade, Terraform do banco, plataforma por ambiente |
 
 ## 🔧 Operação
 
@@ -52,7 +52,7 @@ docs/
 ├── README.md              este índice
 ├── architecture/          componentes, sequências, modelo de dados, auth, módulos
 ├── rfc/                   propostas (001–005)
-├── adr/                   decisões (001–007)
+├── adr/                   decisões (001–008)
 ├── observability/         o que é monitorado e como
 ├── deployment/            integração entre repositórios, Kubernetes local, índice de deploy
 ├── ci-cd/                 pipelines
